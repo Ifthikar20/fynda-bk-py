@@ -6,13 +6,14 @@ Shows social ranking and popularity metrics.
 Uses RapidAPI for Pinterest access.
 """
 
-import os
 import logging
 import hashlib
 import random
 from dataclasses import dataclass
 from typing import Optional
 import requests
+
+from fynda.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class PinterestService:
     ]
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = config.apis.rapidapi_key
         self.timeout = 10
     
     def search_pins(self, query: str, limit: int = 8) -> list[PinterestPin]:

@@ -9,9 +9,30 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 
 from .services import orchestrator, vision_service, tiktok_service, instagram_service, pinterest_service
 from .serializers import SearchResponseSerializer
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class CsrfView(APIView):
+    """
+    Get CSRF token.
+    
+    GET /api/csrf/
+    
+    Sets CSRF cookie and returns token for use in headers.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        return Response({
+            "csrfToken": get_token(request),
+            "message": "CSRF cookie set"
+        })
 
 
 class SearchView(APIView):

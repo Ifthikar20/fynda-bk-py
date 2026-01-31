@@ -6,6 +6,9 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
+# Import centralized config
+from fynda.config import config, get_database_config
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -25,6 +28,7 @@ INSTALLED_APPS = [
     # Local apps
     "deals",
     "users",
+    "mobile",
 ]
 
 MIDDLEWARE = [
@@ -36,14 +40,26 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Custom security middleware
-    "fetchbot.middleware.SecurityHeadersMiddleware",
-    "fetchbot.middleware.RateLimitMiddleware",
-    "fetchbot.middleware.InputSanitizationMiddleware",
-    "fetchbot.middleware.RequestLoggingMiddleware",
+    # Request filters (run first - stateless validation)
+    "fynda.middleware.PathTraversalFilter",
+    "fynda.middleware.RequestSizeFilter",
+    "fynda.middleware.ContentTypeFilter",
+    "fynda.middleware.ParameterValidationFilter",
+    "fynda.middleware.JSONValidationFilter",
+    # API protection (anti-enumeration, bot detection)
+    "fynda.middleware.APIGuardMiddleware",
+    "fynda.middleware.BotDetectionMiddleware",
+    # Core security middleware
+    "fynda.middleware.SecurityHeadersMiddleware",
+    "fynda.middleware.RateLimitMiddleware",
+    "fynda.middleware.InputSanitizationMiddleware",
+    "fynda.middleware.RequestLoggingMiddleware",
+    # Response interceptors (run last - sanitize output)
+    "fynda.middleware.ResponseInterceptor",
+    "fynda.middleware.NotFoundNormalizerMiddleware",
 ]
 
-ROOT_URLCONF = "fetchbot.urls"
+ROOT_URLCONF = "fynda.urls"
 
 TEMPLATES = [
     {
@@ -60,7 +76,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "fetchbot.wsgi.application"
+WSGI_APPLICATION = "fynda.wsgi.application"
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -122,14 +138,9 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# CORS Settings
+# CORS Settings (from config)
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Vite dev server
-    "http://127.0.0.1:5173",
-]
+CORS_ALLOWED_ORIGINS = config.security.cors_origins
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -151,9 +162,12 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = config.security.csrf_trusted_origins
+
+# Celery Configuration (from config)
+CELERY_BROKER_URL = config.redis.broker_url
+CELERY_RESULT_BACKEND = config.redis.result_backend
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -201,15 +215,43 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "fynda.config": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
-# API Keys (loaded from environment)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-EBAY_APP_ID = os.getenv("EBAY_APP_ID", "")
-EBAY_CERT_ID = os.getenv("EBAY_CERT_ID", "")
-BESTBUY_API_KEY = os.getenv("BESTBUY_API_KEY", "")
+# =============================================================================
+# API Keys - Now accessed via config module
+# =============================================================================
+# Usage: from fynda.config import config
+#        api_key = config.apis.rapidapi_key
+
+OPENAI_API_KEY = config.apis.openai_api_key
+EBAY_APP_ID = config.apis.ebay_app_id
+EBAY_CERT_ID = config.apis.ebay_cert_id
+BESTBUY_API_KEY = config.apis.bestbuy_api_key
+RAPIDAPI_KEY = config.apis.rapidapi_key
+
+# Affiliate Networks
+CJ_API_TOKEN = config.apis.cj_api_token
+CJ_WEBSITE_ID = config.apis.cj_website_id
+RAKUTEN_API_TOKEN = config.apis.rakuten_api_token
+RAKUTEN_SITE_ID = config.apis.rakuten_site_id
+SHAREASALE_AFFILIATE_ID = config.apis.shareasale_affiliate_id
+SHAREASALE_API_TOKEN = config.apis.shareasale_api_token
+SHAREASALE_API_SECRET = config.apis.shareasale_api_secret
+
+# ML Service
+ML_SERVICE_URL = config.ml_service.url
+ML_SERVICE_TIMEOUT = config.ml_service.timeout
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Log configuration status on startup
+config.log_status()
+

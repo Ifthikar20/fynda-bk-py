@@ -6,13 +6,14 @@ Note: Facebook Marketplace API requires Meta partner approval.
 This service uses RapidAPI's unofficial Marketplace endpoint as a fallback.
 """
 
-import os
 import logging
 import hashlib
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 import requests
+
+from fynda.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class FacebookMarketplaceService:
     """
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = config.apis.rapidapi_key
         self.api_host = "facebook-marketplace.p.rapidapi.com"
     
     def search(self, query: str, limit: int = 10, max_price: Optional[float] = None, 

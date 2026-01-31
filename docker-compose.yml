@@ -8,7 +8,7 @@ services:
       - DEBUG=True
       - SECRET_KEY=your-secret-key-change-in-production
       - DB_HOST=db
-      - DB_NAME=fetchbot
+      - DB_NAME=fynda
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_URL=redis://redis:6379/0
@@ -24,7 +24,7 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_DB=fetchbot
+      - POSTGRES_DB=fynda
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -39,13 +39,13 @@ services:
 
   celery:
     build: .
-    command: celery -A fetchbot worker -l info
+    command: celery -A fynda worker -l info
     environment:
       - DJANGO_ENV=development
       - DEBUG=True
       - SECRET_KEY=your-secret-key-change-in-production
       - DB_HOST=db
-      - DB_NAME=fetchbot
+      - DB_NAME=fynda
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_URL=redis://redis:6379/0

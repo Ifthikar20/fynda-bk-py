@@ -5,13 +5,14 @@ Searches for product-focused TikTok videos: reviews, demos, unboxings.
 Filters out irrelevant content to show only product information.
 """
 
-import os
 import logging
 import hashlib
 import random
 from dataclasses import dataclass
 from typing import Optional
 import requests
+
+from fynda.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class TikTokService:
     """
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = config.apis.rapidapi_key
         self.api_host = "tiktok-api23.p.rapidapi.com"
     
     def search_videos(self, query: str, limit: int = 6, video_type: str = None) -> list[TikTokVideo]:

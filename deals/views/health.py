@@ -15,6 +15,6 @@ class HealthCheckView(View):
     def get(self, request):
         return JsonResponse({
             "status": "healthy",
-            "service": "fetchbot-api",
+            "service": "fynda-api",
             "version": "1.0.0",
         })

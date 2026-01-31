@@ -13,7 +13,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "fetchbot"),
+        "NAME": os.getenv("DB_NAME", "fynda"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", "localhost"),
@@ -107,7 +107,7 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
 # =============================================================================
 LOGGING["handlers"]["file"] = {
     "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.getenv("LOG_FILE", "/var/log/fetchbot/app.log"),
+    "filename": os.getenv("LOG_FILE", "/var/log/fynda/app.log"),
     "maxBytes": 10 * 1024 * 1024,  # 10 MB
     "backupCount": 5,
     "formatter": "verbose",

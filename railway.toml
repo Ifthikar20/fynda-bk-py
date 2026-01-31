@@ -5,9 +5,9 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python manage.py migrate && gunicorn fetchbot.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
+startCommand = "python manage.py migrate && gunicorn fynda.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
 healthcheckPath = "/api/health/"
 healthcheckTimeout = 100
 
 [env]
-DJANGO_SETTINGS_MODULE = "fetchbot.settings.production"
+DJANGO_SETTINGS_MODULE = "fynda.settings.production"

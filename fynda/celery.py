@@ -1,13 +1,13 @@
 """
-Celery Configuration for Fetch Bot
+Celery Configuration for Fynda
 """
 
 import os
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fetchbot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fynda.settings')
 
-app = Celery('fetchbot')
+app = Celery('fynda')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 

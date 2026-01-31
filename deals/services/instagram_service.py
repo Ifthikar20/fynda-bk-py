@@ -6,7 +6,6 @@ Useful for finding sample photos (e.g., photos taken with a camera).
 Uses RapidAPI for Instagram access.
 """
 
-import os
 import logging
 import hashlib
 import random
@@ -14,6 +13,8 @@ from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 import requests
+
+from fynda.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class InstagramService:
     """
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = config.apis.rapidapi_key
         self.api_host = "instagram-scraper-api2.p.rapidapi.com"
         self.timeout = 10
     

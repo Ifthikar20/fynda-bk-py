@@ -24,4 +24,4 @@ COPY . .
 RUN python manage.py collectstatic --noinput || true
 
 # Run gunicorn
-CMD ["gunicorn", "fetchbot.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+CMD ["gunicorn", "fynda.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
