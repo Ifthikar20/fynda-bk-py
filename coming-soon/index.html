@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fynda - Launching Soon</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+            color: #1a1a1a;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            max-width: 600px;
+            padding: 2rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #000;
+            color: #fff;
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
+            }
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 4.5rem;
+            font-weight: 600;
+            letter-spacing: -3px;
+            margin-bottom: 0.75rem;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            padding: 1rem 1.5rem;
+            max-width: 520px;
+            margin: 0 auto 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .search-box:hover {
+            border-color: #000;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12);
+        }
+
+        .search-icon {
+            width: 22px;
+            height: 22px;
+            color: #888;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .search-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            min-height: 24px;
+        }
+
+        .typing-text {
+            font-size: 1rem;
+            color: #1a1a1a;
+            text-align: left;
+        }
+
+        /* Image upload animation */
+        .upload-preview {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .upload-preview.active {
+            display: flex;
+        }
+
+        .upload-img {
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+            object-fit: cover;
+            animation: popIn 0.4s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .upload-text {
+            font-size: 1.05rem;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .typing-text.hidden {
+            display: none;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #1a1a1a;
+            margin-left: 2px;
+            animation: blink 1s infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .feature svg {
+            width: 16px;
+            height: 16px;
+            color: #666;
+        }
+
+        .floating-cards {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .float-card {
+            position: absolute;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        .float-card img {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .float-card .info {
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .float-card .title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.35rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        .float-card .price-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .float-card .price {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        .float-card .discount {
+            background: #000;
+            color: #fff;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        /* Adjusted positions to avoid overlap */
+        .float-card:nth-child(1) {
+            top: 8%;
+            left: 4%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(1).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .float-card:nth-child(2) {
+            top: 5%;
+            right: 6%;
+        }
+
+        .float-card:nth-child(3) {
+            top: 45%;
+            left: 2%;
+        }
+
+        .float-card:nth-child(4) {
+            top: 30%;
+            right: 3%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(4).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .float-card:nth-child(5) {
+            bottom: 8%;
+            left: 5%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(5).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .float-card:nth-child(6) {
+            bottom: 5%;
+            right: 8%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(6).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .float-card:nth-child(7) {
+            top: 18%;
+            left: 15%;
+        }
+
+        .float-card:nth-child(8) {
+            bottom: 25%;
+            right: 2%;
+        }
+
+        .slide-in-left {
+            animation: slideInLeft 0.8s ease-out forwards, floatAfter 6s ease-in-out infinite;
+            animation-delay: var(--delay), calc(var(--delay) + 0.8s);
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.8s ease-out forwards, floatAfter 6s ease-in-out infinite;
+            animation-delay: var(--delay), calc(var(--delay) + 0.8s);
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-100px) rotate(-10deg) scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg) scale(1);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px) rotate(10deg) scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg) scale(1);
+            }
+        }
+
+        @keyframes floatAfter {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(2deg);
+            }
+        }
+
+        .float-card:nth-child(1) {
+            --delay: 0.3s;
+        }
+
+        .float-card:nth-child(2) {
+            --delay: 0.6s;
+        }
+
+        .float-card:nth-child(3) {
+            --delay: 0.9s;
+        }
+
+        .float-card:nth-child(4) {
+            --delay: 1.2s;
+        }
+
+        .float-card:nth-child(5) {
+            --delay: 1.5s;
+        }
+
+        .float-card:nth-child(6) {
+            --delay: 1.8s;
+        }
+
+        .float-card:nth-child(7) {
+            --delay: 2.1s;
+        }
+
+        .float-card:nth-child(8) {
+            --delay: 2.4s;
+        }
+
+        @media (max-width: 1200px) {
+            .float-card img {
+                width: 100px;
+                height: 100px;
+            }
+
+            .float-card .info {
+                padding: 0.5rem;
+            }
+
+            .float-card .title {
+                max-width: 90px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .float-card {
+                display: none;
+            }
+
+            .logo {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="floating-cards">
+        <div class="float-card slide-in-left">
+            <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=300&h=300&fit=crop" alt="Jacket">
+            <div class="info">
+                <div class="title">Leather Jacket</div>
+                <div class="price-row">
+                    <span class="price">$129</span>
+                    <span class="discount">35% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-right">
+            <img src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop" alt="Hoodie">
+            <div class="info">
+                <div class="title">Nike Hoodie</div>
+                <div class="price-row">
+                    <span class="price">$65</span>
+                    <span class="discount">40% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-left">
+            <img src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300&h=300&fit=crop" alt="Shirt">
+            <div class="info">
+                <div class="title">Denim Shirt</div>
+                <div class="price-row">
+                    <span class="price">$49</span>
+                    <span class="discount">30% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-right">
+            <img src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=300&h=300&fit=crop" alt="Dress">
+            <div class="info">
+                <div class="title">Summer Dress</div>
+                <div class="price-row">
+                    <span class="price">$45</span>
+                    <span class="discount">43% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-left">
+            <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&h=300&fit=crop" alt="Jeans">
+            <div class="info">
+                <div class="title">Slim Fit Jeans</div>
+                <div class="price-row">
+                    <span class="price">$59</span>
+                    <span class="discount">25% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-right">
+            <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop" alt="TShirt">
+            <div class="info">
+                <div class="title">White T-Shirt</div>
+                <div class="price-row">
+                    <span class="price">$25</span>
+                    <span class="discount">50% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-left">
+            <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=300&fit=crop" alt="Coat">
+            <div class="info">
+                <div class="title">Trench Coat</div>
+                <div class="price-row">
+                    <span class="price">$189</span>
+                    <span class="discount">20% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-right">
+            <img src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop" alt="Sweater">
+            <div class="info">
+                <div class="title">Knit Sweater</div>
+                <div class="price-row">
+                    <span class="price">$79</span>
+                    <span class="discount">30% off</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="badge">
+            <span class="pulse-dot"></span>
+            Launching Soon
+        </div>
+
+        <h1 class="logo">Fynda</h1>
+        <p class="tagline">Prompt your way to the best deals.</p>
+
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <div class="search-content">
+                <div class="typing-text" id="typing-container">
+                    <span id="typed-text"></span><span class="cursor"></span>
+                </div>
+                <div class="upload-preview" id="upload-preview">
+                    <img src="" alt="Upload" class="upload-img" id="upload-img">
+                    <span class="upload-text" id="upload-text">Finding similar items...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <path d="m21 15-5-5L5 21"></path>
+                </svg>
+                Upload Image
+            </div>
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                Visual Search
+            </div>
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                AI-Powered
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textPhrases = [
+            "Find me a white t-shirt under $30...",
+            "Show me leather jackets on sale...",
+            "Best deals on summer dresses...",
+            "Slim fit jeans with discount...",
+            "Trendy hoodies for winter..."
+        ];
+
+        const imagePhrases = [
+            { img: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop", text: "Finding similar white t-shirts..." },
+            { img: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=100&h=100&fit=crop", text: "Searching for leather jackets..." },
+            { img: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=100&h=100&fit=crop", text: "Finding similar dresses..." }
+        ];
+
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let isImageMode = false;
+        let cycleCount = 0;
+
+        const typedText = document.getElementById('typed-text');
+        const typingContainer = document.getElementById('typing-container');
+        const uploadPreview = document.getElementById('upload-preview');
+        const uploadImg = document.getElementById('upload-img');
+        const uploadText = document.getElementById('upload-text');
+
+        // Map image index to card selector for image uploads
+        // 0: t-shirt → card 6
+        // 1: leather jacket → card 1
+        // 2: dress → card 4
+        const imageToCard = {
+            0: '.float-card:nth-child(6)',  // white t-shirt
+            1: '.float-card:nth-child(1)',  // leather jacket
+            2: '.float-card:nth-child(4)'   // summer dress
+        };
+
+        function showImageUpload() {
+            const imageIndex = Math.floor(Math.random() * imagePhrases.length);
+            const imageData = imagePhrases[imageIndex];
+
+            typingContainer.classList.add('hidden');
+            uploadPreview.classList.add('active');
+            uploadImg.src = imageData.img;
+            uploadText.textContent = imageData.text;
+
+            // Add glow to corresponding card
+            clearAllGlows();
+            const cardSelector = imageToCard[imageIndex];
+            if (cardSelector) {
+                const card = document.querySelector(cardSelector);
+                if (card) card.classList.add('glow');
+            }
+
+            setTimeout(() => {
+                uploadPreview.classList.remove('active');
+                typingContainer.classList.remove('hidden');
+                clearAllGlows();
+                isImageMode = false;
+                type();
+            }, 3000);
+        }
+
+        // Map phrase index to card selector
+        // 0: white t-shirt → card 6
+        // 1: leather jacket → card 1
+        // 2: summer dress → card 4
+        // 3: slim fit jeans → card 5
+        // 4: hoodies → card 2
+        const phraseToCard = {
+            0: '.float-card:nth-child(6)',  // white t-shirt
+            1: '.float-card:nth-child(1)',  // leather jacket
+            2: '.float-card:nth-child(4)',  // summer dress
+            3: '.float-card:nth-child(5)',  // slim fit jeans
+            4: '.float-card:nth-child(2)'   // hoodie
+        };
+
+        function clearAllGlows() {
+            document.querySelectorAll('.float-card.glow').forEach(card => {
+                card.classList.remove('glow');
+            });
+        }
+
+        function type() {
+            if (isImageMode) return;
+
+            const currentPhrase = textPhrases[phraseIndex];
+
+            if (isDeleting) {
+                typedText.textContent = currentPhrase.substring(0, charIndex - 1);
+                charIndex--;
+
+                // Remove glow when deleting is complete
+                if (charIndex === 0) {
+                    clearAllGlows();
+                }
+            } else {
+                typedText.textContent = currentPhrase.substring(0, charIndex + 1);
+                charIndex++;
+
+                // Add glow when phrase is about 30% typed
+                if (charIndex === Math.floor(currentPhrase.length * 0.3)) {
+                    clearAllGlows();
+                    const cardSelector = phraseToCard[phraseIndex];
+                    if (cardSelector) {
+                        const card = document.querySelector(cardSelector);
+                        if (card) card.classList.add('glow');
+                    }
+                }
+            }
+
+            let typeSpeed = isDeleting ? 30 : 50;
+
+            if (!isDeleting && charIndex === currentPhrase.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                phraseIndex = (phraseIndex + 1) % textPhrases.length;
+                cycleCount++;
+
+                // Show image upload every 2 text phrases
+                if (cycleCount % 2 === 0) {
+                    isImageMode = true;
+                    setTimeout(showImageUpload, 500);
+                    return;
+                }
+
+                typeSpeed = 500;
+            }
+
+            setTimeout(type, typeSpeed);
+        }
+
+        type();
+    </script>
+</body>
+
+</html>
