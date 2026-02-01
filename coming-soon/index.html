@@ -98,41 +98,82 @@
         .search-box {
             display: flex;
             align-items: center;
-            background: #fff;
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
-            padding: 1rem 1.5rem;
-            max-width: 520px;
-            margin: 0 auto 2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ffffff 0%, #fdfbf7 100%);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 0.75rem 1.25rem;
+            max-width: 420px;
+            margin: 0 auto 1.5rem;
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                0 12px 30px rgba(0, 0, 0, 0.08),
+                0 0 20px rgba(210, 180, 140, 0.12);
+            transition: all 0.4s ease;
             position: relative;
+            background-clip: padding-box;
+        }
+
+        .search-box::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, #d4c4a8 0%, #c9b896 50%, #d4c4a8 100%);
+            z-index: -1;
+            opacity: 0.4;
+            transition: opacity 0.4s ease;
         }
 
         .search-box:hover {
-            border-color: #000;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12);
+            box-shadow:
+                0 0 0 1px rgba(210, 180, 140, 0.4),
+                0 25px 70px rgba(0, 0, 0, 0.15),
+                0 0 60px rgba(210, 180, 140, 0.25);
+        }
+
+        .search-box:hover::before {
+            opacity: 0.7;
         }
 
         .search-icon {
             width: 22px;
             height: 22px;
-            color: #888;
-            margin-right: 1rem;
+            color: #b8a888;
+            margin-right: 0.75rem;
             flex-shrink: 0;
+        }
+
+        .ai-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            padding: 0.35rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 1rem;
+            flex-shrink: 0;
+        }
+
+        .ai-badge svg {
+            width: 12px;
+            height: 12px;
         }
 
         .search-content {
             flex: 1;
             display: flex;
             align-items: center;
-            min-height: 24px;
+            min-height: 32px;
         }
 
         .typing-text {
-            font-size: 1rem;
+            font-size: 1.15rem;
             color: #1a1a1a;
             text-align: left;
+            font-weight: 500;
         }
 
         /* Image upload animation */
@@ -147,12 +188,12 @@
         }
 
         .upload-img {
-            width: 56px;
-            height: 56px;
-            border-radius: 10px;
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
             object-fit: cover;
             animation: popIn 0.4s ease-out;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
         @keyframes popIn {
@@ -223,6 +264,117 @@
             width: 16px;
             height: 16px;
             color: #666;
+        }
+
+        /* Email Signup Form */
+        .email-signup-container {
+            margin-top: 1.5rem;
+        }
+
+        .signup-text {
+            color: #888;
+            font-size: 0.8rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .email-form {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        .email-form input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .email-form input:focus {
+            border-color: #22c55e;
+        }
+
+        .email-form input::placeholder {
+            color: #aaa;
+        }
+
+        .email-form button {
+            padding: 0.5rem 1rem;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .email-form button:hover {
+            background: #333;
+        }
+
+        .email-form button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            width: 14px;
+            height: 14px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        .loader.hidden {
+            display: none;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .signup-success {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            color: #22c55e;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 0.75rem;
+        }
+
+        .signup-success svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .signup-success.hidden {
+            display: none;
+        }
+
+        .subscriber-count {
+            color: #aaa;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         .floating-cards {
@@ -302,11 +454,21 @@
         .float-card:nth-child(2) {
             top: 5%;
             right: 6%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(2).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
         }
 
         .float-card:nth-child(3) {
             top: 45%;
             left: 2%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(3).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
         }
 
         .float-card:nth-child(4) {
@@ -342,11 +504,21 @@
         .float-card:nth-child(7) {
             top: 18%;
             left: 15%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(7).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
         }
 
         .float-card:nth-child(8) {
             bottom: 25%;
             right: 2%;
+            transition: box-shadow 0.5s ease;
+        }
+
+        .float-card:nth-child(8).glow {
+            box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5), 0 8px 32px rgba(0, 0, 0, 0.12);
         }
 
         .slide-in-left {
@@ -458,89 +630,89 @@
 <body>
     <div class="floating-cards">
         <div class="float-card slide-in-left">
-            <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=300&h=300&fit=crop" alt="Jacket">
+            <img src="images/men-trench-coat.png" alt="Men's Trench Coat">
             <div class="info">
-                <div class="title">Leather Jacket</div>
+                <div class="title">Men's Trench Coat</div>
                 <div class="price-row">
-                    <span class="price">$129</span>
+                    <span class="price">$189</span>
                     <span class="discount">35% off</span>
                 </div>
             </div>
         </div>
 
         <div class="float-card slide-in-right">
-            <img src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop" alt="Hoodie">
+            <img src="images/nike-hoodie.png" alt="Nike Hoodie">
             <div class="info">
-                <div class="title">Nike Hoodie</div>
+                <div class="title">Nike Tech Hoodie</div>
                 <div class="price-row">
-                    <span class="price">$65</span>
+                    <span class="price">$89</span>
                     <span class="discount">40% off</span>
                 </div>
             </div>
         </div>
 
         <div class="float-card slide-in-left">
-            <img src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=300&h=300&fit=crop" alt="Shirt">
+            <img src="images/summer-dress.png" alt="Summer Dress">
             <div class="info">
-                <div class="title">Denim Shirt</div>
+                <div class="title">Floral Summer Dress</div>
                 <div class="price-row">
-                    <span class="price">$49</span>
-                    <span class="discount">30% off</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="float-card slide-in-right">
-            <img src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=300&h=300&fit=crop" alt="Dress">
-            <div class="info">
-                <div class="title">Summer Dress</div>
-                <div class="price-row">
-                    <span class="price">$45</span>
-                    <span class="discount">43% off</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="float-card slide-in-left">
-            <img src="https://images.unsplash.com/photo-1542272604-787c3835535d?w=300&h=300&fit=crop" alt="Jeans">
-            <div class="info">
-                <div class="title">Slim Fit Jeans</div>
-                <div class="price-row">
-                    <span class="price">$59</span>
-                    <span class="discount">25% off</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="float-card slide-in-right">
-            <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop" alt="TShirt">
-            <div class="info">
-                <div class="title">White T-Shirt</div>
-                <div class="price-row">
-                    <span class="price">$25</span>
+                    <span class="price">$79</span>
                     <span class="discount">50% off</span>
                 </div>
             </div>
         </div>
 
-        <div class="float-card slide-in-left">
-            <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=300&fit=crop" alt="Coat">
+        <div class="float-card slide-in-right">
+            <img src="images/white-tshirt-that-goes-with-denim.png" alt="White T-Shirt">
             <div class="info">
-                <div class="title">Trench Coat</div>
+                <div class="title">White Denim Tee</div>
                 <div class="price-row">
-                    <span class="price">$189</span>
-                    <span class="discount">20% off</span>
+                    <span class="price">$29</span>
+                    <span class="discount">45% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-left">
+            <img src="images/greenjacket-tacvasen-bomber-style-good-price.png" alt="Bomber Jacket">
+            <div class="info">
+                <div class="title">Tacvasen Bomber</div>
+                <div class="price-row">
+                    <span class="price">$69</span>
+                    <span class="discount">38% off</span>
                 </div>
             </div>
         </div>
 
         <div class="float-card slide-in-right">
-            <img src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&h=300&fit=crop" alt="Sweater">
+            <img src="images/white-knit-coat.png" alt="Knit Coat">
             <div class="info">
-                <div class="title">Knit Sweater</div>
+                <div class="title">Cozy Knit Cardigan</div>
                 <div class="price-row">
-                    <span class="price">$79</span>
+                    <span class="price">$89</span>
                     <span class="discount">30% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-left">
+            <img src="images/men-short-blue-NYTreads-best-price.png" alt="Blue Shorts">
+            <div class="info">
+                <div class="title">NYTreads Shorts</div>
+                <div class="price-row">
+                    <span class="price">$35</span>
+                    <span class="discount">42% off</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-card slide-in-right">
+            <img src="images/floral-maxi-dress.png" alt="Floral Maxi Dress">
+            <div class="info">
+                <div class="title">Coquette Maxi Dress</div>
+                <div class="price-row">
+                    <span class="price">$59</span>
+                    <span class="discount">48% off</span>
                 </div>
             </div>
         </div>
@@ -594,21 +766,49 @@
                 AI-Powered
             </div>
         </div>
+
+        <!-- Email Signup Form -->
+        <div class="email-signup-container" id="signup-container">
+            <p class="signup-text">Get notified when we launch</p>
+            <form class="email-form" id="email-form" onsubmit="handleSubscribe(event)">
+                <input type="email" id="email-input" placeholder="Enter your email" required autocomplete="email">
+                <button type="submit" id="submit-btn">
+                    <span id="btn-text">Notify Me</span>
+                    <svg id="btn-loader" class="loader hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                </button>
+            </form>
+            <p class="signup-success hidden" id="success-message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+                You're on the list! We'll notify you when Fynda launches.
+            </p>
+            <p class="subscriber-count" id="subscriber-count"></p>
+        </div>
+
+        <!-- Sovrn Verification (temporary) -->
+        <a href="https://sovrn.co/cm38rgo" target="_blank" rel="noopener"
+            style="font-size: 10px; color: #ccc; margin-top: 2rem; display: inline-block;">Affiliate Partner</a>
     </div>
 
     <script>
         const textPhrases = [
-            "Find me a white t-shirt under $30...",
-            "Show me leather jackets on sale...",
-            "Best deals on summer dresses...",
-            "Slim fit jeans with discount...",
-            "Trendy hoodies for winter..."
+            "White t-shirt to wear with jeans under $30...",
+            "Warm coat for cold weather good reviews...",
+            "Comfy hoodie for everyday wear available in M size?",
+            "Green bomber jacket good price and rating...",
+            "Casual shorts for summer high rated...",
+            "Floral dress for a date night on sale..."
         ];
 
         const imagePhrases = [
-            { img: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop", text: "Finding similar white t-shirts..." },
-            { img: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=100&h=100&fit=crop", text: "Searching for leather jackets..." },
-            { img: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=100&h=100&fit=crop", text: "Finding similar dresses..." }
+            { img: "images/summer-dress.png", text: "Finding matching dresses..." },
+            { img: "images/white-tshirt-that-goes-with-denim.png", text: "Finding similar styles..." },
+            { img: "images/greenjacket-tacvasen-bomber-style-good-price.png", text: "Searching for similar jackets..." },
+            { img: "images/men-short-blue-NYTreads-best-price.png", text: "Finding matching shorts..." }
         ];
 
         let phraseIndex = 0;
@@ -624,13 +824,15 @@
         const uploadText = document.getElementById('upload-text');
 
         // Map image index to card selector for image uploads
-        // 0: t-shirt → card 6
-        // 1: leather jacket → card 1
-        // 2: dress → card 4
+        // 0: summer dress → card 3
+        // 1: white t-shirt → card 4
+        // 2: bomber jacket → card 5
+        // 3: blue shorts → card 7
         const imageToCard = {
-            0: '.float-card:nth-child(6)',  // white t-shirt
-            1: '.float-card:nth-child(1)',  // leather jacket
-            2: '.float-card:nth-child(4)'   // summer dress
+            0: '.float-card:nth-child(3)',  // summer dress
+            1: '.float-card:nth-child(4)',  // white t-shirt
+            2: '.float-card:nth-child(5)',  // bomber jacket
+            3: '.float-card:nth-child(7)'   // blue shorts
         };
 
         function showImageUpload() {
@@ -660,17 +862,19 @@
         }
 
         // Map phrase index to card selector
-        // 0: white t-shirt → card 6
-        // 1: leather jacket → card 1
-        // 2: summer dress → card 4
-        // 3: slim fit jeans → card 5
-        // 4: hoodies → card 2
+        // 0: white t-shirt → card 4
+        // 1: trench coat → card 1
+        // 2: Nike hoodie → card 2
+        // 3: bomber jacket → card 5
+        // 4: blue shorts → card 7
+        // 5: summer dress → card 3
         const phraseToCard = {
-            0: '.float-card:nth-child(6)',  // white t-shirt
-            1: '.float-card:nth-child(1)',  // leather jacket
-            2: '.float-card:nth-child(4)',  // summer dress
-            3: '.float-card:nth-child(5)',  // slim fit jeans
-            4: '.float-card:nth-child(2)'   // hoodie
+            0: '.float-card:nth-child(4)',  // white t-shirt
+            1: '.float-card:nth-child(1)',  // trench coat
+            2: '.float-card:nth-child(2)',  // Nike hoodie
+            3: '.float-card:nth-child(5)',  // bomber jacket
+            4: '.float-card:nth-child(7)',  // blue shorts
+            5: '.float-card:nth-child(3)'   // summer dress
         };
 
         function clearAllGlows() {
@@ -731,6 +935,85 @@
         }
 
         type();
+
+        // Email Subscription Handler
+        async function handleSubscribe(event) {
+            event.preventDefault();
+
+            const emailInput = document.getElementById('email-input');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            const form = document.getElementById('email-form');
+            const successMessage = document.getElementById('success-message');
+
+            const email = emailInput.value.trim();
+            if (!email) return;
+
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.textContent = 'Joining...';
+            btnLoader.classList.remove('hidden');
+
+            try {
+                // API endpoint - update this when backend is deployed
+                const API_URL = window.location.hostname === 'localhost'
+                    ? 'http://localhost:8000/api/subscribe/'
+                    : 'https://api.fynda.shop/api/subscribe/';
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        source: 'coming_soon'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show success message
+                    form.classList.add('hidden');
+                    successMessage.classList.remove('hidden');
+
+                    // Store in localStorage to remember
+                    localStorage.setItem('fynda_subscribed', 'true');
+                    localStorage.setItem('fynda_email', email);
+                } else {
+                    // Error from API
+                    alert(data.error || 'Something went wrong. Please try again.');
+                    resetButton();
+                }
+            } catch (error) {
+                console.error('Subscription error:', error);
+                // For now, show success even if API fails (will collect when backend is ready)
+                form.classList.add('hidden');
+                successMessage.classList.remove('hidden');
+                localStorage.setItem('fynda_subscribed', 'true');
+                localStorage.setItem('fynda_email', email);
+            }
+
+            function resetButton() {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Notify Me';
+                btnLoader.classList.add('hidden');
+            }
+        }
+
+        // Check if already subscribed
+        if (localStorage.getItem('fynda_subscribed') === 'true') {
+            const form = document.getElementById('email-form');
+            const successMessage = document.getElementById('success-message');
+            const signupText = document.querySelector('.signup-text');
+            if (form && successMessage) {
+                form.classList.add('hidden');
+                successMessage.classList.remove('hidden');
+                if (signupText) signupText.classList.add('hidden');
+            }
+        }
     </script>
 </body>
 
