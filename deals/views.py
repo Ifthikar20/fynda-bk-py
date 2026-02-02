@@ -216,3 +216,165 @@ class HealthView(APIView):
             "service": "Fetch Bot API",
             "version": "1.0.0",
         })
+
+
+# ============================================================
+# Shared Storyboard Views
+# ============================================================
+
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from datetime import timedelta
+from .models import SharedStoryboard
+
+
+class CreateSharedStoryboardView(APIView):
+    """
+    Create a shared storyboard link.
+    
+    POST /api/storyboard/share/
+    
+    Request body:
+        - title: string (optional)
+        - storyboard_data: object (required)
+        - expires_in_days: number (optional, default: 30)
+    
+    Response:
+        - token: string (the share token)
+        - share_url: string (full URL to share)
+        - expires_at: datetime
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        storyboard_data = request.data.get('storyboard_data', {})
+        title = request.data.get('title', 'Fashion Storyboard')
+        expires_in_days = request.data.get('expires_in_days', 30)
+        
+        if not storyboard_data:
+            return Response(
+                {"error": "storyboard_data is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generate unique token
+        token = SharedStoryboard.generate_token()
+        
+        # Calculate expiration
+        expires_at = timezone.now() + timedelta(days=expires_in_days)
+        
+        # Create the shared storyboard
+        shared = SharedStoryboard.objects.create(
+            token=token,
+            user=request.user,
+            title=title,
+            storyboard_data=storyboard_data,
+            expires_at=expires_at
+        )
+        
+        # Build share URL
+        share_url = f"{request.scheme}://{request.get_host()}/share/{token}"
+        
+        return Response({
+            "token": token,
+            "share_url": share_url,
+            "expires_at": expires_at.isoformat(),
+            "id": str(shared.id)
+        }, status=status.HTTP_201_CREATED)
+
+
+class GetSharedStoryboardView(APIView):
+    """
+    Get a shared storyboard by token (public access).
+    
+    GET /api/storyboard/share/<token>/
+    
+    Response:
+        - title: string
+        - storyboard_data: object
+        - created_at: datetime
+        - view_count: number
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request, token):
+        try:
+            shared = SharedStoryboard.objects.get(token=token)
+        except SharedStoryboard.DoesNotExist:
+            return Response(
+                {"error": "Shared storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if expired
+        if shared.expires_at and shared.expires_at < timezone.now():
+            return Response(
+                {"error": "This share link has expired"},
+                status=status.HTTP_410_GONE
+            )
+        
+        # Check if public
+        if not shared.is_public:
+            return Response(
+                {"error": "This storyboard is not publicly accessible"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Increment view count
+        shared.increment_views()
+        
+        return Response({
+            "title": shared.title,
+            "storyboard_data": shared.storyboard_data,
+            "created_at": shared.created_at.isoformat(),
+            "view_count": shared.view_count,
+            "owner": shared.user.first_name or "Anonymous"
+        })
+
+
+class MySharedStoryboardsView(APIView):
+    """
+    List all shared storyboards for the authenticated user.
+    
+    GET /api/storyboard/my-shares/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        shares = SharedStoryboard.objects.filter(user=request.user)
+        
+        return Response({
+            "shares": [
+                {
+                    "id": str(s.id),
+                    "token": s.token,
+                    "title": s.title,
+                    "created_at": s.created_at.isoformat(),
+                    "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+                    "view_count": s.view_count,
+                    "is_public": s.is_public,
+                    "share_url": f"{request.scheme}://{request.get_host()}/share/{s.token}"
+                }
+                for s in shares
+            ],
+            "total": shares.count()
+        })
+    
+    def delete(self, request):
+        """Delete a shared storyboard"""
+        share_id = request.data.get('id')
+        if not share_id:
+            return Response(
+                {"error": "id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            shared = SharedStoryboard.objects.get(id=share_id, user=request.user)
+            shared.delete()
+            return Response({"message": "Shared storyboard deleted"})
+        except SharedStoryboard.DoesNotExist:
+            return Response(
+                {"error": "Shared storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
