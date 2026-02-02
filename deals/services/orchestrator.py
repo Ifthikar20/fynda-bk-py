@@ -18,6 +18,8 @@ from .bestbuy_service import bestbuy_service
 from .facebook_service import facebook_service
 from .shopify_service import shopify_service
 from .affiliates import affiliate_aggregator
+from .amazon_service import amazon_service
+from .vendors import vendor_manager
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,9 @@ class DealOrchestrator:
     """
     
     def __init__(self):
-        self.all_sources = ["eBay", "Best Buy", "Facebook Marketplace", "Shopify", "Affiliates", "Mock"]
+        # Get source names from enabled vendors
+        enabled = vendor_manager.get_enabled_vendors()
+        self.all_sources = [v.name for v in enabled]
     
     def search(self, query: str) -> SearchResult:
         """
@@ -107,7 +111,7 @@ class DealOrchestrator:
     
     def _fetch_all_deals(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], List[str]]:
         """
-        Fetch deals from all marketplace sources in parallel.
+        Fetch deals from affiliate networks only (CJ, Rakuten, ShareASale).
         
         Returns:
             Tuple of (all_deals, list_of_sources_that_returned_results)
@@ -115,16 +119,16 @@ class DealOrchestrator:
         all_deals = []
         sources_with_results = []
         
-        # Run API calls in parallel for better performance
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {
-                executor.submit(self._fetch_ebay, parsed): "eBay",
-                executor.submit(self._fetch_bestbuy, parsed): "Best Buy",
-                executor.submit(self._fetch_facebook, parsed): "Facebook Marketplace",
-                executor.submit(self._fetch_shopify, parsed): "Shopify",
-                executor.submit(self._fetch_affiliates, parsed): "Affiliates",
-                executor.submit(self._fetch_mock, parsed): "Mock",
-            }
+        # Query all enabled vendors using VendorManager
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {}
+            
+            # Add enabled vendors from VendorManager
+            for vendor_id, instance in vendor_manager.get_all_instances().items():
+                futures[executor.submit(self._fetch_from_vendor, instance, parsed)] = instance.VENDOR_NAME
+            
+            # Also include affiliate aggregator for compatibility
+            futures[executor.submit(self._fetch_affiliates, parsed)] = "Affiliates"
             
             for future in concurrent.futures.as_completed(futures, timeout=20):
                 source = futures[future]
@@ -138,6 +142,46 @@ class DealOrchestrator:
                     logger.error(f"Error fetching from {source}: {e}")
         
         return all_deals, sources_with_results
+    
+    def _fetch_from_vendor(self, vendor_instance, parsed: ParsedQuery) -> List[Dict[str, Any]]:
+        """
+        Fetch deals from a vendor instance.
+        
+        Uses the standardized VendorProduct format.
+        """
+        try:
+            products = vendor_instance.search_products(
+                query=parsed.product,
+                limit=15,
+            )
+            # Convert VendorProduct to dict if needed
+            results = []
+            for p in products:
+                if hasattr(p, 'to_dict'):
+                    results.append(p.to_dict())
+                elif isinstance(p, dict):
+                    results.append(p)
+            
+            # Filter by budget if specified
+            if parsed.budget:
+                results = [p for p in results if p.get('price', 0) <= parsed.budget]
+            return results
+        except Exception as e:
+            logger.warning(f"Vendor fetch error: {e}")
+            return []
+    
+    def _fetch_amazon(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
+        """Fetch deals from Amazon via RapidAPI."""
+        try:
+            deals = amazon_service.search(
+                query=parsed.product,
+                limit=10,
+                max_price=parsed.budget,
+            )
+            return [d.to_dict() for d in deals]
+        except Exception as e:
+            logger.warning(f"Amazon fetch error: {e}")
+            return []
     
     def _fetch_ebay(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """Fetch deals from eBay."""
@@ -268,6 +312,7 @@ class DealOrchestrator:
             # Source priority bonus
             source = deal.get("source", "") or ""
             source_bonus = {
+                "Amazon": 18,
                 "eBay": 15,
                 "Best Buy": 15,
                 "Facebook Marketplace": 10,

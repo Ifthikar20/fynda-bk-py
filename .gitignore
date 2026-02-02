@@ -4,6 +4,9 @@
 
 # Frontend (deployed separately)
 frontend/
+
+# ML Services (separate repo)
+FYNDA_ML_Services/
 # SECRETS - NEVER COMMIT THESE
 # =============================================================================
 .env

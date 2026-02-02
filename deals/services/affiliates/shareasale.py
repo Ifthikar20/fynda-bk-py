@@ -73,17 +73,20 @@ class ShareASaleService(AffiliateService):
             limit: Maximum results
             
         Returns:
-            List of products from ShareASale merchants
+            List of products from ShareASale merchants (empty if API unavailable)
         """
-        if self.is_configured():
-            try:
-                return self._search_api(query, limit)
-            except AuthenticationError:
-                logger.error("ShareASale API authentication failed")
-            except Exception as e:
-                logger.warning(f"ShareASale API error, using mock: {e}")
+        if not self.is_configured():
+            logger.debug("ShareASale API not configured - skipping")
+            return []
         
-        return self._get_mock_products(query, limit)
+        try:
+            return self._search_api(query, limit)
+        except AuthenticationError:
+            logger.error("ShareASale API authentication failed")
+            return []
+        except Exception as e:
+            logger.warning(f"ShareASale API error: {e}")
+            return []
     
     def _search_api(self, query: str, limit: int) -> list[AffiliateProduct]:
         """

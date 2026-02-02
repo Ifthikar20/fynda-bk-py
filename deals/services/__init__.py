@@ -11,6 +11,7 @@ from .facebook_service import facebook_service, FacebookMarketplaceService, Face
 from .shopify_service import shopify_service, ShopifyScraperService, ShopifyProduct
 from .instagram_service import instagram_service, InstagramService, InstagramPost
 from .pinterest_service import pinterest_service, PinterestService, PinterestPin, PinterestTrend
+from .amazon_service import amazon_service, AmazonService, AmazonDeal
 
 __all__ = [
     # Query parser
@@ -60,6 +61,10 @@ __all__ = [
     "PinterestService",
     "PinterestPin",
     "PinterestTrend",
+    # Amazon
+    "amazon_service",
+    "AmazonService",
+    "AmazonDeal",
 ]
 
 

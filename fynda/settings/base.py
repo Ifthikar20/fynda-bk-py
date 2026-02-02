@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "deals",
     "users",
     "mobile",
+    "emails",
 ]
 
 MIDDLEWARE = [
@@ -251,6 +252,18 @@ ML_SERVICE_TIMEOUT = config.ml_service.timeout
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# =============================================================================
+# EMAIL CONFIGURATION - AWS SES
+# =============================================================================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'email-smtp.us-east-1.amazonaws.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('AWS_SES_ACCESS_KEY', '')
+EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SECRET_KEY', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Fynda <noreply@fynda.shop>')
+SITE_URL = os.getenv('SITE_URL', 'https://fynda.shop')
 
 # Log configuration status on startup
 config.log_status()

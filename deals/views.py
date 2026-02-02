@@ -43,15 +43,11 @@ class SearchView(APIView):
     
     Example queries:
         - "sony camera $1200 with lens"
-        - "I am looking for a sony camera and my budget is $1200 that comes with a lens"
         - "best sony mirrorless camera under $1000"
     
     Response includes:
         - Parsed query (product, budget, requirements)
-        - List of matching deals sorted by relevance
-        - Related TikTok videos
-        - Sample photos (Instagram)
-        - Pinterest pins and trend ranking
+        - List of matching deals from affiliate networks (CJ, Rakuten, ShareASale)
         - Metadata (total results, sources, search time)
     """
     permission_classes = [AllowAny]
@@ -71,37 +67,12 @@ class SearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Perform the deal search
+        # Perform the deal search (affiliate networks only)
         result = orchestrator.search(query)
         
-        # Fetch related TikTok videos
-        videos = tiktok_service.search_videos(query, limit=6)
-        
-        # Fetch sample photos from Instagram (e.g., photos taken with a camera)
-        sample_photos = instagram_service.search_posts(query, limit=8)
-        
-        # Fetch Pinterest pins and trend data
-        pinterest_pins = pinterest_service.search_pins(query, limit=6)
-        pinterest_trend = pinterest_service.get_trend_data(query)
-        
-        # Serialize and return
+        # Return clean response with only affiliate deals
         response_data = result.to_dict()
-        response_data["videos"] = [v.to_dict() for v in videos]
-        response_data["sample_photos"] = [p.to_dict() for p in sample_photos]
-        response_data["pinterest_pins"] = [p.to_dict() for p in pinterest_pins]
-        response_data["pinterest_trend"] = pinterest_trend.to_dict()
         
-        serializer = SearchResponseSerializer(data=response_data)
-        
-        if serializer.is_valid():
-            validated = serializer.validated_data
-            validated["videos"] = response_data["videos"]
-            validated["sample_photos"] = response_data["sample_photos"]
-            validated["pinterest_pins"] = response_data["pinterest_pins"]
-            validated["pinterest_trend"] = response_data["pinterest_trend"]
-            return Response(validated)
-        
-        # If serialization fails, return raw data
         return Response(response_data)
 
 
@@ -114,13 +85,19 @@ class ImageUploadView(APIView):
     Request: multipart/form-data with 'image' field
     
     Response includes:
-        - Extracted product information
-        - Matching deals if product is identified
+        - Extracted product attributes (colors, textures, caption)
+        - Generated search queries
+        - Matching deals from Amazon and other marketplaces
     """
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
+    ML_SERVICE_URL = "http://localhost:8001/api/extract-attributes"
+    
     def post(self, request):
+        import base64
+        import requests
+        
         if 'image' not in request.FILES:
             return Response(
                 {"error": "No image file provided. Use 'image' field."},
@@ -145,31 +122,72 @@ class ImageUploadView(APIView):
             )
         
         try:
-            # Read image data
+            # Read and encode image
             image_data = image_file.read()
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
             
-            # Analyze with Vision service
-            analysis = vision_service.analyze_image(image_data=image_data)
+            # Step 1: Call ML service for attribute extraction
+            ml_response = None
+            extracted = None
+            search_queries = []
             
-            # If product identified, search for deals
-            deals = []
+            try:
+                ml_response = requests.post(
+                    self.ML_SERVICE_URL,
+                    json={"image_base64": image_base64},
+                    timeout=60
+                )
+                if ml_response.status_code == 200:
+                    ml_data = ml_response.json()
+                    extracted = {
+                        "caption": ml_data.get("caption", ""),
+                        "colors": ml_data.get("colors", {}),
+                        "textures": ml_data.get("textures", []),
+                        "category": ml_data.get("category", ""),
+                    }
+                    search_queries = ml_data.get("search_queries", [])
+            except requests.RequestException as e:
+                # ML service not available, fall back to vision service
+                pass
+            
+            # Fallback to original vision service if ML fails
+            if not extracted or not search_queries:
+                analysis = vision_service.analyze_image(image_data=image_data)
+                extracted = analysis.to_dict()
+                if analysis.product_name:
+                    query = analysis.product_name
+                    if analysis.brand:
+                        query = f"{analysis.brand} {query}"
+                    search_queries = [query]
+            
+            # Step 2: Search for deals using generated queries
+            all_deals = []
             videos = []
-            if analysis.product_name:
-                query = analysis.product_name
-                if analysis.brand:
-                    query = f"{analysis.brand} {query}"
-                
+            
+            for query in search_queries[:3]:  # Use top 3 queries
                 result = orchestrator.search(query)
-                deals = result.to_dict()["deals"][:10]
+                for deal in result.to_dict()["deals"]:
+                    # Avoid duplicates
+                    if not any(d.get("id") == deal.get("id") for d in all_deals):
+                        all_deals.append(deal)
                 
-                # Also fetch TikTok videos
-                videos = [v.to_dict() for v in tiktok_service.search_videos(query, limit=4)]
+                # Fetch TikTok videos for first query only
+                if not videos:
+                    videos = [v.to_dict() for v in tiktok_service.search_videos(query, limit=4)]
+            
+            # Sort by relevance and limit results
+            all_deals = sorted(
+                all_deals, 
+                key=lambda d: d.get("relevance_score", 0), 
+                reverse=True
+            )[:15]
             
             return Response({
-                "extracted": analysis.to_dict(),
-                "deals": deals,
+                "extracted": extracted,
+                "search_queries": search_queries,
+                "deals": all_deals,
                 "videos": videos,
-                "message": "Image analyzed successfully" if analysis.product_name else "Could not identify product"
+                "message": "Image analyzed successfully" if search_queries else "Could not identify product"
             })
             
         except ValueError as e:

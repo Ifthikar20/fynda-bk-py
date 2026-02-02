@@ -52,17 +52,20 @@ class CJAffiliateService(AffiliateService):
             limit: Maximum results (max 100)
             
         Returns:
-            List of products from CJ merchants
+            List of products from CJ merchants (empty if API unavailable)
         """
-        if self.is_configured():
-            try:
-                return self._search_api(query, limit)
-            except AuthenticationError:
-                logger.error("CJ API authentication failed - check API token")
-            except Exception as e:
-                logger.warning(f"CJ API error, using mock: {e}")
+        if not self.is_configured():
+            logger.debug("CJ API not configured - skipping")
+            return []
         
-        return self._get_mock_products(query, limit)
+        try:
+            return self._search_api(query, limit)
+        except AuthenticationError:
+            logger.error("CJ API authentication failed - check API token")
+            return []
+        except Exception as e:
+            logger.warning(f"CJ API error: {e}")
+            return []
     
     def _search_api(self, query: str, limit: int) -> list[AffiliateProduct]:
         """
