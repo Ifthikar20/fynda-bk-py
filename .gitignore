@@ -11,6 +11,7 @@ FYNDA_ML_Services/
 # =============================================================================
 .env
 .env.local
+.env.example
 .env.*.local
 *.pem
 *.key

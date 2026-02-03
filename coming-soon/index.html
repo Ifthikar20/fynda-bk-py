@@ -6,6 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="fo-verify" content="3623730c-f838-4b17-841a-dfec7429beea" />
     <title>Fynda - Launching Soon</title>
+
+    <!-- Mixpanel Analytics -->
+    <script>
+        (function (f, b) { if (!b.__SV) { var e, g, i, h; window.mixpanel = b; b._i = []; b.init = function (e, f, c) { function g(a, d) { var b = d.split("."); 2 == b.length && (a = a[b[0]], d = b[1]); a[d] = function () { a.push([d].concat(Array.prototype.slice.call(arguments, 0))) } } var a = b; "undefined" !== typeof c ? a = b[c] = [] : c = "mixpanel"; a.people = a.people || []; a.toString = function (a) { var d = "mixpanel"; "mixpanel" !== c && (d += "." + c); a || (d += " (stub)"); return d }; a.people.toString = function () { return a.toString(1) + ".people (stub)" }; i = "disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" "); for (h = 0; h < i.length; h++)g(a, i[h]); b._i.push([e, f, c]) }; b.__SV = 1.2; e = f.createElement("script"); e.type = "text/javascript"; e.async = !0; e.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"; g = f.getElementsByTagName("script")[0]; g.parentNode.insertBefore(e, g) } })(document, window.mixpanel || []);
+
+        // Initialize Mixpanel with your token
+        mixpanel.init('870cb922685b80e1dc5941129b0c8cb1', {
+            debug: false,
+            track_pageview: true,
+            persistence: 'localStorage'
+        });
+
+        // Track page view
+        mixpanel.track('Landing Page View', {
+            page: 'coming_soon',
+            referrer: document.referrer
+        });
+    </script>
+
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
         rel="stylesheet">
@@ -58,6 +77,23 @@
             font-size: 0.85rem;
             font-weight: 500;
             margin-bottom: 1.5rem;
+        }
+
+        .preview-link {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.08);
+            color: #666;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .preview-link:hover {
+            background: #1a1a1a;
+            color: #fff;
         }
 
         .pulse-dot {
@@ -625,6 +661,58 @@
                 font-size: 3rem;
             }
         }
+
+        /* Footer */
+        .site-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 100;
+            border-top: 1px solid #eee;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #1a1a1a;
+        }
+
+        .site-footer .copyright {
+            color: #aaa;
+            font-size: 0.7rem;
+        }
+
+        @media (max-width: 768px) {
+            .site-footer {
+                padding: 0.75rem 1rem;
+            }
+
+            .footer-links {
+                gap: 1rem;
+            }
+
+            .footer-links a {
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 
@@ -726,6 +814,7 @@
         </div>
 
         <h1 class="logo">Fynda</h1>
+        <!-- Hidden backdoor: app.fynda.shop -->
         <p class="tagline">Prompt your way to the best deals.</p>
 
         <div class="search-box">
@@ -790,6 +879,17 @@
             <p class="subscriber-count" id="subscriber-count"></p>
         </div>
     </div>
+
+    <!-- Footer with Legal Links -->
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="/blog/">Blog</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/cookies.html">Cookie Policy</a>
+        </div>
+        <p class="copyright">© 2026 Fynda. All rights reserved.</p>
+    </footer>
 
     <script>
         const textPhrases = [
@@ -946,6 +1046,11 @@
 
             const email = emailInput.value.trim();
             if (!email) return;
+
+            // Track email signup attempt
+            if (window.mixpanel) {
+                mixpanel.track('Email Signup Attempt', { email: email });
+            }
 
             // Show loading state
             submitBtn.disabled = true;

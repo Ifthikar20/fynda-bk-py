@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fynda Blog - Fashion Tips, Trends & Deals</title>
+    <meta name="description"
+        content="Discover the latest fashion trends, styling tips, and the best deals. Your guide to smart fashion shopping with AI-powered discovery.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fynda Blog - Fashion Tips, Trends & Deals">
+    <meta property="og:description" content="Discover the latest fashion trends, styling tips, and the best deals.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fynda.shop/blog/">
+    <meta property="og:image" content="https://fynda.shop/blog/images/og-blog.jpg">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fynda Blog - Fashion Tips, Trends & Deals">
+    <meta name="twitter:description" content="Discover the latest fashion trends, styling tips, and the best deals.">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://fynda.shop/blog/">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Mixpanel -->
+    <script>
+        (function (f, b) { if (!b.__SV) { var e, g, i, h; window.mixpanel = b; b._i = []; b.init = function (e, f, c) { function g(a, d) { var b = d.split("."); 2 == b.length && (a = a[b[0]], d = b[1]); a[d] = function () { a.push([d].concat(Array.prototype.slice.call(arguments, 0))) } } var a = b; "undefined" !== typeof c ? a = b[c] = [] : c = "mixpanel"; a.people = a.people || []; a.toString = function (a) { var d = "mixpanel"; "mixpanel" !== c && (d += "." + c); a || (d += " (stub)"); return d }; a.people.toString = function () { return a.toString(1) + ".people (stub)" }; i = "disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" "); for (h = 0; h < i.length; h++)g(a, i[h]); b._i.push([e, f, c]) }; b.__SV = 1.2; e = f.createElement("script"); e.type = "text/javascript"; e.async = !0; e.src = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"; g = f.getElementsByTagName("script")[0]; g.parentNode.insertBefore(e, g) } })(document, window.mixpanel || []);
+        mixpanel.init('870cb922685b80e1dc5941129b0c8cb1', { track_pageview: true });
+        mixpanel.track('Blog Index View');
+    </script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Fynda Blog",
+        "description": "Fashion tips, trends, and the best deals",
+        "url": "https://fynda.shop/blog/",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Fynda",
+            "url": "https://fynda.shop"
+        }
+    }
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        header {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -1px;
+            color: #1a1a1a;
+            text-decoration: none;
+        }
+
+        nav a {
+            color: #666;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #1a1a1a;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            color: #fff;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            color: #aaa;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #eee;
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 2rem;
+        }
+
+        .article-card {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .article-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+        }
+
+        .article-content {
+            padding: 1.5rem;
+        }
+
+        .article-category {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #666;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .article-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .article-excerpt {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .newsletter-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            color: #fff;
+            margin-top: 3rem;
+        }
+
+        .newsletter-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .newsletter-section p {
+            color: #aaa;
+            margin-bottom: 1.5rem;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .newsletter-form input {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .newsletter-form button {
+            padding: 0.875rem 1.5rem;
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .newsletter-form button:hover {
+            background: #16a34a;
+        }
+
+        footer {
+            background: #fff;
+            border-top: 1px solid #eee;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .footer-links a:hover {
+            color: #1a1a1a;
+        }
+
+        .copyright {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .articles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .newsletter-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">Fynda</a>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/blog/">Blog</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>The Fynda Blog</h1>
+        <p>Fashion tips, trend reports, and smart shopping guides to help you look your best for less.</p>
+    </div>
+
+    <main>
+        <h2 class="section-title">Latest Articles</h2>
+
+        <div class="articles-grid">
+            <a href="/blog/ai-fashion-discovery.html" class="article-card">
+                <div class="article-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <div class="article-content">
+                    <span class="article-category">Technology</span>
+                    <h3 class="article-title">How AI is Changing Fashion Discovery</h3>
+                    <p class="article-excerpt">Discover how visual search and AI are transforming the way we shop for
+                        clothes online.</p>
+                    <div class="article-meta">
+                        <span>Feb 2, 2026</span>
+                        <span>•</span>
+                        <span>5 min read</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/blog/spring-2026-trends.html" class="article-card">
+                <div class="article-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <div class="article-content">
+                    <span class="article-category">Trends</span>
+                    <h3 class="article-title">Spring 2026 Fashion Trends on a Budget</h3>
+                    <p class="article-excerpt">The hottest spring trends and how to wear them without breaking the bank.
+                    </p>
+                    <div class="article-meta">
+                        <span>Feb 1, 2026</span>
+                        <span>•</span>
+                        <span>7 min read</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/blog/best-deals-guide.html" class="article-card">
+                <div class="article-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <div class="article-content">
+                    <span class="article-category">Shopping</span>
+                    <h3 class="article-title">5 Tips for Finding the Best Online Deals</h3>
+                    <p class="article-excerpt">Expert strategies to save money on your favorite fashion items.</p>
+                    <div class="article-meta">
+                        <span>Jan 30, 2026</span>
+                        <span>•</span>
+                        <span>4 min read</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="newsletter-section">
+            <h2>Stay Fashionably Informed</h2>
+            <p>Get the latest trends, deals, and style tips delivered to your inbox.</p>
+            <form class="newsletter-form" onsubmit="handleBlogSubscribe(event)">
+                <input type="email" placeholder="Enter your email" required>
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="/blog/">Blog</a>
+                <a href="/terms.html">Terms</a>
+                <a href="/privacy.html">Privacy</a>
+                <a href="/cookies.html">Cookies</a>
+            </div>
+            <p class="copyright">© 2026 Fynda. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function handleBlogSubscribe(e) {
+            e.preventDefault();
+            const email = e.target.querySelector('input').value;
+            if (window.mixpanel) {
+                mixpanel.track('Blog Newsletter Signup', { email: email });
+            }
+            alert('Thanks for subscribing! We\'ll keep you updated.');
+            e.target.reset();
+        }
+    </script>
+</body>
+
+</html>

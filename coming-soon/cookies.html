@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Policy - Fynda</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.7;
+        }
+
+        header {
+            background: #fff;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -1px;
+            color: #1a1a1a;
+            text-decoration: none;
+        }
+
+        .back-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #1a1a1a;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .last-updated {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 2.5rem;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #444;
+        }
+
+        ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+
+        .section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2:first-child {
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-weight: 600;
+            color: #1a1a1a;
+            background: #f8f8f8;
+        }
+
+        td {
+            color: #444;
+        }
+
+        .cookie-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .cookie-essential {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .cookie-analytics {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .cookie-marketing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .manage-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .manage-btn:hover {
+            background: #333;
+        }
+
+        footer {
+            background: #fff;
+            border-top: 1px solid #eee;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .footer-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .footer-links a:hover {
+            color: #1a1a1a;
+        }
+
+        .copyright {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th,
+            td {
+                padding: 0.75rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">Fynda</a>
+            <a href="/" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Home
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <h1>Cookie Policy</h1>
+        <p class="last-updated">Last updated: February 2, 2026</p>
+
+        <div class="section">
+            <h2>What Are Cookies?</h2>
+            <p>Cookies are small text files stored on your device when you visit websites. They help us remember your
+                preferences, understand how you use our platform, and improve your experience.</p>
+        </div>
+
+        <div class="section">
+            <h2>Types of Cookies We Use</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cookie Type</th>
+                        <th>Purpose</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="cookie-type cookie-essential">Essential</span></td>
+                        <td>Required for basic site functionality, authentication, and security</td>
+                        <td>Session / 1 year</td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-type cookie-analytics">Analytics</span></td>
+                        <td>Help us understand how visitors interact with our site (Mixpanel)</td>
+                        <td>1 year</td>
+                    </tr>
+                    <tr>
+                        <td><span class="cookie-type cookie-marketing">Affiliate</span></td>
+                        <td>Track referrals to partner retailers for commission attribution</td>
+                        <td>30 days</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Essential Cookies</h2>
+            <p>These cookies are necessary for the website to function properly and cannot be disabled:</p>
+            <ul>
+                <li><strong>Authentication:</strong> Keep you logged in</li>
+                <li><strong>Security:</strong> Protect against fraud and unauthorized access</li>
+                <li><strong>Preferences:</strong> Remember your cookie consent choice</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Analytics Cookies</h2>
+            <p>We use Mixpanel to understand how users interact with Fynda. This helps us:</p>
+            <ul>
+                <li>Identify popular features and content</li>
+                <li>Improve user experience</li>
+                <li>Fix issues and bugs</li>
+            </ul>
+            <p>You can opt out of analytics cookies through our cookie banner.</p>
+        </div>
+
+        <div class="section">
+            <h2>Affiliate & Third-Party Cookies</h2>
+            <p>When you click on product links, retailers may set cookies to:</p>
+            <ul>
+                <li>Track your visit from Fynda</li>
+                <li>Attribute purchases for affiliate commissions</li>
+                <li>Personalize their shopping experience</li>
+            </ul>
+            <p>These cookies are set by third parties (e.g., Awin, ShareASale) and are subject to their privacy
+                policies.</p>
+        </div>
+
+        <div class="section">
+            <h2>Managing Your Cookie Preferences</h2>
+            <p>You can manage your cookie preferences in several ways:</p>
+            <ul>
+                <li><strong>Cookie Banner:</strong> Use our consent banner when you first visit</li>
+                <li><strong>Browser Settings:</strong> Block or delete cookies in your browser</li>
+                <li><strong>Opt-Out Links:</strong> Use third-party opt-out tools</li>
+            </ul>
+            <p>Note: Disabling certain cookies may affect site functionality.</p>
+            <br>
+            <button class="manage-btn" onclick="window.dispatchEvent(new CustomEvent('openCookieSettings'))">
+                Manage Cookie Preferences
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>Contact Us</h2>
+            <p>For questions about our use of cookies:</p>
+            <p><strong>Email:</strong> privacy@fynda.shop</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/terms.html">Terms of Service</a>
+                <a href="/privacy.html">Privacy Policy</a>
+                <a href="/cookies.html">Cookie Policy</a>
+            </div>
+            <p class="copyright">© 2026 Fynda. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

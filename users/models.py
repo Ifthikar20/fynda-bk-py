@@ -45,6 +45,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     
+    # OAuth fields for social login
+    oauth_provider = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        choices=[
+            ('google', 'Google'),
+            ('apple', 'Apple'),
+        ],
+        help_text="OAuth provider if user signed up via social login"
+    )
+    oauth_uid = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text="Unique ID from OAuth provider"
+    )
+    
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
@@ -60,6 +78,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = "users"
         verbose_name = "user"
         verbose_name_plural = "users"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['oauth_provider', 'oauth_uid'],
+                name='unique_oauth_account',
+                condition=models.Q(oauth_provider__isnull=False)
+            )
+        ]
     
     def __str__(self):
         return self.email
@@ -69,6 +94,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def get_short_name(self):
         return self.first_name or self.email.split("@")[0]
+    
+    @property
+    def is_oauth_user(self):
+        """Check if user signed up via OAuth."""
+        return bool(self.oauth_provider)
 
 
 class SearchHistory(models.Model):
