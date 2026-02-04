@@ -1,0 +1,65 @@
+{% extends "blog/base.html" %}
+
+{% block content %}
+<section class="error-page">
+    <div class="error-content">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Page Not Found</h2>
+        <p class="error-message">
+            The page you're looking for doesn't exist or has been moved.
+        </p>
+        <a href="/blog/" class="back-link">← Back to Blog</a>
+    </div>
+</section>
+
+<style>
+    .error-page {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .error-content {
+        max-width: 500px;
+    }
+
+    .error-code {
+        font-size: 8rem;
+        font-weight: 200;
+        color: #1a1a1a;
+        margin: 0;
+        line-height: 1;
+        letter-spacing: -0.05em;
+    }
+
+    .error-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 1rem 0;
+        color: #1a1a1a;
+    }
+
+    .error-message {
+        color: #666;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .back-link {
+        display: inline-block;
+        padding: 0.75rem 2rem;
+        background: #1a1a1a;
+        color: white;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+
+    .back-link:hover {
+        background: #333;
+    }
+</style>
+{% endblock %}

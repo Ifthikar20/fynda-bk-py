@@ -8,6 +8,11 @@ from django.db.models import Q
 from .models import Post, Category, Tag
 
 
+def custom_404(request, exception=None):
+    """Custom 404 page with nice styling."""
+    return render(request, '404.html', status=404)
+
+
 class PostListView(ListView):
     """Homepage listing all published posts."""
     model = Post

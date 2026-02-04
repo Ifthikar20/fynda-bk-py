@@ -67,7 +67,7 @@ ROOT_URLCONF = "fynda.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "blog" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
