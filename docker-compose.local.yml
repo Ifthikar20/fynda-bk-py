@@ -70,32 +70,6 @@ services:
       start_period: 60s
 
   # =============================================================================
-  # GHOST BLOG - Content Management
-  # =============================================================================
-  ghost:
-    image: ghost:5-alpine
-    container_name: fynda-ghost
-    restart: unless-stopped
-    expose:
-      - "2368"
-    environment:
-      url: ${GHOST_URL:-https://blog.fynda.shop}
-      database__client: sqlite3
-      database__connection__filename: /var/lib/ghost/content/data/ghost.db
-      mail__transport: ${GHOST_MAIL_TRANSPORT:-Direct}
-      mail__from: ${GHOST_MAIL_FROM:-noreply@fynda.shop}
-    volumes:
-      - ghost_content:/var/lib/ghost/content
-    networks:
-      - fynda-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:2368/ghost/api/admin/site/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # =============================================================================
   # POSTGRESQL DATABASE
   # =============================================================================
   db:
@@ -182,9 +156,9 @@ services:
       - /var/www/certbot:/var/www/certbot:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - static_data:/var/www/static:ro
+      - media_data:/var/www/media:ro
     depends_on:
       - api
-      - ghost
     networks:
       - fynda-network
 
@@ -204,6 +178,5 @@ volumes:
   media_data:
   static_data:
   ml_data:
-  ghost_content:
   certbot_www:
   certbot_conf:

@@ -1,0 +1,72 @@
+<!-- SEO Meta Tags -->
+<title>{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}</title>
+<meta name="description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Your ultimate destination for fashion deals." }}{% endif %}">
+<link rel="canonical" href="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="{% if post %}article{% else %}website{% endif %}">
+<meta property="og:url" content="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
+<meta property="og:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}">
+<meta property="og:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Fashion deals and tips." }}{% endif %}">
+{% if post.featured_image %}
+<meta property="og:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
+{% else %}
+<meta property="og:image" content="https://fynda.shop/og-image.png">
+{% endif %}
+<meta property="og:site_name" content="Fynda Blog">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}">
+<meta name="twitter:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Fashion deals." }}{% endif %}">
+{% if post.featured_image %}
+<meta name="twitter:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
+{% endif %}
+
+<!-- Article specific meta -->
+{% if post %}
+<meta property="article:published_time" content="{{ post.published_at|date:'c' }}">
+<meta property="article:modified_time" content="{{ post.updated_at|date:'c' }}">
+{% if post.author %}
+<meta property="article:author" content="{{ post.author.get_full_name|default:post.author.username }}">
+{% endif %}
+{% if post.category %}
+<meta property="article:section" content="{{ post.category.name }}">
+{% endif %}
+{% for tag in post.tags.all %}
+<meta property="article:tag" content="{{ tag.name }}">
+{% endfor %}
+{% endif %}
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{% if post %}
+{
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{ post.title }}",
+    "description": "{{ post.seo_description }}",
+    "datePublished": "{{ post.published_at|date:'c' }}",
+    "dateModified": "{{ post.updated_at|date:'c' }}",
+    "author": {
+        "@type": "Person",
+        "name": "Fynda Team"
+    },
+    "publisher": {
+        "@type": "Organization",
+        "name": "Fynda"
+    }
+}
+{% else %}
+{
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Fynda Fashion Blog",
+    "description": "Your destination for fashion deals.",
+    "url": "https://blog.fynda.shop/"
+}
+{% endif %}
+</script>
+
+<!-- RSS Feed -->
+<link rel="alternate" type="application/rss+xml" title="Fynda Blog RSS" href="/blog/feed/">

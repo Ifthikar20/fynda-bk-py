@@ -1,0 +1,57 @@
+{% extends "blog/base.html" %}
+
+{% block content %}
+<!-- Search Header -->
+<section class="search-header">
+    <h1 class="category-title">Search</h1>
+
+    <form method="get" action="{% url 'blog:search' %}" class="search-form">
+        <input type="text" name="q" placeholder="What are you looking for?" value="{{ query|default:'' }}">
+        <button type="submit">Search</button>
+    </form>
+</section>
+
+{% if query %}
+<section class="category-header">
+    <p class="blog-subtitle">
+        {% if posts %}
+        {{ posts|length }} result{{ posts|length|pluralize }} for "{{ query }}"
+        {% else %}
+        No results found for "{{ query }}"
+        {% endif %}
+    </p>
+</section>
+{% endif %}
+
+{% if posts %}
+<!-- Article Grid -->
+<section class="articles-grid">
+    {% for post in posts %}
+    <article class="article-card">
+        <a href="{% url 'blog:post_detail' post.slug %}">
+            {% if post.featured_image %}
+            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+            {% else %}
+            <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=500&fit=crop"
+                alt="{{ post.title }}">
+            {% endif %}
+
+            {% if post.category %}
+            <span class="category">{{ post.category.name }}</span>
+            {% endif %}
+
+            <h3>{{ post.title }}</h3>
+
+            {% if post.meta_description %}
+            <p class="excerpt">{{ post.meta_description|truncatewords:20 }}</p>
+            {% else %}
+            <p class="excerpt">{{ post.content|striptags|truncatewords:20 }}</p>
+            {% endif %}
+
+            <div class="meta">{{ post.published_date|date:"M j, Y" }}</div>
+        </a>
+    </article>
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

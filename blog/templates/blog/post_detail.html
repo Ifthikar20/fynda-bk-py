@@ -1,0 +1,86 @@
+{% extends "blog/base.html" %}
+{% load static %}
+
+{% block seo %}
+{% include "blog/includes/seo_meta.html" with post=post %}
+{% endblock %}
+
+{% block content %}
+<article>
+    <!-- Article Header -->
+    <header class="article-header">
+        {% if post.category %}
+        <a href="{% url 'blog:category_posts' post.category.slug %}" class="article-category">{{ post.category.name
+            }}</a>
+        {% endif %}
+
+        <h1 class="article-title">{{ post.title }}</h1>
+
+        <div class="article-meta">
+            Published on {{ post.published_date|date:"F j, Y" }}
+            {% if post.author %}
+            <br>Authored by <span class="author">{{ post.author.get_full_name|default:post.author.username }}</span>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Featured Image -->
+    {% if post.featured_image %}
+    <figure class="featured-image">
+        <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+        {% if post.category %}
+        <figcaption class="image-caption">{{ post.category.name }}</figcaption>
+        {% endif %}
+    </figure>
+    {% else %}
+    <figure class="featured-image">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop"
+            alt="{{ post.title }}">
+    </figure>
+    {% endif %}
+
+    <!-- Editorial Disclosure -->
+    <div class="article-body">
+        <p class="editorial-note">
+            All products are hand-picked by our editorial team. We may earn a commission on the sale of these products.
+        </p>
+    </div>
+
+    <!-- Article Body -->
+    <div class="article-body">
+        {{ post.content|safe }}
+    </div>
+
+    <!-- Tags -->
+    {% if post.tags.exists %}
+    <div class="article-body">
+        <div class="article-tags">
+            {% for tag in post.tags.all %}
+            <a href="{% url 'blog:tag_posts' tag.slug %}" class="tag">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</article>
+
+<!-- Related Articles -->
+{% if related_posts %}
+<section class="related-section">
+    <h2 class="section-title">Continue Reading</h2>
+    <div class="related-grid">
+        {% for related in related_posts %}
+        <a href="{% url 'blog:post_detail' related.slug %}" class="related-card">
+            {% if related.featured_image %}
+            <img src="{{ related.featured_image.url }}" alt="{{ related.title }}">
+            {% else %}
+            <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=500&fit=crop"
+                alt="{{ related.title }}">
+            {% endif %}
+            <h3>{{ related.title }}</h3>
+            <span class="date">{{ related.published_date|date:"M j, Y" }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -7,6 +7,17 @@ from django.urls import path, include
 from django.http import JsonResponse
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.sitemaps.views import sitemap
+
+from blog.sitemaps import PostSitemap, CategorySitemap, StaticBlogSitemap
+from blog.feeds import LatestPostsFeed
+
+# Sitemap configuration
+sitemaps = {
+    'posts': PostSitemap,
+    'categories': CategorySitemap,
+    'blog': StaticBlogSitemap,
+}
 
 
 def api_root(request):
@@ -37,6 +48,13 @@ def api_root(request):
                 "search": "/api/mobile/deals/search/",
                 "alerts": "/api/mobile/alerts/",
                 "favorites": "/api/mobile/favorites/",
+            },
+            "blog": {
+                "home": "/blog/",
+                "post": "/blog/post/<slug>/",
+                "search": "/blog/search/",
+                "sitemap": "/sitemap.xml",
+                "feed": "/blog/feed/",
             }
         },
         "example": "/api/search/?q=sony+camera+$1200+with+lens",
@@ -49,9 +67,12 @@ urlpatterns = [
     path('api/', include('deals.urls')),
     path('api/', include('emails.urls')),
     path('api/auth/', include('users.urls')),
+    # Blog
+    path('blog/', include('blog.urls')),
+    path('blog/feed/', LatestPostsFeed(), name='blog_feed'),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 ]
 
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
