@@ -24,18 +24,13 @@
         </div>
     </header>
 
-    <!-- Featured Image -->
+    <!-- Featured Image (only if exists) -->
     {% if post.featured_image %}
     <figure class="featured-image">
         <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
         {% if post.category %}
         <figcaption class="image-caption">{{ post.category.name }}</figcaption>
         {% endif %}
-    </figure>
-    {% else %}
-    <figure class="featured-image">
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop"
-            alt="{{ post.title }}">
     </figure>
     {% endif %}
 
@@ -72,9 +67,6 @@
         <a href="{% url 'blog:post_detail' related.slug %}" class="related-card">
             {% if related.featured_image %}
             <img src="{{ related.featured_image.url }}" alt="{{ related.title }}">
-            {% else %}
-            <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=500&fit=crop"
-                alt="{{ related.title }}">
             {% endif %}
             <h3>{{ related.title }}</h3>
             <span class="date">{{ related.published_date|date:"M j, Y" }}</span>

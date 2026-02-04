@@ -15,9 +15,6 @@
         <a href="{% url 'blog:post_detail' post.slug %}">
             {% if post.featured_image %}
             <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
-            {% else %}
-            <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=500&fit=crop"
-                alt="{{ post.title }}">
             {% endif %}
 
             {% if post.category %}
