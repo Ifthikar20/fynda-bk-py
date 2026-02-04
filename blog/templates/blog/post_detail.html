@@ -19,7 +19,7 @@
         <div class="article-meta">
             Published on {{ post.published_date|date:"F j, Y" }}
             {% if post.author %}
-            <br>Authored by <span class="author">{{ post.author.get_full_name|default:post.author.username }}</span>
+            <br>Authored by <span class="author">{{ post.author.get_full_name|default:post.author.email }}</span>
             {% endif %}
         </div>
     </header>

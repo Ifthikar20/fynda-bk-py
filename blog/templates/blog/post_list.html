@@ -36,7 +36,7 @@
 
         <div class="meta">
             Published on {{ featured.published_date|date:"F j, Y" }}{% if featured.author %} · By {{
-            featured.author.get_full_name|default:featured.author.username }}{% endif %}
+            featured.author.get_full_name|default:featured.author.email }}{% endif %}
         </div>
     </a>
 </article>
