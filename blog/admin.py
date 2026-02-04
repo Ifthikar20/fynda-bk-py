@@ -4,7 +4,7 @@ Blog Admin - Easy-to-use interface with SEO flexibility
 
 from django.contrib import admin
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import mark_safe
 from django.contrib import messages
 from .models import Post, Category, Tag
 
@@ -33,10 +33,11 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    # List view configuration
-    list_display = ['title', 'status_badge', 'category', 'published_at', 'featured_image_preview']
+    # List view - simple and clear
+    list_display = ['title', 'status', 'category', 'published_at', 'has_image']
     list_filter = ['status', 'category', 'created_at']
-    search_fields = ['title', 'content', 'excerpt']
+    list_editable = ['status']  # Allows quick publish/unpublish from list
+    search_fields = ['title', 'content']
     prepopulated_fields = {'slug': ('title',)}
     date_hierarchy = 'published_at'
     ordering = ['-created_at']
@@ -49,72 +50,45 @@ class PostAdmin(admin.ModelAdmin):
     fieldsets = (
         ('📝 Content', {
             'fields': ('title', 'slug', 'content', 'featured_image'),
-            'description': 'Write your blog post here. Use HTML for formatting.'
+            'description': 'Write your blog post. Use HTML for formatting.'
         }),
         ('📂 Organization', {
             'fields': ('category', 'tags'),
-            'description': 'Categorize your post for better organization.'
         }),
-        ('🔍 SEO Settings', {
+        ('🔍 SEO Settings (Optional)', {
             'fields': ('meta_title', 'meta_description'),
-            'description': 'Customize how your post appears in search engines. Leave blank to use defaults (title and first 160 chars).'
+            'description': 'Leave blank to auto-generate from title/content.',
+            'classes': ('collapse',),
         }),
         ('⚙️ Publishing', {
             'fields': ('status', 'author', 'published_at'),
-            'description': 'Control when and how your post is published.',
-            'classes': ('collapse',),
         }),
     )
     
-    def status_badge(self, obj):
-        """Display status as colored badge"""
-        if obj.status == 'published':
-            return format_html(
-                '<span style="background: #28a745; color: white; padding: 4px 12px; '
-                'border-radius: 4px; font-size: 11px; font-weight: bold;">🟢 LIVE</span>'
-            )
-        else:
-            return format_html(
-                '<span style="background: #6c757d; color: white; padding: 4px 12px; '
-                'border-radius: 4px; font-size: 11px; font-weight: bold;">📝 DRAFT</span>'
-            )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
-    
-    def featured_image_preview(self, obj):
-        if obj.featured_image:
-            return format_html(
-                '<img src="{}" style="max-height: 40px; max-width: 60px; border-radius: 4px;" />',
-                obj.featured_image.url
-            )
-        return format_html('<span style="color: #999;">No image</span>')
-    featured_image_preview.short_description = 'Image'
+    def has_image(self, obj):
+        return '✅' if obj.featured_image else '—'
+    has_image.short_description = 'Image'
     
     def save_model(self, request, obj, form, change):
-        """Auto-assign author if not set"""
+        """Auto-assign author and set published_at when publishing"""
         if not obj.author:
             obj.author = request.user
+        if obj.status == 'published' and not obj.published_at:
+            obj.published_at = timezone.now()
         super().save_model(request, obj, form, change)
     
     # Bulk actions
     @admin.action(description='✅ Publish selected posts')
     def publish_posts(self, request, queryset):
         now = timezone.now()
-        count = 0
         for post in queryset:
             post.status = 'published'
             if not post.published_at:
                 post.published_at = now
             post.save()
-            count += 1
-        self.message_user(request, f'{count} post(s) published!', messages.SUCCESS)
+        self.message_user(request, f'{queryset.count()} post(s) published!', messages.SUCCESS)
     
     @admin.action(description='📝 Unpublish selected posts')
     def unpublish_posts(self, request, queryset):
-        count = queryset.update(status='draft')
-        self.message_user(request, f'{count} post(s) set to draft.', messages.WARNING)
-    
-    class Media:
-        css = {
-            'all': ['admin/css/blog_admin.css'] if False else []
-        }
+        queryset.update(status='draft')
+        self.message_user(request, f'{queryset.count()} post(s) set to draft.', messages.WARNING)
