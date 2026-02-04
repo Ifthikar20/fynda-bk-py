@@ -1,77 +1,32 @@
 <!-- SEO Meta Tags -->
-<title>{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}</title>
-<meta name="description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:" Your
-    ultimate destination for fashion deals." }}{% endif %}">
-<link rel="canonical"
-    href="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
+<title>{{ page_title|default:"Fynda Blog" }}</title>
+<meta name="description" content="{{ page_description|default:"Your destination for fashion deals." }}">
+<link rel="canonical" href="https://blog.fynda.shop{{ request.path }}">
 
-<!-- Open Graph / Facebook -->
+<!-- Open Graph -->
 <meta property="og:type" content="{% if post %}article{% else %}website{% endif %}">
-<meta property="og:url"
-    content="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
-<meta property="og:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:" Fynda Blog" }}{%
-    endif %}">
-<meta property="og:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"
-    Fashion deals and tips." }}{% endif %}">
-{% if post.featured_image %}
-<meta property="og:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
-{% endif %}
+<meta property="og:url" content="https://blog.fynda.shop{{ request.path }}">
+<meta property="og:title" content="{{ page_title|default:"Fynda Blog" }}">
+<meta property="og:description" content="{{ page_description|default:"Fashion deals." }}">
 <meta property="og:site_name" content="Fynda Blog">
+{% if post.featured_image %}<meta property="og:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">{% endif %}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:" Fynda Blog" }}{%
-    endif %}">
-<meta name="twitter:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"
-    Fashion deals." }}{% endif %}">
-{% if post.featured_image %}
-<meta name="twitter:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
-{% endif %}
+<meta name="twitter:title" content="{{ page_title|default:"Fynda Blog" }}">
+<meta name="twitter:description" content="{{ page_description|default:"Fashion deals." }}">
+{% if post.featured_image %}<meta name="twitter:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">{% endif %}
 
-<!-- Article specific meta -->
+<!-- Article Meta -->
 {% if post %}
 <meta property="article:published_time" content="{{ post.published_at|date:'c' }}">
 <meta property="article:modified_time" content="{{ post.updated_at|date:'c' }}">
-{% if post.author %}
-<meta property="article:author" content="{{ post.author.get_full_name|default:post.author.email }}">
-{% endif %}
-{% if post.category %}
-<meta property="article:section" content="{{ post.category.name }}">
-{% endif %}
-{% for tag in post.tags.all %}
-<meta property="article:tag" content="{{ tag.name }}">
-{% endfor %}
+{% if post.author %}<meta property="article:author" content="{{ post.author.get_full_name|default:post.author.email }}">{% endif %}
+{% if post.category %}<meta property="article:section" content="{{ post.category.name }}">{% endif %}
+{% for tag in post.tags.all %}<meta property="article:tag" content="{{ tag.name }}">{% endfor %}
 {% endif %}
 
-<!-- JSON-LD Structured Data -->
+<!-- JSON-LD -->
 <script type="application/ld+json">
-{% if post %}
-{
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": "{{ post.title }}",
-    "description": "{{ post.seo_description }}",
-    "datePublished": "{{ post.published_at|date:'c' }}",
-    "dateModified": "{{ post.updated_at|date:'c' }}",
-    "author": {
-        "@type": "Person",
-        "name": "Fynda Team"
-    },
-    "publisher": {
-        "@type": "Organization",
-        "name": "Fynda"
-    }
-}
-{% else %}
-{
-    "@context": "https://schema.org",
-    "@type": "Blog",
-    "name": "Fynda Fashion Blog",
-    "description": "Your destination for fashion deals.",
-    "url": "https://blog.fynda.shop/"
-}
-{% endif %}
+{% if post %}{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ post.title }}","description":"{{ post.seo_description }}","datePublished":"{{ post.published_at|date:'c' }}","dateModified":"{{ post.updated_at|date:'c' }}","author":{"@type":"Person","name":"Fynda Team"},"publisher":{"@type":"Organization","name":"Fynda"}}{% else %}{"@context":"https://schema.org","@type":"Blog","name":"Fynda Fashion Blog","url":"https://blog.fynda.shop/"}{% endif %}
 </script>
-
-<!-- RSS Feed -->
-<link rel="alternate" type="application/rss+xml" title="Fynda Blog RSS" href="/blog/feed/">
