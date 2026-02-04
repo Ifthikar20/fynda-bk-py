@@ -1,0 +1,209 @@
+services:
+  # =============================================================================
+  # DJANGO API - Main Backend
+  # =============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fynda-api
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - DJANGO_ENV=production
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ML_SERVICE_URL=http://ml:8001
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    networks:
+      - fynda-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # ML SERVICES - Internal Only (not publicly exposed)
+  # =============================================================================
+  ml:
+    build:
+      context: ./FYNDA_ML_Services
+      dockerfile: Dockerfile
+    container_name: fynda-ml
+    restart: unless-stopped
+    expose:
+      - "8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ml_data:/app/data
+    networks:
+      - fynda-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # =============================================================================
+  # GHOST BLOG - Content Management
+  # =============================================================================
+  ghost:
+    image: ghost:5-alpine
+    container_name: fynda-ghost
+    restart: unless-stopped
+    expose:
+      - "2368"
+    environment:
+      url: ${GHOST_URL:-https://blog.fynda.shop}
+      database__client: sqlite3
+      database__connection__filename: /var/lib/ghost/content/data/ghost.db
+      mail__transport: ${GHOST_MAIL_TRANSPORT:-Direct}
+      mail__from: ${GHOST_MAIL_FROM:-noreply@fynda.shop}
+    volumes:
+      - ghost_content:/var/lib/ghost/content
+    networks:
+      - fynda-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:2368/ghost/api/admin/site/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================================================
+  # POSTGRESQL DATABASE
+  # =============================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: fynda-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fynda}
+      POSTGRES_USER: ${DB_USER:-fynda}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fynda123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fynda-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fynda -d fynda"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # REDIS - Caching & Celery Broker
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: fynda-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - fynda-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # CELERY WORKER - Background Tasks
+  # =============================================================================
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fynda-celery
+    restart: unless-stopped
+    command: celery -A fynda worker -l info --concurrency=2
+    environment:
+      - DJANGO_ENV=production
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - fynda-network
+
+  # =============================================================================
+  # NGINX - Reverse Proxy & SSL Termination
+  # =============================================================================
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: fynda-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - static_data:/var/www/static:ro
+    depends_on:
+      - api
+      - ghost
+    networks:
+      - fynda-network
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  fynda-network:
+    driver: bridge
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  static_data:
+  ml_data:
+  ghost_content:
+  certbot_www:
+  certbot_conf:
