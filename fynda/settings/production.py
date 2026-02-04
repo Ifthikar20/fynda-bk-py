@@ -103,17 +103,12 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
 }
 
 # =============================================================================
-# LOGGING - Production
+# LOGGING - Production (Console-only for Docker)
 # =============================================================================
-LOGGING["handlers"]["file"] = {
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.getenv("LOG_FILE", "/var/log/fynda/app.log"),
-    "maxBytes": 10 * 1024 * 1024,  # 10 MB
-    "backupCount": 5,
-    "formatter": "verbose",
-}
-LOGGING["root"]["handlers"] = ["console", "file"]
+# In Docker, logs are captured from stdout/stderr by the container runtime
+LOGGING["root"]["handlers"] = ["console"]
 LOGGING["root"]["level"] = "WARNING"
+LOGGING["handlers"]["console"]["level"] = "WARNING"
 
 # =============================================================================
 # JWT - Shorter Tokens for Security
