@@ -20,7 +20,7 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT", "5432"),
         "CONN_MAX_AGE": 60,  # Persistent connections
         "OPTIONS": {
-            "sslmode": os.getenv("DB_SSL_MODE", "require"),
+            "sslmode": os.getenv("DB_SSL_MODE", "prefer"),
         },
     }
 }
