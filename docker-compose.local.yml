@@ -157,6 +157,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - static_data:/var/www/static:ro
       - media_data:/var/www/media:ro
+      - ./frontend-dist:/var/www/frontend:ro
     depends_on:
       - api
     networks:
