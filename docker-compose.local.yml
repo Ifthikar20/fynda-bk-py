@@ -143,7 +143,7 @@ services:
       dockerfile: Dockerfile
     container_name: fynda-celery
     restart: unless-stopped
-    command: celery -A fynda worker -l info --concurrency=2
+    command: celery -A fynda worker -l info --concurrency=1 -P solo
     environment:
       - DJANGO_ENV=production
       - DEBUG=False

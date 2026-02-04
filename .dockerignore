@@ -1,0 +1,94 @@
+# Optimized .dockerignore to reduce build context and image size
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Build artifacts
+dist/
+build/
+*.whl
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Frontend (built separately)
+frontend/
+coming-soon/
+mobile/
+
+# ML services (separate container)
+FYNDA_ML_Services/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Local development
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Misc
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Deploy scripts (not needed in container)
+deploy/
+*.sh
