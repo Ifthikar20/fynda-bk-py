@@ -1,18 +1,13 @@
 <!-- SEO Meta Tags -->
 <title>{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}</title>
-<meta name="description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:" Your
-    ultimate destination for fashion deals." }}{% endif %}">
-<link rel="canonical"
-    href="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
+<meta name="description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Your ultimate destination for fashion deals." }}{% endif %}">
+<link rel="canonical" href="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="{% if post %}article{% else %}website{% endif %}">
-<meta property="og:url"
-    content="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
-<meta property="og:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:" Fynda Blog" }}{%
-    endif %}">
-<meta property="og:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"
-    Fashion deals and tips." }}{% endif %}">
+<meta property="og:url" content="https://blog.fynda.shop{% if post %}{{ post.get_absolute_url }}{% else %}{{ request.path }}{% endif %}">
+<meta property="og:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}">
+<meta property="og:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Fashion deals and tips." }}{% endif %}">
 {% if post.featured_image %}
 <meta property="og:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
 {% else %}
@@ -22,10 +17,8 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:" Fynda Blog" }}{%
-    endif %}">
-<meta name="twitter:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"
-    Fashion deals." }}{% endif %}">
+<meta name="twitter:title" content="{% if post %}{{ post.seo_title }}{% else %}{{ page_title|default:"Fynda Blog" }}{% endif %}">
+<meta name="twitter:description" content="{% if post %}{{ post.seo_description }}{% else %}{{ page_description|default:"Fashion deals." }}{% endif %}">
 {% if post.featured_image %}
 <meta name="twitter:image" content="https://blog.fynda.shop{{ post.featured_image.url }}">
 {% endif %}
