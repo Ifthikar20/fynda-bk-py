@@ -1,0 +1,87 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block submit_buttons_bottom %}
+<div class="submit-row">
+    {# Standard Save button #}
+    <input type="submit" value="{% translate 'Save' %}" class="default" name="_save">
+
+    {# Save and continue editing #}
+    <input type="submit" value="{% translate 'Save and continue editing' %}" name="_continue">
+
+    {% if original %}
+    {# Only show View on site for existing posts #}
+    {% if original.status == 'published' %}
+    <a href="{{ original.get_absolute_url }}" target="_blank" style="float: right; padding: 10px 20px; background: #17a2b8; color: white; 
+                      border-radius: 4px; text-decoration: none; margin-left: 10px;">
+        👁 View on Site
+    </a>
+    {% endif %}
+
+    {# PUBLISH / UNPUBLISH buttons #}
+    {% if original.status == 'draft' %}
+    <input type="submit" value="🚀 Publish" name="_publish" style="float: right; background: #28a745; color: white; border: none; 
+                          padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+    {% else %}
+    <input type="submit" value="📝 Unpublish" name="_unpublish" style="float: right; background: #dc3545; color: white; border: none; 
+                          padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+    {% endif %}
+    {% else %}
+    {# New post - show publish button #}
+    <input type="submit" value="💾 Save as Draft" name="_save" style="float: right; background: #6c757d; color: white; border: none; 
+                      padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+    <input type="submit" value="🚀 Publish Now" name="_publish" style="float: right; background: #28a745; color: white; border: none; 
+                      padding: 10px 25px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Style improvements for the form */
+    .submit-row {
+        padding: 15px 20px !important;
+        background: #f8f9fa !important;
+        border-top: 2px solid #dee2e6 !important;
+    }
+
+    .submit-row input[type="submit"] {
+        font-size: 14px !important;
+        padding: 10px 20px !important;
+    }
+
+    /* Status indicator in breadcrumbs */
+    .status-indicator {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+
+    .status-live {
+        background: #28a745;
+        color: white;
+    }
+
+    .status-draft {
+        background: #6c757d;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+{{ block.super }}
+{% if original %}
+<li>
+    {% if original.status == 'published' %}
+    <span class="status-indicator status-live">🟢 LIVE</span>
+    {% else %}
+    <span class="status-indicator status-draft">📝 DRAFT</span>
+    {% endif %}
+</li>
+{% endif %}
+{% endblock %}
