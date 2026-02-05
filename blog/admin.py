@@ -9,12 +9,21 @@ from django.contrib import messages
 from .models import Post, Category, Tag, ContentSection, ProductCard
 
 
-class ProductCardInline(admin.TabularInline):
+class ProductCardInline(admin.StackedInline):
     """Inline admin for products within a content section."""
     model = ProductCard
     extra = 1
-    fields = ['order', 'brand', 'product_name', 'image', 'price', 'sale_price', 'retailer', 'product_url']
+    fields = [
+        ('order', 'brand'),
+        ('product_name', 'retailer'),
+        'image',
+        ('price', 'sale_price'),
+        'product_url',
+    ]
     ordering = ['order']
+    classes = ['collapse']
+    verbose_name = "Product"
+    verbose_name_plural = "Products"
 
 
 class ContentSectionInline(admin.StackedInline):

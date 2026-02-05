@@ -337,7 +337,7 @@ JAZZMIN_SETTINGS = {
     #############
     # UI Tweaks #
     #############
-    "custom_css": None,
+    "custom_css": "admin/css/fynda_admin.css",
     "custom_js": None,
     "use_google_fonts_cdn": True,
     "show_ui_builder": False,

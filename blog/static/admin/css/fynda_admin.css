@@ -1,0 +1,100 @@
+/* Fynda Editorial Admin - Custom Fixes */
+
+/* Fix inline form spacing */
+.inline-related {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+/* Better button spacing */
+.form-row .field-box,
+.form-row .flex-container {
+    margin-bottom: 10px;
+}
+
+/* Fix upload button overlap */
+.file-upload,
+.clearablefileinput {
+    display: block;
+    margin-top: 5px;
+}
+
+input[type="file"] {
+    padding: 8px 0;
+    display: block;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Better inline form field alignment */
+.stacked .inline_label,
+.stacked .inline-related h3 {
+    margin-bottom: 10px;
+}
+
+/* Fix action buttons */
+.submit-row {
+    margin-top: 20px;
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.submit-row input,
+.submit-row button {
+    margin: 5px !important;
+}
+
+/* Better field row spacing */
+.form-row {
+    padding: 10px;
+    margin-bottom: 5px;
+}
+
+/* Image preview improvements */
+.field-image img,
+.file-upload img,
+.thumbnail {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: contain;
+    margin-top: 5px;
+    border-radius: 4px;
+}
+
+/* Add/Remove inline buttons */
+.djn-add-item,
+.add-row,
+.inline-deletelink {
+    margin: 10px 5px;
+    padding: 8px 15px;
+}
+
+/* Collapse toggle button fix */
+.collapse-toggle {
+    margin-bottom: 10px;
+}
+
+/* Fieldset headers */
+fieldset.module h2 {
+    margin-bottom: 15px;
+}
+
+/* Better form field widths */
+.vTextField,
+.vURLField {
+    width: 100%;
+    max-width: 800px;
+}
+
+/* Price fields - smaller width */
+input[name*="price"] {
+    max-width: 150px;
+}
+
+/* Order field - very small */
+input[name*="order"] {
+    max-width: 80px;
+}
