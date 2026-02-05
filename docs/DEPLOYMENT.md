@@ -52,6 +52,35 @@ ssh -L 8888:localhost:8000 ubuntu@54.227.94.35
 
 ---
 
+## 🚀 CI/CD Deployment (Primary Method)
+
+> **Push to `main` branch triggers automatic deployment via GitHub Actions**
+
+### Backend Deployment
+```bash
+# Commit and push to fynda-bk-py
+git add .
+git commit -m "your message"
+git push origin main
+# → GitHub Actions: test → build → deploy to EC2
+```
+
+### Frontend Deployment
+```bash
+# In frontend directory (separate repo: fynda-frontend-vue)
+cd frontend
+git add .
+git commit -m "your message"  
+git push origin main
+# → Deploys via S3/CloudFront or needs manual sync to EC2
+```
+
+### Monitor Deployment
+- GitHub Actions: https://github.com/Ifthikar20/fynda-bk-py/actions
+- Check run status, logs, and health check results
+
+---
+
 ## Deployment Steps
 
 ### 1. Deploy Frontend Only
