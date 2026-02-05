@@ -1,18 +1,19 @@
 """
-Blog Admin - Easy-to-use interface with SEO flexibility
+Blog Admin - Easy-to-use interface with nested sections and products
 """
 
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import mark_safe
 from django.contrib import messages
+import nested_admin
 from .models import Post, Category, Tag, ContentSection, ProductCard
 
 
-class ProductCardInline(admin.StackedInline):
+class ProductCardInline(nested_admin.NestedStackedInline):
     """Inline admin for products within a content section."""
     model = ProductCard
-    extra = 1
+    extra = 0
     fields = [
         ('order', 'brand'),
         ('product_name', 'retailer'),
@@ -26,17 +27,14 @@ class ProductCardInline(admin.StackedInline):
     verbose_name_plural = "Products"
 
 
-class ContentSectionInline(admin.StackedInline):
-    """Inline admin for content sections within a post."""
+class ContentSectionInline(nested_admin.NestedStackedInline):
+    """Inline admin for content sections within a post - includes products."""
     model = ContentSection
     extra = 0
     fields = ['order', 'section_type', 'title', 'subtitle', 'content']
     ordering = ['order']
     classes = ['collapse']
-    
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super().get_formset(request, obj, **kwargs)
-        return formset
+    inlines = [ProductCardInline]  # Nested products within sections
 
 
 @admin.register(Category)
@@ -62,7 +60,7 @@ class TagAdmin(admin.ModelAdmin):
 
 
 @admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+class PostAdmin(nested_admin.NestedModelAdmin):
     # List view - simple and clear
     list_display = ['title', 'status', 'category', 'published_at', 'has_image', 'section_count']
     list_filter = ['status', 'category', 'created_at']
@@ -131,7 +129,7 @@ class PostAdmin(admin.ModelAdmin):
 
 
 @admin.register(ContentSection)
-class ContentSectionAdmin(admin.ModelAdmin):
+class ContentSectionAdmin(nested_admin.NestedModelAdmin):
     """Admin for editing content sections with product cards."""
     list_display = ['__str__', 'post', 'section_type', 'order', 'product_count']
     list_filter = ['section_type', 'post']
@@ -148,4 +146,3 @@ class ContentSectionAdmin(admin.ModelAdmin):
         count = obj.products.count()
         return f'{count} product(s)' if count else '—'
     product_count.short_description = 'Products'
-

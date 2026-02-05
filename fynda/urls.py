@@ -66,6 +66,7 @@ def api_root(request):
 urlpatterns = [
     path('', api_root, name='api_root'),
     path(f'{config.security.admin_url}/', admin.site.urls),  # Dynamic admin URL from ADMIN_URL env var
+    path('_nested_admin/', include('nested_admin.urls')),  # Nested admin assets
     path('api/', include('deals.urls')),
     path('api/', include('emails.urls')),
     path('api/auth/', include('users.urls')),
