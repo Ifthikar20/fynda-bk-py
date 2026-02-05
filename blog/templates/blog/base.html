@@ -786,6 +786,145 @@
             color: white;
             border-color: var(--text-black);
         }
+
+        /* ============================================
+           CONTENT SECTIONS - BRAND SHOWCASES
+           ============================================ */
+
+        .content-section {
+            max-width: var(--wide-width);
+            margin: 4rem auto;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .content-section .section-title {
+            font-family: var(--font-serif);
+            font-size: 1.75rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .content-section .section-subtitle {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            max-width: var(--content-width);
+        }
+
+        .content-section .section-content {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 300;
+            line-height: 1.9;
+            margin-bottom: 2rem;
+            max-width: var(--content-width);
+        }
+
+        /* Product Grid - Editorial Style */
+        .content-section .product-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .product-card {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .product-card .product-image {
+            background: var(--bg-white);
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .product-card .product-image img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-card .product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .product-card .product-price {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .product-card .original-price {
+            text-decoration: line-through;
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        .product-card .sale-price {
+            color: var(--accent-pink);
+            font-weight: 600;
+        }
+
+        .product-card .product-brand {
+            font-family: var(--font-sans);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-gray);
+        }
+
+        .product-card .product-name {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-light);
+            line-height: 1.4;
+        }
+
+        /* Responsive Product Grid */
+        @media (max-width: 1024px) {
+            .content-section .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-section .product-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .product-card .product-image {
+                aspect-ratio: 1/1;
+            }
+        }
     </style>
 </head>
 

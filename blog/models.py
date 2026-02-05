@@ -147,3 +147,96 @@ class Post(models.Model):
         """Estimate reading time in minutes."""
         word_count = len(self.content.split())
         return max(1, round(word_count / 200))
+
+
+class ContentSection(models.Model):
+    """
+    Ordered content sections within a blog post.
+    Allows for rich editorial layouts with text, brand showcases, and galleries.
+    """
+    SECTION_TYPES = [
+        ('text', 'Text Block'),
+        ('brand_showcase', 'Brand Showcase'),
+        ('gallery', 'Image Gallery'),
+    ]
+    
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='sections'
+    )
+    section_type = models.CharField(
+        max_length=20,
+        choices=SECTION_TYPES,
+        default='brand_showcase'
+    )
+    order = models.PositiveIntegerField(default=0)
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Section title, e.g. '01. AURALEE'"
+    )
+    subtitle = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text="Optional subtitle or description"
+    )
+    content = models.TextField(
+        blank=True,
+        help_text="Text content for text sections"
+    )
+    
+    class Meta:
+        ordering = ['order']
+        verbose_name = "Content Section"
+        verbose_name_plural = "Content Sections"
+    
+    def __str__(self):
+        return f"{self.post.title} - {self.title or self.get_section_type_display()}"
+
+
+class ProductCard(models.Model):
+    """
+    Product cards within a brand showcase section.
+    Displays product image, brand, name, price, and link.
+    """
+    section = models.ForeignKey(
+        ContentSection,
+        on_delete=models.CASCADE,
+        related_name='products'
+    )
+    order = models.PositiveIntegerField(default=0)
+    
+    # Product info
+    brand = models.CharField(max_length=100, help_text="Brand name, e.g. 'AURALEE'")
+    product_name = models.CharField(max_length=200, help_text="Product name")
+    image = models.ImageField(
+        upload_to='blog/products/',
+        help_text="Product image"
+    )
+    
+    # Pricing
+    price = models.CharField(max_length=50, help_text="Price, e.g. '$1,200'")
+    sale_price = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Sale price (optional)"
+    )
+    
+    # Link
+    product_url = models.URLField(
+        help_text="Link to product page (affiliate or direct)"
+    )
+    
+    class Meta:
+        ordering = ['order']
+        verbose_name = "Product Card"
+        verbose_name_plural = "Product Cards"
+    
+    def __str__(self):
+        return f"{self.brand} - {self.product_name}"
+    
+    @property
+    def is_on_sale(self):
+        return bool(self.sale_price)
+

@@ -46,6 +46,47 @@
         {{ post.content|safe }}
     </div>
 
+    <!-- Content Sections (Brand Showcases, etc.) -->
+    {% for section in post.sections.all %}
+    <section class="content-section {% if section.section_type == 'brand_showcase' %}brand-showcase{% endif %}">
+        {% if section.title %}
+        <h2 class="section-title">{{ section.title }}</h2>
+        {% endif %}
+
+        {% if section.subtitle %}
+        <p class="section-subtitle">{{ section.subtitle }}</p>
+        {% endif %}
+
+        {% if section.content %}
+        <div class="section-content">{{ section.content|safe }}</div>
+        {% endif %}
+
+        {% if section.section_type == 'brand_showcase' and section.products.exists %}
+        <div class="product-grid">
+            {% for product in section.products.all %}
+            <a href="{{ product.product_url }}" class="product-card" target="_blank" rel="noopener">
+                <div class="product-image">
+                    <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
+                </div>
+                <div class="product-info">
+                    <span class="product-price">
+                        {% if product.is_on_sale %}
+                        <span class="original-price">{{ product.price }}</span>
+                        <span class="sale-price">{{ product.sale_price }}</span>
+                        {% else %}
+                        {{ product.price }}
+                        {% endif %}
+                    </span>
+                    <span class="product-brand">{{ product.brand }}</span>
+                    <span class="product-name">{{ product.product_name }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endfor %}
+
     <!-- Tags -->
     {% if post.tags.exists %}
     <div class="article-body">
