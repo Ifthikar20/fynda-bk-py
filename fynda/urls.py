@@ -9,6 +9,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
+from fynda.config import config
+
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticBlogSitemap
 from blog.feeds import LatestPostsFeed
 
@@ -63,11 +65,13 @@ def api_root(request):
 
 urlpatterns = [
     path('', api_root, name='api_root'),
-    path('admin/', admin.site.urls),
+    path(f'{config.security.admin_url}/', admin.site.urls),  # Dynamic admin URL from ADMIN_URL env var
     path('api/', include('deals.urls')),
     path('api/', include('emails.urls')),
     path('api/auth/', include('users.urls')),
-    # Blog
+    # Blog API (for Vue frontend)
+    path('api/blog/', include('blog.api_urls')),
+    # Blog SSR (for SEO)
     path('blog/', include('blog.urls')),
     path('blog/feed/', LatestPostsFeed(), name='blog_feed'),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),

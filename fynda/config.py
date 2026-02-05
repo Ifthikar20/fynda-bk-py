@@ -128,6 +128,10 @@ class SecurityConfig:
     # Mobile API key for Flutter app authentication
     mobile_api_key: str = field(default_factory=lambda: os.getenv("FYNDA_MOBILE_API_KEY", ""))
     
+    # Dynamic admin URL path (without leading/trailing slashes)
+    # Set to a secret value in production for security through obscurity
+    admin_url: str = field(default_factory=lambda: os.getenv("ADMIN_URL", "admin"))
+    
     @property
     def is_secure_key(self) -> bool:
         """Check if using a proper secret key."""
