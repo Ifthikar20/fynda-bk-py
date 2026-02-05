@@ -61,7 +61,7 @@
         <div class="section-content">{{ section.content|safe }}</div>
         {% endif %}
 
-        {% if section.section_type == 'brand_showcase' and section.products.exists %}
+        {% if section.products.exists %}
         <div class="product-grid">
             {% for product in section.products.all %}
             <a href="{{ product.link }}" class="product-card">
