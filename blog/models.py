@@ -28,7 +28,9 @@ class Category(models.Model):
         return self.name
     
     def get_absolute_url(self):
-        return reverse('blog:category_posts', kwargs={'slug': self.slug})
+        # Return full URL for admin "View on site" to point to fynda.shop
+        path = reverse('blog:category_posts', kwargs={'slug': self.slug})
+        return f"{settings.SITE_URL}{path}"
 
 
 class Tag(models.Model):
@@ -126,7 +128,9 @@ class Post(models.Model):
         return self.title
     
     def get_absolute_url(self):
-        return reverse('blog:post_detail', kwargs={'slug': self.slug})
+        # Return full URL for admin "View on site" to point to fynda.shop
+        path = reverse('blog:post_detail', kwargs={'slug': self.slug})
+        return f"{settings.SITE_URL}{path}"
     
     @property
     def seo_title(self):
