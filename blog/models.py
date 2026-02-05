@@ -199,6 +199,7 @@ class ProductCard(models.Model):
     """
     Product cards within a brand showcase section.
     Displays product image, brand, name, price, and link.
+    Links to Fynda search by default.
     """
     section = models.ForeignKey(
         ContentSection,
@@ -223,9 +224,17 @@ class ProductCard(models.Model):
         help_text="Sale price (optional)"
     )
     
-    # Link
+    # Retailer info (for "FROM HARRODS" display)
+    retailer = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Retailer name, e.g. 'HARRODS', 'MR PORTER'"
+    )
+    
+    # Optional external link (if empty, links to Fynda search)
     product_url = models.URLField(
-        help_text="Link to product page (affiliate or direct)"
+        blank=True,
+        help_text="Optional external link. Leave empty to link to Fynda search."
     )
     
     class Meta:
@@ -239,4 +248,17 @@ class ProductCard(models.Model):
     @property
     def is_on_sale(self):
         return bool(self.sale_price)
+    
+    @property
+    def fynda_url(self):
+        """Generate Fynda search URL for this product."""
+        from urllib.parse import quote
+        search_query = f"{self.brand} {self.product_name}"
+        return f"{settings.SITE_URL}/?q={quote(search_query)}"
+    
+    @property
+    def link(self):
+        """Return the product URL - either external or Fynda search."""
+        return self.product_url if self.product_url else self.fynda_url
+
 

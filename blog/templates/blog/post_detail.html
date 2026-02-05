@@ -64,7 +64,7 @@
         {% if section.section_type == 'brand_showcase' and section.products.exists %}
         <div class="product-grid">
             {% for product in section.products.all %}
-            <a href="{{ product.product_url }}" class="product-card" target="_blank" rel="noopener">
+            <a href="{{ product.link }}" class="product-card">
                 <div class="product-image">
                     <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
                 </div>
@@ -79,6 +79,9 @@
                     </span>
                     <span class="product-brand">{{ product.brand }}</span>
                     <span class="product-name">{{ product.product_name }}</span>
+                    {% if product.retailer %}
+                    <span class="product-retailer">FROM {{ product.retailer|upper }}</span>
+                    {% endif %}
                 </div>
             </a>
             {% endfor %}

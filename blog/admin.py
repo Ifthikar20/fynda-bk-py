@@ -13,7 +13,7 @@ class ProductCardInline(admin.TabularInline):
     """Inline admin for products within a content section."""
     model = ProductCard
     extra = 1
-    fields = ['order', 'brand', 'product_name', 'image', 'price', 'sale_price', 'product_url']
+    fields = ['order', 'brand', 'product_name', 'image', 'price', 'sale_price', 'retailer', 'product_url']
     ordering = ['order']
 
 
