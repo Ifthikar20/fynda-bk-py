@@ -84,16 +84,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push ML image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./FYNDA_ML_Services
-          push: true
-          tags: |
-            ghcr.io/${{ steps.repo.outputs.name }}/ml:latest
-            ghcr.io/${{ steps.repo.outputs.name }}/ml:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # Note: ML service (FYNDA_ML_Services) is a separate repository
+      # It should be built and deployed from its own CI/CD pipeline
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
