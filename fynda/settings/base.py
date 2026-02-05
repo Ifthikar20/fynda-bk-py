@@ -14,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Application definition
 INSTALLED_APPS = [
+    "jazzmin",  # Modern admin UI - must be before django.contrib.admin
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -266,6 +267,120 @@ EMAIL_HOST_USER = os.getenv('AWS_SES_ACCESS_KEY', '')
 EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SECRET_KEY', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Fynda <noreply@fynda.shop>')
 SITE_URL = os.getenv('SITE_URL', 'https://fynda.shop')
+
+# =============================================================================
+# JAZZMIN - MODERN ADMIN UI
+# =============================================================================
+JAZZMIN_SETTINGS = {
+    # Title on the login screen
+    "site_title": "Fynda Editorial",
+    
+    # Title on the brand (top left)
+    "site_header": "Fynda Editorial",
+    
+    # Title on the browser tab
+    "site_brand": "Fynda Editorial",
+    
+    # Welcome text on the login page
+    "welcome_sign": "Welcome to Fynda Editorial",
+    
+    # Copyright on the footer
+    "copyright": "Fynda",
+    
+    # Search model for the search bar
+    "search_model": ["blog.Post", "users.User"],
+    
+    # Field name on user model for avatar
+    "user_avatar": None,
+    
+    ############
+    # Top Menu #
+    ############
+    "topmenu_links": [
+        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "View Blog", "url": "/blog/", "new_window": True},
+        {"name": "Visit Fynda", "url": "https://fynda.shop", "new_window": True},
+    ],
+    
+    #############
+    # Side Menu #
+    #############
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    
+    # Custom icons for apps/models
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "blog.Post": "fas fa-newspaper",
+        "blog.Category": "fas fa-folder",
+        "blog.Tag": "fas fa-tags",
+        "blog.ContentSection": "fas fa-layer-group",
+        "blog.ProductCard": "fas fa-shopping-bag",
+        "users.User": "fas fa-user",
+        "deals": "fas fa-percent",
+        "emails.EmailSubscriber": "fas fa-envelope",
+    },
+    
+    # Default icon for apps not specified above
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    
+    #################
+    # Related Modal #
+    #################
+    "related_modal_active": True,
+    
+    #############
+    # UI Tweaks #
+    #############
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    
+    # Change view settings
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "blog.post": "collapsible",
+    },
+}
+
+# Jazzmin UI tweaks for dark theme with pink accent
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-pink",  # Pink accent to match Fynda brand
+    "navbar": "navbar-dark",
+    "no_navbar_border": True,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-pink",  # Dark sidebar with pink highlights
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "darkly",  # Dark theme for modern look
+    "dark_mode_theme": "darkly",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
 
 # Log configuration status on startup
 config.log_status()
