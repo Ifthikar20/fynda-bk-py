@@ -30,11 +30,12 @@ class ProductCardInline(nested_admin.NestedStackedInline):
 class ContentSectionInline(nested_admin.NestedStackedInline):
     """Inline admin for content sections within a post - includes products."""
     model = ContentSection
-    extra = 0
+    extra = 1
     fields = ['order', 'section_type', 'title', 'subtitle', 'content']
     ordering = ['order']
-    classes = ['collapse']
     inlines = [ProductCardInline]  # Nested products within sections
+    verbose_name = "Content Section"
+    verbose_name_plural = "Content Sections (with Products)"
 
 
 @admin.register(Category)
