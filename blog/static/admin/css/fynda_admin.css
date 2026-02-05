@@ -1,100 +1,314 @@
 /* Fynda Editorial Admin - Custom Fixes */
 
-/* Fix inline form spacing */
+/* =============================================================================
+   CONTENT SECTIONS - Modern Card-Based Layout
+   ============================================================================= */
+
+/* Overall inline container */
+.djn-inline-form,
 .inline-related {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     margin-bottom: 20px;
-    padding: 15px;
+    padding: 20px;
+    transition: box-shadow 0.2s ease;
+}
+
+.djn-inline-form:hover,
+.inline-related:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Section headers */
+.djn-inline-form h3,
+.inline-related h3 {
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: -20px -20px 20px -20px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Delete button - pill style */
+.djn-inline-form .inline-deletelink,
+.inline-related .inline-deletelink,
+.djn-remove-handler {
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 6px 16px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.djn-inline-form .inline-deletelink:hover,
+.inline-related .inline-deletelink:hover,
+.djn-remove-handler:hover {
+    background: #c82333 !important;
+    transform: translateY(-1px);
+}
+
+/* Form rows - cleaner spacing */
+.djn-inline-form .form-row,
+.inline-related .form-row {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
 }
 
-/* Better button spacing */
-.form-row .field-box,
-.form-row .flex-container {
-    margin-bottom: 10px;
+/* Labels */
+.djn-inline-form label,
+.inline-related label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+    color: #e0e0e0;
 }
 
-/* Fix upload button overlap */
+/* Input fields */
+.djn-inline-form input[type="text"],
+.djn-inline-form input[type="number"],
+.djn-inline-form select,
+.djn-inline-form textarea,
+.inline-related input[type="text"],
+.inline-related input[type="number"],
+.inline-related select,
+.inline-related textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.djn-inline-form input:focus,
+.djn-inline-form select:focus,
+.djn-inline-form textarea:focus,
+.inline-related input:focus,
+.inline-related select:focus,
+.inline-related textarea:focus {
+    border-color: #ff69b4;
+    box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.15);
+    outline: none;
+}
+
+/* Order field - compact */
+.djn-inline-form input[name*="order"],
+.inline-related input[name*="order"] {
+    max-width: 80px;
+    text-align: center;
+}
+
+/* Section type select */
+.djn-inline-form select[name*="section_type"],
+.inline-related select[name*="section_type"] {
+    max-width: 200px;
+}
+
+/* =============================================================================
+   ADD BUTTON - Modern Pill Style
+   ============================================================================= */
+
+.djn-add-item,
+.add-row a,
+.djn-add-handler {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 12px 24px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+    margin: 15px 0;
+}
+
+.djn-add-item:hover,
+.add-row a:hover,
+.djn-add-handler:hover {
+    background: linear-gradient(135deg, #ff1493 0%, #c71585 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+}
+
+/* Add button icon */
+.djn-add-item::before,
+.add-row a::before {
+    content: "+";
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* =============================================================================
+   NESTED PRODUCTS - Visual Hierarchy
+   ============================================================================= */
+
+.djn-items .djn-inline-form {
+    margin-left: 20px;
+    border-left: 3px solid #ff69b4;
+    background: rgba(255, 105, 180, 0.03);
+}
+
+/* =============================================================================
+   SUBMIT BUTTONS - Aligned & Modern
+   ============================================================================= */
+
+.submit-row {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 30px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+}
+
+.submit-row input[type="submit"],
+.submit-row button {
+    border-radius: 8px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    border: none !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.submit-row input[name="_save"] {
+    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%) !important;
+    color: white !important;
+}
+
+.submit-row input[name="_save"]:hover {
+    background: linear-gradient(135deg, #ff1493 0%, #c71585 100%) !important;
+}
+
+.submit-row input[name="_addanother"],
+.submit-row input[name="_continue"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+.submit-row input[name="_addanother"]:hover,
+.submit-row input[name="_continue"]:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* =============================================================================
+   FILE UPLOAD - Clean Display
+   ============================================================================= */
+
 .file-upload,
 .clearablefileinput {
     display: block;
-    margin-top: 5px;
+    margin-top: 8px;
 }
 
 input[type="file"] {
-    padding: 8px 0;
-    display: block;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
     width: 100%;
     max-width: 400px;
+    cursor: pointer;
 }
 
-/* Better inline form field alignment */
-.stacked .inline_label,
-.stacked .inline-related h3 {
-    margin-bottom: 10px;
+input[type="file"]:hover {
+    border-color: #ff69b4;
 }
 
-/* Fix action buttons */
-.submit-row {
-    margin-top: 20px;
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+/* Current file preview */
+.file-upload a,
+.clearablefileinput a {
+    color: #ff69b4;
+    text-decoration: none;
 }
 
-.submit-row input,
-.submit-row button {
-    margin: 5px !important;
-}
-
-/* Better field row spacing */
-.form-row {
-    padding: 10px;
-    margin-bottom: 5px;
-}
-
-/* Image preview improvements */
+/* Image thumbnails */
 .field-image img,
 .file-upload img,
 .thumbnail {
-    max-width: 150px;
-    max-height: 150px;
-    object-fit: contain;
-    margin-top: 5px;
-    border-radius: 4px;
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Add/Remove inline buttons */
-.djn-add-item,
-.add-row,
-.inline-deletelink {
-    margin: 10px 5px;
-    padding: 8px 15px;
+/* =============================================================================
+   HELP TEXT - Subtle
+   ============================================================================= */
+
+.help,
+.helptext {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+    font-style: italic;
 }
 
-/* Collapse toggle button fix */
-.collapse-toggle {
-    margin-bottom: 10px;
-}
+/* =============================================================================
+   FIELDSET HEADERS - Clean
+   ============================================================================= */
 
-/* Fieldset headers */
 fieldset.module h2 {
-    margin-bottom: 15px;
+    font-size: 16px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+    border-radius: 8px;
 }
 
-/* Better form field widths */
-.vTextField,
-.vURLField {
-    width: 100%;
-    max-width: 800px;
-}
+/* =============================================================================
+   RESPONSIVE IMPROVEMENTS
+   ============================================================================= */
 
-/* Price fields - smaller width */
-input[name*="price"] {
-    max-width: 150px;
-}
+@media (max-width: 768px) {
 
-/* Order field - very small */
-input[name*="order"] {
-    max-width: 80px;
+    .djn-inline-form,
+    .inline-related {
+        padding: 12px;
+    }
+
+    .djn-inline-form h3,
+    .inline-related h3 {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .submit-row {
+        flex-direction: column;
+    }
+
+    .submit-row input[type="submit"],
+    .submit-row button {
+        width: 100%;
+    }
 }
