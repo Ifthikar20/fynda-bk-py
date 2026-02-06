@@ -66,8 +66,6 @@ class APIGuardMiddleware:
         r"w3af",
         r"nuclei",
         r"httpx",
-        r"curl/\d",      # Bare curl requests
-        r"python-requests",  # Basic Python requests
     ]
     
     # Required headers for legitimate requests
