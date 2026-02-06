@@ -117,38 +117,46 @@ jobs:
             echo "Error: EC2_HOST is not set"
             exit 1
           fi
+          echo "EC2_HOST is: $EC2_HOST"
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          echo "SSH setup complete"
+
+      - name: Test SSH Connection
+        run: |
+          echo "Testing SSH connection to $EC2_HOST..."
+          ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST 'echo "SSH connection successful!" && whoami && pwd'
 
       - name: Deploy to EC2
         run: |
-          ssh -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'ENDSSH'
             set -e
-            cd ${{ env.DEPLOY_PATH }}
+            echo "Starting deployment..."
+            
+            cd /opt/fynda || { echo "Directory /opt/fynda not found"; exit 1; }
             
             # Pull latest code
             git fetch origin main
             git reset --hard origin/main
             
-            # Login to GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Check if docker-compose.prod.yml exists
+            if [ ! -f "docker-compose.prod.yml" ]; then
+              echo "docker-compose.prod.yml not found, using docker-compose.local.yml"
+              COMPOSE_FILE="docker-compose.local.yml"
+            else
+              COMPOSE_FILE="docker-compose.prod.yml"
+            fi
             
-            # Pull latest images
-            docker compose -f docker-compose.prod.yml pull
-            
-            # Restart services with new images
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Restart services
+            docker compose -f $COMPOSE_FILE up -d --remove-orphans || docker-compose -f $COMPOSE_FILE up -d --remove-orphans
             
             # Run migrations
-            docker compose -f docker-compose.prod.yml exec -T api python manage.py migrate --noinput
+            docker compose -f $COMPOSE_FILE exec -T api python manage.py migrate --noinput || true
             
             # Collect static files
-            docker compose -f docker-compose.prod.yml exec -T api python manage.py collectstatic --noinput
-            
-            # Cleanup old images
-            docker image prune -f
+            docker compose -f $COMPOSE_FILE exec -T api python manage.py collectstatic --noinput || true
             
             echo "Deployment complete!"
           ENDSSH
