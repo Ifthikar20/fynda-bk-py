@@ -3,7 +3,9 @@ services:
   # DJANGO API - Main Backend
   # =============================================================================
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY}/api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: fynda-api
     restart: unless-stopped
     expose:
@@ -47,7 +49,9 @@ services:
   # ML SERVICES - Internal Only (not publicly exposed)
   # =============================================================================
   ml:
-    image: ghcr.io/${GITHUB_REPOSITORY}/ml:latest
+    build:
+      context: ./FYNDA_ML_Services
+      dockerfile: Dockerfile
     container_name: fynda-ml
     restart: unless-stopped
     expose:
@@ -64,32 +68,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  # =============================================================================
-  # GHOST BLOG - Content Management
-  # =============================================================================
-  ghost:
-    image: ghost:5-alpine
-    container_name: fynda-ghost
-    restart: unless-stopped
-    expose:
-      - "2368"
-    environment:
-      url: ${GHOST_URL}
-      database__client: sqlite3
-      database__connection__filename: /var/lib/ghost/content/data/ghost.db
-      mail__transport: ${GHOST_MAIL_TRANSPORT:-Direct}
-      mail__from: ${GHOST_MAIL_FROM:-noreply@fynda.shop}
-    volumes:
-      - ghost_content:/var/lib/ghost/content
-    networks:
-      - fynda-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:2368/ghost/api/admin/site/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   # =============================================================================
   # POSTGRESQL DATABASE
@@ -134,7 +112,9 @@ services:
   # CELERY WORKER - Background Tasks
   # =============================================================================
   celery:
-    image: ghcr.io/${GITHUB_REPOSITORY}/api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: fynda-celery
     restart: unless-stopped
     command: celery -A fynda worker -l info --concurrency=2
@@ -162,7 +142,9 @@ services:
   # NGINX - Reverse Proxy & SSL Termination
   # =============================================================================
   nginx:
-    image: ghcr.io/${GITHUB_REPOSITORY}/nginx:latest
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     container_name: fynda-nginx
     restart: unless-stopped
     ports:
@@ -176,7 +158,6 @@ services:
       - static_data:/var/www/static:ro
     depends_on:
       - api
-      - ghost
     networks:
       - fynda-network
 
@@ -207,6 +188,5 @@ volumes:
   media_data:
   static_data:
   ml_data:
-  ghost_content:
   certbot_www:
   certbot_conf:

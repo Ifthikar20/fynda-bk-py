@@ -168,11 +168,12 @@ jobs:
             fi
             echo "Using compose file: $COMPOSE_FILE"
             
-            # Build and restart services (use local build instead of pulling from registry)
-            docker compose -f $COMPOSE_FILE build --no-cache api
-            docker compose -f $COMPOSE_FILE up -d --remove-orphans
+            # Build and restart services (build locally)
+            docker compose -f $COMPOSE_FILE build api nginx || echo "Build failed"
+            docker compose -f $COMPOSE_FILE up -d api nginx db redis celery --remove-orphans
             
             # Run migrations
+            sleep 5
             docker compose -f $COMPOSE_FILE exec -T api python manage.py migrate --noinput || echo "Migration skipped or failed"
             
             # Collect static files
