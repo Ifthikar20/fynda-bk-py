@@ -159,21 +159,27 @@ jobs:
             git reset --hard origin/main
             
             # Check if docker-compose.prod.yml exists
-            if [ ! -f "docker-compose.prod.yml" ]; then
-              echo "docker-compose.prod.yml not found, using docker-compose.local.yml"
+            if [ -f "docker-compose.prod.yml" ]; then
+              COMPOSE_FILE="docker-compose.prod.yml"
+            elif [ -f "docker-compose.local.yml" ]; then
               COMPOSE_FILE="docker-compose.local.yml"
             else
-              COMPOSE_FILE="docker-compose.prod.yml"
+              COMPOSE_FILE="docker-compose.yml"
             fi
+            echo "Using compose file: $COMPOSE_FILE"
             
-            # Restart services
-            docker compose -f $COMPOSE_FILE up -d --remove-orphans || docker-compose -f $COMPOSE_FILE up -d --remove-orphans
+            # Build and restart services (use local build instead of pulling from registry)
+            docker compose -f $COMPOSE_FILE build --no-cache api
+            docker compose -f $COMPOSE_FILE up -d --remove-orphans
             
             # Run migrations
-            docker compose -f $COMPOSE_FILE exec -T api python manage.py migrate --noinput || true
+            docker compose -f $COMPOSE_FILE exec -T api python manage.py migrate --noinput || echo "Migration skipped or failed"
             
             # Collect static files
-            docker compose -f $COMPOSE_FILE exec -T api python manage.py collectstatic --noinput || true
+            docker compose -f $COMPOSE_FILE exec -T api python manage.py collectstatic --noinput || echo "Collectstatic skipped or failed"
+            
+            # Cleanup old images
+            docker image prune -f
             
             echo "Deployment complete!"
           ENDSSH
