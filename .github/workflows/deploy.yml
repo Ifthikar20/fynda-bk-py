@@ -135,7 +135,24 @@ jobs:
             set -e
             echo "Starting deployment..."
             
-            cd /opt/fynda || { echo "Directory /opt/fynda not found"; exit 1; }
+            # Find the project directory
+            if [ -d "/opt/fynda" ]; then
+              PROJECT_DIR="/opt/fynda"
+            elif [ -d "/home/ubuntu/fynda" ]; then
+              PROJECT_DIR="/home/ubuntu/fynda"
+            elif [ -d "/home/ubuntu/FB_APP" ]; then
+              PROJECT_DIR="/home/ubuntu/FB_APP"
+            else
+              echo "Finding project directory..."
+              PROJECT_DIR=$(find /home/ubuntu -maxdepth 2 -name "docker-compose*.yml" -exec dirname {} \; 2>/dev/null | head -1)
+              if [ -z "$PROJECT_DIR" ]; then
+                echo "ERROR: Could not find project directory"
+                exit 1
+              fi
+            fi
+            
+            echo "Using project directory: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
             
             # Pull latest code
             git fetch origin main
