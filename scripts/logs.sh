@@ -2,7 +2,7 @@
 # ==============================================================================
 # Fynda — Comprehensive Log Monitor
 # ==============================================================================
-# Usage:
+# Usage (run from your Mac — SSHs into EC2 automatically):
 #   ./scripts/logs.sh              # All services (default)
 #   ./scripts/logs.sh api          # API only
 #   ./scripts/logs.sh ml           # ML service only
@@ -13,24 +13,18 @@
 #   ./scripts/logs.sh errors       # Errors from ALL services
 #   ./scripts/logs.sh search       # Live search request tracking
 #   ./scripts/logs.sh deploy       # Deployment / startup logs
+#   ./scripts/logs.sh status       # Container status overview
+#   ./scripts/logs.sh health       # API & site health checks
 # ==============================================================================
 
 set -euo pipefail
 
-# --- Config ---
-COMPOSE_FILE="docker-compose.local.yml"
-PROJECT_DIR="/opt/fynda"
+# --- Remote Config ---
+EC2_HOST="ubuntu@54.227.94.35"
+SSH_KEY="$HOME/.ssh/fynda-api-key.pem"
+PROJECT_DIR="/home/ubuntu/fynda"
+COMPOSE_FILE="docker-compose.prod.yml"
 TAIL_LINES=100
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m' # No Color
 
 # Container names
 API="fynda-api"
@@ -40,7 +34,21 @@ CELERY="fynda-celery"
 DB="fynda-db"
 REDIS="fynda-redis"
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m'
+
 # --- Helpers ---
+ssh_cmd() {
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$EC2_HOST" "$@"
+}
+
 header() {
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -49,78 +57,51 @@ header() {
     echo ""
 }
 
-status_check() {
-    header "SERVICE STATUS"
-    echo -e "  ${WHITE}Container          Status              Ports${NC}"
-    echo -e "  ${CYAN}─────────────────  ──────────────────  ─────────────${NC}"
-
-    for container in $API $ML $NGINX $CELERY $DB $REDIS; do
-        status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || echo "not found")
-        uptime=$(docker inspect -f '{{.State.StartedAt}}' "$container" 2>/dev/null | cut -d'T' -f1,2 | cut -d'.' -f1 || echo "-")
-        ports=$(docker port "$container" 2>/dev/null | head -1 || echo "-")
-
-        if [ "$status" = "running" ]; then
-            color=$GREEN
-            icon="✅"
-        elif [ "$status" = "not found" ]; then
-            color=$RED
-            icon="❌"
-        else
-            color=$YELLOW
-            icon="⚠️"
-        fi
-
-        printf "  ${icon} ${color}%-18s %-20s %s${NC}\n" "$container" "$status" "$ports"
-    done
-    echo ""
-}
-
 # --- Commands ---
 case "${1:-all}" in
 
-    # ---- Individual services ----
     api)
         header "API LOGS ($API)"
-        docker logs -f --tail "$TAIL_LINES" "$API" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $API"
         ;;
 
     ml)
         header "ML SERVICE LOGS ($ML)"
-        docker logs -f --tail "$TAIL_LINES" "$ML" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $ML"
         ;;
 
     nginx)
         header "NGINX LOGS ($NGINX)"
-        docker logs -f --tail "$TAIL_LINES" "$NGINX" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $NGINX"
         ;;
 
     celery)
         header "CELERY WORKER LOGS ($CELERY)"
-        docker logs -f --tail "$TAIL_LINES" "$CELERY" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $CELERY"
         ;;
 
     db)
         header "DATABASE LOGS ($DB)"
-        docker logs -f --tail "$TAIL_LINES" "$DB" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $DB"
         ;;
 
     redis)
         header "REDIS LOGS ($REDIS)"
-        docker logs -f --tail "$TAIL_LINES" "$REDIS" 2>&1
+        ssh_cmd "docker logs -f --tail $TAIL_LINES $REDIS"
         ;;
 
-    # ---- Aggregated views ----
     all)
-        status_check
         header "ALL SERVICES — LIVE LOGS (Ctrl+C to stop)"
         echo -e "  ${YELLOW}Tip: Use './scripts/logs.sh api' to filter by service${NC}"
         echo ""
-        docker logs -f --tail 30 "$API"    2>&1 | sed "s/^/[${GREEN}API${NC}]    /" &
-        docker logs -f --tail 30 "$ML"     2>&1 | sed "s/^/[${MAGENTA}ML${NC}]     /" &
-        docker logs -f --tail 10 "$NGINX"  2>&1 | sed "s/^/[${BLUE}NGINX${NC}]  /" &
-        docker logs -f --tail 10 "$CELERY" 2>&1 | sed "s/^/[${YELLOW}CELERY${NC}] /" &
-        docker logs -f --tail  5 "$REDIS"  2>&1 | sed "s/^/[${RED}REDIS${NC}]  /" &
-        docker logs -f --tail  5 "$DB"     2>&1 | sed "s/^/[${CYAN}DB${NC}]     /" &
+        ssh_cmd "docker logs -f --tail 30 $API"    2>&1 | sed "s/^/[API]    /" &
+        ssh_cmd "docker logs -f --tail 10 $NGINX"  2>&1 | sed "s/^/[NGINX]  /" &
+        ssh_cmd "docker logs -f --tail 10 $CELERY" 2>&1 | sed "s/^/[CELERY] /" &
+        ssh_cmd "docker logs -f --tail  5 $ML"     2>&1 | sed "s/^/[ML]     /" &
+        ssh_cmd "docker logs -f --tail  5 $REDIS"  2>&1 | sed "s/^/[REDIS]  /" &
+        ssh_cmd "docker logs -f --tail  5 $DB"     2>&1 | sed "s/^/[DB]     /" &
+
+        trap "kill 0" INT TERM
         wait
         ;;
 
@@ -128,7 +109,7 @@ case "${1:-all}" in
         header "ERRORS ACROSS ALL SERVICES"
         echo -e "  Scanning last 500 lines from each container...\n"
         for container in $API $ML $NGINX $CELERY $DB $REDIS; do
-            errors=$(docker logs --tail 500 "$container" 2>&1 | grep -iE "error|exception|traceback|critical|fatal" | tail -10)
+            errors=$(ssh_cmd "docker logs --tail 500 $container 2>&1" | grep -iE "error|exception|traceback|critical|fatal" | tail -10)
             if [ -n "$errors" ]; then
                 echo -e "  ${RED}━━━ $container ━━━${NC}"
                 echo "$errors" | sed 's/^/    /'
@@ -140,8 +121,8 @@ case "${1:-all}" in
 
     search)
         header "LIVE SEARCH TRACKING"
-        echo -e "  ${YELLOW}Filtering API logs for search/upload requests...${NC}\n"
-        docker logs -f --tail 10 "$API" 2>&1 | grep --line-buffered -iE "search|upload|amazon|orchestrator|parsed query|fetched|products for"
+        echo -e "  ${YELLOW}Filtering API logs for search/Amazon requests...${NC}\n"
+        ssh_cmd "docker logs -f --tail 10 $API 2>&1" | grep --line-buffered -iE "search|amazon|orchestrator|parsed query|fetched|products for"
         ;;
 
     deploy)
@@ -149,27 +130,30 @@ case "${1:-all}" in
         echo -e "  ${YELLOW}Last 50 lines from each service startup...${NC}\n"
         for container in $API $ML $NGINX $CELERY; do
             echo -e "  ${CYAN}━━━ $container ━━━${NC}"
-            docker logs --tail 50 "$container" 2>&1 | head -20 | sed 's/^/    /'
+            ssh_cmd "docker logs --tail 50 $container 2>&1" | head -20 | sed 's/^/    /'
             echo ""
         done
         ;;
 
     status)
-        status_check
+        header "SERVICE STATUS"
+        ssh_cmd "cd $PROJECT_DIR && docker compose -f $COMPOSE_FILE ps --format 'table {{.Name}}\t{{.Status}}'"
         ;;
 
     health)
         header "HEALTH CHECKS"
         echo -ne "  API:   "
-        curl -s -o /dev/null -w "%{http_code}" https://api.fynda.shop/api/health/ 2>/dev/null && echo -e " ${GREEN}OK${NC}" || echo -e " ${RED}FAIL${NC}"
+        code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.fynda.shop/api/health/" 2>/dev/null)
+        [ "$code" = "200" ] && echo -e "${GREEN}$code OK${NC}" || echo -e "${RED}$code FAIL${NC}"
         echo -ne "  Site:  "
-        curl -s -o /dev/null -w "%{http_code}" https://fynda.shop/ 2>/dev/null && echo -e " ${GREEN}OK${NC}" || echo -e " ${RED}FAIL${NC}"
+        code=$(curl -s -o /dev/null -w "%{http_code}" "https://fynda.shop/" 2>/dev/null)
+        [ "$code" = "200" ] && echo -e "${GREEN}$code OK${NC}" || echo -e "${RED}$code FAIL${NC}"
         echo ""
         ;;
 
     *)
         echo ""
-        echo -e "${WHITE}Fynda Log Monitor${NC}"
+        echo -e "${WHITE}Fynda Log Monitor${NC} (runs via SSH to EC2)"
         echo ""
         echo "  Usage: ./scripts/logs.sh [command]"
         echo ""
