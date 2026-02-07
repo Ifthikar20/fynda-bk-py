@@ -130,6 +130,9 @@ class DealOrchestrator:
             # Also include affiliate aggregator for compatibility
             futures[executor.submit(self._fetch_affiliates, parsed)] = "Affiliates"
             
+            # Include Amazon via RapidAPI
+            futures[executor.submit(self._fetch_amazon, parsed)] = "Amazon"
+            
             for future in concurrent.futures.as_completed(futures, timeout=20):
                 source = futures[future]
                 try:
@@ -150,8 +153,9 @@ class DealOrchestrator:
         Uses the standardized VendorProduct format.
         """
         try:
+            search_query = parsed.get_search_terms() or parsed.original
             products = vendor_instance.search_products(
-                query=parsed.product,
+                query=search_query,
                 limit=15,
             )
             # Convert VendorProduct to dict if needed
@@ -173,8 +177,9 @@ class DealOrchestrator:
     def _fetch_amazon(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """Fetch deals from Amazon via RapidAPI."""
         try:
+            search_query = parsed.get_search_terms() or parsed.original
             deals = amazon_service.search(
-                query=parsed.product,
+                query=search_query,
                 limit=10,
                 max_price=parsed.budget,
             )
