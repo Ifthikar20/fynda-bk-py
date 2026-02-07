@@ -54,20 +54,25 @@ class VisionService:
     - Product features
     """
     
-    ANALYSIS_PROMPT = """Analyze this product screenshot and extract the following information in JSON format:
+    ANALYSIS_PROMPT = """Look at this image and identify the main product or fashion item shown. Respond ONLY with a JSON object (no extra text):
 
 {
-    "product_name": "Full product name",
-    "brand": "Brand name",
-    "price": 123.45,
+    "product_name": "Specific product description for searching (e.g., 'women's oversized denim jacket', 'men's white running shoes')",
+    "brand": "Brand name if visible, or null",
+    "price": null,
     "currency": "USD",
-    "source": "Website name (e.g., Amazon, eBay, Best Buy)",
-    "condition": "new/used/refurbished",
-    "features": ["feature1", "feature2"],
-    "raw_text": "Any other relevant text visible"
+    "source": null,
+    "condition": "new",
+    "features": ["key feature 1", "key feature 2"],
+    "raw_text": "Brief description of what you see"
 }
 
-If any field cannot be determined, use null. For price, extract only the number without currency symbols."""
+IMPORTANT RULES:
+- Focus on WHAT the product IS, not watermarks, credits, or background elements
+- product_name should be a specific, searchable product description
+- If you see clothing, describe the type, style, color, and any distinct features
+- If you cannot identify a product, set product_name to null
+- Respond with ONLY the JSON object, no other text"""
 
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY", "")
