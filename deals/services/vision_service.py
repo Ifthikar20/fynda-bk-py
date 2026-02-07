@@ -126,16 +126,32 @@ If any field cannot be determined, use null. For price, extract only the number 
             
             # Parse the JSON response
             content = response.choices[0].message.content
+            logger.info(f"Vision API raw response (first 300 chars): {content[:300] if content else 'EMPTY'}")
+            
+            if not content or not content.strip():
+                raise ValueError("Vision API returned empty response")
             
             # Extract JSON from response (handle markdown code blocks)
+            json_str = content
             if "```json" in content:
                 json_str = content.split("```json")[1].split("```")[0]
             elif "```" in content:
-                json_str = content.split("```")[1].split("```")[0]
-            else:
-                json_str = content
+                parts = content.split("```")
+                if len(parts) >= 3:
+                    json_str = parts[1]
             
-            data = json.loads(json_str.strip())
+            try:
+                data = json.loads(json_str.strip())
+            except json.JSONDecodeError:
+                # Try to find any JSON object in the response
+                import re
+                json_match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
+                if json_match:
+                    data = json.loads(json_match.group())
+                else:
+                    # Last resort: extract product name from text and create data
+                    logger.warning(f"No JSON found in Vision response, extracting from text")
+                    data = self._extract_from_text(content)
             
             return ImageAnalysis(
                 product_name=data.get("product_name"),
@@ -145,23 +161,64 @@ If any field cannot be determined, use null. For price, extract only the number 
                 source=data.get("source"),
                 condition=data.get("condition"),
                 features=data.get("features", []),
-                raw_text=data.get("raw_text", ""),
-                confidence=0.9,
+                raw_text=data.get("raw_text", content[:200] if content else ""),
+                confidence=0.9 if data.get("product_name") else 0.3,
             )
             
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse Vision API response: {e}")
+            logger.error(f"Raw content was: {content[:500] if content else 'NO CONTENT'}")
+            # Try to salvage product name from text
+            fallback = self._extract_from_text(content) if content else {}
             return ImageAnalysis(
-                product_name=None,
-                brand=None,
+                product_name=fallback.get("product_name"),
+                brand=fallback.get("brand"),
                 price=None,
                 currency="USD",
                 source=None,
                 condition=None,
                 features=[],
-                raw_text=content if 'content' in dir() else "",
-                confidence=0.0,
+                raw_text=content[:200] if content else "",
+                confidence=0.3 if fallback.get("product_name") else 0.0,
             )
+    
+    def _extract_from_text(self, text: str) -> Dict[str, Any]:
+        """
+        Fallback: extract product info from plain text Vision response.
+        Uses a second, simpler API call asking just for the product name.
+        """
+        if not text:
+            return {}
+        
+        # Try to find product-like terms in the text
+        result = {}
+        
+        # If the text mentions a product, try a simpler follow-up call
+        try:
+            if self.client:
+                simple_response = self.client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"From this text, extract just the product name and brand. Reply with ONLY a JSON object like {{\"product_name\": \"...\", \"brand\": \"...\"}}. If no product, reply {{}}.\n\nText: {text[:500]}"
+                        }
+                    ],
+                    max_tokens=100
+                )
+                simple_content = simple_response.choices[0].message.content.strip()
+                # Remove markdown fences if present
+                if "```" in simple_content:
+                    simple_content = simple_content.split("```")[1]
+                    if simple_content.startswith("json"):
+                        simple_content = simple_content[4:]
+                    simple_content = simple_content.strip()
+                result = json.loads(simple_content)
+                logger.info(f"Text extraction fallback found: {result}")
+        except Exception as e:
+            logger.warning(f"Text extraction fallback failed: {e}")
+        
+        return result
     
     def _encode_image_file(self, image_path: str) -> Dict[str, Any]:
         """Encode image file to base64."""
