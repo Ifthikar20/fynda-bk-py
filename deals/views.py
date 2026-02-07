@@ -73,6 +73,14 @@ class SearchView(APIView):
         # Return clean response with only affiliate deals
         response_data = result.to_dict()
         
+        # Auto-index returned products into FAISS (background)
+        try:
+            from .tasks import index_products_to_faiss
+            if response_data.get('deals'):
+                index_products_to_faiss.delay(response_data['deals'])
+        except Exception:
+            pass  # Never let indexing failure affect search
+        
         return Response(response_data)
 
 
