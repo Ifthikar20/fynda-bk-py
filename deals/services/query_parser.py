@@ -104,9 +104,17 @@ class ParsedQuery:
         if self.material:
             terms.append(self.material)
         
-        # Fallback to product if no entities found
-        if not terms and self.product:
-            terms.append(self.product)
+        # Include product terms — these contain unrecognized colors
+        # and descriptors (e.g. "yellow" from "blue and yellow hoodie")
+        if self.product:
+            # Filter out noise but keep color-like descriptors
+            for word in self.product.split():
+                if word.lower() not in [t.lower() for t in terms]:
+                    terms.append(word)
+        
+        # Final fallback
+        if not terms:
+            terms.append(self.original)
         
         return " ".join(terms)
     
