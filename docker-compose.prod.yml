@@ -40,7 +40,7 @@ services:
     networks:
       - fynda-network
     healthcheck:
-      test: ["CMD", "curl", "-fL", "http://localhost:8000/api/health/"]
+      test: ["CMD", "curl", "-f", "-H", "X-Forwarded-Proto: https", "http://localhost:8000/api/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
