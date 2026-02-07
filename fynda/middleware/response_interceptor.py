@@ -36,8 +36,8 @@ class ResponseInterceptor:
         (r'["\']?password["\']?\s*[:=]\s*["\']?([^"\']+)["\']?', 'password', '***REDACTED***'),
         # Email partial masking  
         (r'([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', None, None),  # Special handling
-        # Credit card-like patterns
-        (r'\b(\d{4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})\b', 'card', '****-****-****-\\4'),
+        # Credit card-like patterns (require separators to avoid matching JSON floats)
+        (r'(?<![.\d])(\d{4})[- ](\d{4})[- ](\d{4})[- ](\d{4})(?!\d)', 'card', '****-****-****-\\4'),
     ]
     
     # Error messages to sanitize (map internal -> external)
