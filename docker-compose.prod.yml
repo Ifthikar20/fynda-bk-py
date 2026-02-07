@@ -138,6 +138,12 @@ services:
         condition: service_started
     networks:
       - fynda-network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "fynda", "inspect", "ping", "--timeout", "5"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # =============================================================================
   # NGINX - Reverse Proxy & SSL Termination
