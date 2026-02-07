@@ -115,12 +115,7 @@ else
     echo -e "${YELLOW}⚠ API health check failed (may still be starting)${NC}"
 fi
 
-# Test Ghost
-if curl -s --max-time 5 http://localhost:2368/ > /dev/null; then
-    echo -e "${GREEN}✓ Ghost is responding${NC}"
-else
-    echo -e "${YELLOW}⚠ Ghost health check failed (may still be starting)${NC}"
-fi
+
 
 # =============================================================================
 # Done!

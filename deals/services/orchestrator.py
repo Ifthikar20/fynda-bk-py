@@ -1,8 +1,8 @@
 """
 API Orchestrator
 
-Coordinates multiple marketplace APIs with fallback logic.
-Aggregates results from eBay, Best Buy, Facebook Marketplace, Shopify stores, and mock data.
+Coordinates multiple marketplace APIs.
+Aggregates results from Amazon, affiliate networks, and other real data sources.
 """
 
 from typing import List, Dict, Any, Optional
@@ -12,7 +12,6 @@ import logging
 import concurrent.futures
 
 from .query_parser import query_parser, ParsedQuery
-from .deal_data import mock_deal_service
 from .ebay_service import ebay_service
 from .bestbuy_service import bestbuy_service
 from .facebook_service import facebook_service
@@ -227,13 +226,7 @@ class DealOrchestrator:
             logger.warning(f"Facebook Marketplace fetch error: {e}")
             return []
     
-    def _fetch_mock(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch mock deals as fallback."""
-        return mock_deal_service.search(
-            query=parsed.product,
-            budget=parsed.budget,
-            requirements=parsed.requirements,
-        )
+
     
     def _fetch_shopify(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """Fetch deals from Shopify stores."""

@@ -45,10 +45,7 @@ class VendorManager:
         try:
             # Map service class names to actual classes
             service_map = {
-                "DemoStoreService": "deals.services.vendors.demo_store.DemoStoreService",
-                "FakeStoreService": "deals.services.vendors.fakestore.FakeStoreService",
-                "DummyJSONService": "deals.services.vendors.dummyjson.DummyJSONService",
-                # Affiliate services (use existing)
+                # Affiliate services
                 "RakutenService": "deals.services.affiliates.rakuten.RakutenService",
                 "CJService": "deals.services.affiliates.cj_affiliate.CJAffiliateService",
                 "ShareASaleService": "deals.services.affiliates.shareasale.ShareASaleService",

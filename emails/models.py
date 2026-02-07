@@ -22,7 +22,7 @@ class Subscriber(models.Model):
     unsubscribe_token = models.CharField(max_length=64, unique=True)
     
     # Source tracking
-    source = models.CharField(max_length=50, default='coming_soon')  # coming_soon, registration, checkout
+    source = models.CharField(max_length=50, default='website')  # website, registration, checkout
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     
     # Preferences

@@ -1,7 +1,6 @@
 # Services package
 from .query_parser import query_parser, QueryParser, ParsedQuery
 from .orchestrator import orchestrator, DealOrchestrator, SearchResult
-from .deal_data import mock_deal_service
 from .nlp_service import nlp_service, NLPService, ExtractedIntent
 from .vision_service import vision_service, VisionService, ImageAnalysis
 from .tiktok_service import tiktok_service, TikTokService, TikTokVideo
@@ -22,8 +21,6 @@ __all__ = [
     "orchestrator",
     "DealOrchestrator",
     "SearchResult",
-    # Mock data
-    "mock_deal_service",
     # NLP
     "nlp_service",
     "NLPService",
@@ -66,6 +63,3 @@ __all__ = [
     "AmazonService",
     "AmazonDeal",
 ]
-
-
-

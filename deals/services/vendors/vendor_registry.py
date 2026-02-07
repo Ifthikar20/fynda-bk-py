@@ -11,42 +11,7 @@ from .base_vendor import VendorConfig, VendorCategory
 # All available vendors
 VENDOR_REGISTRY: dict[str, VendorConfig] = {
     
-    # ===== DEMO VENDORS (Free, No Auth Required) =====
-    
-    "demo_store": VendorConfig(
-        id="demo_store",
-        name="Demo Store",
-        service_class="DemoStoreService",
-        enabled=True,
-        requires_auth=False,
-        priority=100,
-        category=VendorCategory.DEMO,
-        description="Platzi Fake Store API - Real clothing images"
-    ),
-    
-    "fakestore": VendorConfig(
-        id="fakestore",
-        name="FakeStore",
-        service_class="FakeStoreService",
-        enabled=True,
-        requires_auth=False,
-        priority=90,
-        category=VendorCategory.DEMO,
-        description="FakeStore API - 20 products across categories"
-    ),
-    
-    "dummyjson": VendorConfig(
-        id="dummyjson",
-        name="DummyJSON",
-        service_class="DummyJSONService",
-        enabled=True,
-        requires_auth=False,
-        priority=85,
-        category=VendorCategory.DEMO,
-        description="DummyJSON API - 100+ products"
-    ),
-    
-    # ===== AFFILIATE NETWORKS (Require Approval) =====
+    # ===== AFFILIATE NETWORKS =====
     
     "rakuten": VendorConfig(
         id="rakuten",

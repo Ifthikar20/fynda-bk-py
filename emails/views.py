@@ -39,12 +39,12 @@ def subscribe(request):
     {
         "email": "user@example.com",
         "name": "John Doe",  // optional
-        "source": "coming_soon"  // optional
+        "source": "website"  // optional
     }
     """
     email = request.data.get('email', '').strip().lower()
     name = request.data.get('name', '').strip()
-    source = request.data.get('source', 'coming_soon')
+    source = request.data.get('source', 'website')
     
     # Validate email
     if not email:
@@ -206,7 +206,7 @@ def track_click(request, tracking_id):
 @permission_classes([AllowAny])
 def subscriber_count(request):
     """
-    Get subscriber count (for display on coming soon page)
+    Get subscriber count
     
     GET /api/subscribers/count/
     """
