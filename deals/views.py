@@ -12,6 +12,8 @@ from rest_framework import status
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
+import io
+import base64
 
 from .services import orchestrator, vision_service, tiktok_service, instagram_service, pinterest_service
 from .serializers import SearchResponseSerializer
@@ -107,7 +109,6 @@ class ImageUploadView(APIView):
         return f"{base}/api/extract-attributes"
     
     def post(self, request):
-        import base64
         import requests
         import logging
         logger = logging.getLogger(__name__)
@@ -136,8 +137,19 @@ class ImageUploadView(APIView):
             )
         
         try:
-            # Read and encode image
+            # Read and encode image (resize for speed)
             image_data = image_file.read()
+            
+            # Resize image before sending to ML (saves network + processing time)
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(io.BytesIO(image_data))
+            if max(pil_img.size) > 800:
+                pil_img.thumbnail((800, 800), PILImage.LANCZOS)
+                buf = io.BytesIO()
+                pil_img.save(buf, format='JPEG', quality=85)
+                image_data = buf.getvalue()
+                logger.info(f"Resized upload to {pil_img.size}")
+            
             image_base64 = base64.b64encode(image_data).decode('utf-8')
             
             # Step 1: Try to identify the product
@@ -193,26 +205,34 @@ class ImageUploadView(APIView):
                     "message": "Could not identify product. Try a clearer product image."
                 })
             
-            # Step 2: Search for deals using generated queries
+            # Step 2: Search for deals using generated queries (IN PARALLEL)
+            from concurrent.futures import ThreadPoolExecutor, as_completed
             all_deals = []
             videos = []
             
-            for query in search_queries[:3]:  # Use top 3 queries
+            def search_query(query):
+                """Search a single query and return results."""
                 try:
                     result = orchestrator.search(query)
-                    for deal in result.to_dict()["deals"]:
-                        # Avoid duplicates
-                        if not any(d.get("id") == deal.get("id") for d in all_deals):
-                            all_deals.append(deal)
+                    return result.to_dict()["deals"]
                 except Exception as e:
                     logger.warning(f"Search failed for query '{query}': {e}")
-                
-                # Fetch TikTok videos for first query only
-                if not videos:
-                    try:
-                        videos = [v.to_dict() for v in tiktok_service.search_videos(query, limit=4)]
-                    except Exception:
-                        pass
+                    return []
+            
+            # Run all search queries in parallel
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = {executor.submit(search_query, q): q for q in search_queries[:3]}
+                for future in as_completed(futures):
+                    for deal in future.result():
+                        if not any(d.get("id") == deal.get("id") for d in all_deals):
+                            all_deals.append(deal)
+            
+            # Fetch TikTok videos for first query
+            if search_queries:
+                try:
+                    videos = [v.to_dict() for v in tiktok_service.search_videos(search_queries[0], limit=4)]
+                except Exception:
+                    pass
             
             # Sort by relevance and limit results
             all_deals = sorted(
