@@ -288,13 +288,20 @@ class APIGuardMiddleware:
         time.sleep(random.uniform(0.005, 0.05))
     
     def _sanitize_error_response(self, response, request):
-        """Remove sensitive info from error responses."""
+        """Remove sensitive info from error responses, but preserve DRF errors."""
         # For 404s, return generic message (don't reveal if endpoint exists)
         if response.status_code == 404:
             return JsonResponse({"error": "Not found"}, status=404)
         
-        # For 500s, hide internal errors
+        # For 500s, preserve our own DRF JSON error responses (they are already safe)
+        # Only replace Django's internal HTML error pages with a generic JSON message
         if response.status_code >= 500 and not settings.DEBUG:
+            content_type = response.get("Content-Type", "")
+            if "application/json" in content_type:
+                # Our API view returned a structured JSON error — let it through
+                return response
+            # Django HTML error page — replace with generic JSON
+            logger.error(f"Unhandled 500 on {request.path}")
             return JsonResponse({"error": "Server error"}, status=500)
         
         return response
