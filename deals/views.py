@@ -100,11 +100,17 @@ class ImageUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
-    ML_SERVICE_URL = "http://localhost:8001/api/extract-attributes"
+    def _get_ml_url(self):
+        """Get ML service URL from Django settings (resolves to http://ml:8001 in Docker)."""
+        from django.conf import settings as django_settings
+        base = getattr(django_settings, 'ML_SERVICE_URL', 'http://localhost:8001')
+        return f"{base}/api/extract-attributes"
     
     def post(self, request):
         import base64
         import requests
+        import logging
+        logger = logging.getLogger(__name__)
         
         if 'image' not in request.FILES:
             return Response(
@@ -135,13 +141,14 @@ class ImageUploadView(APIView):
             image_base64 = base64.b64encode(image_data).decode('utf-8')
             
             # Step 1: Call ML service for attribute extraction
-            ml_response = None
             extracted = None
             search_queries = []
             
             try:
+                ml_url = self._get_ml_url()
+                logger.info(f"Calling ML service at {ml_url}")
                 ml_response = requests.post(
-                    self.ML_SERVICE_URL,
+                    ml_url,
                     json={"image_base64": image_base64},
                     timeout=60
                 )
@@ -154,34 +161,56 @@ class ImageUploadView(APIView):
                         "category": ml_data.get("category", ""),
                     }
                     search_queries = ml_data.get("search_queries", [])
+                    logger.info(f"ML service returned queries: {search_queries}")
+                else:
+                    logger.warning(f"ML service returned status {ml_response.status_code}")
             except requests.RequestException as e:
-                # ML service not available, fall back to vision service
-                pass
+                logger.warning(f"ML service unavailable: {e}")
             
-            # Fallback to original vision service if ML fails
+            # Fallback to OpenAI vision service if ML fails
             if not extracted or not search_queries:
-                analysis = vision_service.analyze_image(image_data=image_data)
-                extracted = analysis.to_dict()
-                if analysis.product_name:
-                    query = analysis.product_name
-                    if analysis.brand:
-                        query = f"{analysis.brand} {query}"
-                    search_queries = [query]
+                try:
+                    analysis = vision_service.analyze_image(image_data=image_data)
+                    extracted = analysis.to_dict()
+                    if analysis.product_name:
+                        query = analysis.product_name
+                        if analysis.brand:
+                            query = f"{analysis.brand} {query}"
+                        search_queries = [query]
+                        logger.info(f"Vision fallback generated queries: {search_queries}")
+                except Exception as e:
+                    logger.warning(f"Vision service also failed: {e}")
+            
+            # If we still have no queries, return a graceful empty response
+            if not search_queries:
+                return Response({
+                    "extracted": extracted or {},
+                    "search_queries": [],
+                    "deals": [],
+                    "videos": [],
+                    "message": "Could not identify product. Try a clearer product image."
+                })
             
             # Step 2: Search for deals using generated queries
             all_deals = []
             videos = []
             
             for query in search_queries[:3]:  # Use top 3 queries
-                result = orchestrator.search(query)
-                for deal in result.to_dict()["deals"]:
-                    # Avoid duplicates
-                    if not any(d.get("id") == deal.get("id") for d in all_deals):
-                        all_deals.append(deal)
+                try:
+                    result = orchestrator.search(query)
+                    for deal in result.to_dict()["deals"]:
+                        # Avoid duplicates
+                        if not any(d.get("id") == deal.get("id") for d in all_deals):
+                            all_deals.append(deal)
+                except Exception as e:
+                    logger.warning(f"Search failed for query '{query}': {e}")
                 
                 # Fetch TikTok videos for first query only
                 if not videos:
-                    videos = [v.to_dict() for v in tiktok_service.search_videos(query, limit=4)]
+                    try:
+                        videos = [v.to_dict() for v in tiktok_service.search_videos(query, limit=4)]
+                    except Exception:
+                        pass
             
             # Sort by relevance and limit results
             all_deals = sorted(
@@ -204,6 +233,7 @@ class ImageUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
+            logger.error(f"Image upload failed: {e}", exc_info=True)
             return Response(
                 {"error": f"Failed to analyze image: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -75,11 +75,19 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 # CORS - Strict Production Settings
 # =============================================================================
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    origin.strip() 
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") 
+
+# Always allow our own domains + any extras from env var
+_HARDCODED_ORIGINS = [
+    "https://fynda.shop",
+    "https://www.fynda.shop",
+    "https://api.fynda.shop",
+]
+_ENV_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+CORS_ALLOWED_ORIGINS = list(set(_HARDCODED_ORIGINS + _ENV_ORIGINS))
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = [
