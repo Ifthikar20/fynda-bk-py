@@ -144,31 +144,18 @@ class ImageUploadView(APIView):
             extracted = None
             search_queries = []
             
-            # Primary: OpenAI Vision (most reliable for product identification)
+            # Primary: Own ML service (BLIP — free, fast, runs on EC2)
             try:
-                analysis = vision_service.analyze_image(image_data=image_data)
-                extracted = analysis.to_dict()
-                if analysis.product_name:
-                    query = analysis.product_name
-                    if analysis.brand:
-                        query = f"{analysis.brand} {query}"
-                    search_queries = [query]
-                    logger.info(f"Vision service identified: {search_queries}")
-            except Exception as e:
-                logger.warning(f"Vision service failed: {e}")
-            
-            # Fallback: ML service extract-attributes (if Vision failed)
-            if not search_queries:
-                try:
-                    ml_url = self._get_ml_url()
-                    logger.info(f"Trying ML service at {ml_url}")
-                    ml_response = requests.post(
-                        ml_url,
-                        json={"image_base64": image_base64},
-                        timeout=30
-                    )
-                    if ml_response.status_code == 200:
-                        ml_data = ml_response.json()
+                ml_url = self._get_ml_url()
+                logger.info(f"Calling ML service at {ml_url}")
+                ml_response = requests.post(
+                    ml_url,
+                    json={"image_base64": image_base64},
+                    timeout=30
+                )
+                if ml_response.status_code == 200:
+                    ml_data = ml_response.json()
+                    if ml_data.get("success"):
                         extracted = {
                             "caption": ml_data.get("caption", ""),
                             "colors": ml_data.get("colors", {}),
@@ -176,11 +163,25 @@ class ImageUploadView(APIView):
                             "category": ml_data.get("category", ""),
                         }
                         search_queries = ml_data.get("search_queries", [])
-                        logger.info(f"ML service returned queries: {search_queries}")
-                    else:
-                        logger.warning(f"ML service returned status {ml_response.status_code}")
-                except requests.RequestException as e:
-                    logger.warning(f"ML service unavailable: {e}")
+                        logger.info(f"ML service identified product: {search_queries}")
+                else:
+                    logger.warning(f"ML service returned status {ml_response.status_code}")
+            except requests.RequestException as e:
+                logger.warning(f"ML service unavailable: {e}")
+            
+            # Fallback: OpenAI Vision (if ML service failed or returned no queries)
+            if not search_queries:
+                try:
+                    analysis = vision_service.analyze_image(image_data=image_data)
+                    extracted = analysis.to_dict()
+                    if analysis.product_name:
+                        query = analysis.product_name
+                        if analysis.brand:
+                            query = f"{analysis.brand} {query}"
+                        search_queries = [query]
+                        logger.info(f"OpenAI Vision fallback identified: {search_queries}")
+                except Exception as e:
+                    logger.warning(f"OpenAI Vision fallback also failed: {e}")
             
             # If we still have no queries, return a graceful empty response
             if not search_queries:

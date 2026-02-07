@@ -169,8 +169,8 @@ jobs:
             echo "Using compose file: $COMPOSE_FILE"
             
             # Build and restart services (build locally - celery shares api Dockerfile)
-            docker compose -f $COMPOSE_FILE build api celery nginx || echo "Build failed"
-            docker compose -f $COMPOSE_FILE up -d api nginx db redis celery --remove-orphans --force-recreate
+            docker compose -f $COMPOSE_FILE build api celery nginx ml || echo "Build failed"
+            docker compose -f $COMPOSE_FILE up -d api nginx db redis celery ml --remove-orphans --force-recreate
             
             # Run migrations
             sleep 5
