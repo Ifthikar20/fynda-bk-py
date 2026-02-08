@@ -6,10 +6,14 @@ Aggregates results from Amazon, affiliate networks, and other real data sources.
 """
 
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import logging
+import hashlib
+import json
 import concurrent.futures
+
+from django.core.cache import cache
 
 from .query_parser import query_parser, ParsedQuery
 from .ebay_service import ebay_service
@@ -17,10 +21,13 @@ from .bestbuy_service import bestbuy_service
 from .facebook_service import facebook_service
 from .shopify_service import shopify_service
 from .affiliates import affiliate_aggregator
-from .amazon_service import amazon_service
+from .amazon_service import amazon_service, QuotaExceededException
 from .vendors import vendor_manager
 
 logger = logging.getLogger(__name__)
+
+# Cache TTL: 6 hours (in seconds)
+SEARCH_CACHE_TTL = 6 * 60 * 60
 
 
 @dataclass
@@ -32,9 +39,10 @@ class SearchResult:
     sources_with_results: List[str]
     cache_hit: bool
     search_time_ms: int
+    quota_exceeded: bool = False
     
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "query": self.query.to_dict(),
             "deals": self.deals,
             "meta": {
@@ -45,6 +53,9 @@ class SearchResult:
                 "search_time_ms": self.search_time_ms,
             }
         }
+        if self.quota_exceeded:
+            result["quota_warning"] = "Some marketplace results may be limited right now. Please try again later."
+        return result
 
 
 class DealOrchestrator:
@@ -64,10 +75,17 @@ class DealOrchestrator:
         enabled = vendor_manager.get_enabled_vendors()
         self.all_sources = [v.name for v in enabled]
     
+    def _get_cache_key(self, query: str) -> str:
+        """Generate a normalized cache key for a search query."""
+        normalized = query.lower().strip()
+        query_hash = hashlib.md5(normalized.encode()).hexdigest()
+        return f"search:{query_hash}"
+    
     def search(self, query: str) -> SearchResult:
         """
         Search for deals matching the natural language query.
         
+        Uses Django cache to avoid redundant API calls.
         Queries all configured marketplaces in parallel and aggregates results.
         
         Args:
@@ -79,12 +97,32 @@ class DealOrchestrator:
         """
         start_time = datetime.now()
         
+        # Check cache first
+        cache_key = self._get_cache_key(query)
+        cached = cache.get(cache_key)
+        if cached:
+            logger.info(f"Cache HIT for query: '{query}'")
+            search_time = int((datetime.now() - start_time).total_seconds() * 1000)
+            # Reconstruct SearchResult from cached data
+            parsed = query_parser.parse(query)
+            return SearchResult(
+                query=parsed,
+                deals=cached["deals"],
+                sources_queried=cached.get("sources_queried", self.all_sources),
+                sources_with_results=cached.get("sources_with_results", []),
+                cache_hit=True,
+                search_time_ms=search_time,
+                quota_exceeded=cached.get("quota_exceeded", False),
+            )
+        
+        logger.info(f"Cache MISS for query: '{query}' — fetching from APIs")
+        
         # Step 1: Parse the query
         parsed = query_parser.parse(query)
         logger.info(f"Parsed query: product='{parsed.product}', budget={parsed.budget}, requirements={parsed.requirements}")
         
         # Step 2: Fetch deals from all sources in parallel
-        deals, sources_with_results = self._fetch_all_deals(parsed)
+        deals, sources_with_results, quota_exceeded = self._fetch_all_deals(parsed)
         
         # Step 3: Apply budget filter
         if parsed.budget:
@@ -96,27 +134,41 @@ class DealOrchestrator:
         # Step 5: Rank results
         deals = self._rank_deals(deals, parsed)
         
+        # Limit to top 20
+        deals = deals[:20]
+        
         # Calculate search time
         search_time = int((datetime.now() - start_time).total_seconds() * 1000)
         
+        # Cache the results (6 hours)
+        cache.set(cache_key, {
+            "deals": deals,
+            "sources_queried": self.all_sources,
+            "sources_with_results": sources_with_results,
+            "quota_exceeded": quota_exceeded,
+        }, SEARCH_CACHE_TTL)
+        logger.info(f"Cached {len(deals)} deals for query: '{query}' (TTL: {SEARCH_CACHE_TTL}s)")
+        
         return SearchResult(
             query=parsed,
-            deals=deals[:20],  # Return top 20 results
+            deals=deals,
             sources_queried=self.all_sources,
             sources_with_results=sources_with_results,
             cache_hit=False,
             search_time_ms=search_time,
+            quota_exceeded=quota_exceeded,
         )
     
-    def _fetch_all_deals(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], List[str]]:
+    def _fetch_all_deals(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], List[str], bool]:
         """
-        Fetch deals from affiliate networks only (CJ, Rakuten, ShareASale).
+        Fetch deals from affiliate networks, Amazon, and other sources.
         
         Returns:
-            Tuple of (all_deals, list_of_sources_that_returned_results)
+            Tuple of (all_deals, list_of_sources_with_results, quota_exceeded)
         """
         all_deals = []
         sources_with_results = []
+        quota_exceeded = False
         
         # Query all enabled vendors using VendorManager
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
@@ -135,7 +187,14 @@ class DealOrchestrator:
             for future in concurrent.futures.as_completed(futures, timeout=20):
                 source = futures[future]
                 try:
-                    deals = future.result()
+                    result = future.result()
+                    # Check if result is a tuple (deals, quota_flag) from Amazon
+                    if isinstance(result, tuple):
+                        deals, is_quota_exceeded = result
+                        if is_quota_exceeded:
+                            quota_exceeded = True
+                    else:
+                        deals = result
                     if deals:
                         all_deals.extend(deals)
                         sources_with_results.append(source)
@@ -143,7 +202,7 @@ class DealOrchestrator:
                 except Exception as e:
                     logger.error(f"Error fetching from {source}: {e}")
         
-        return all_deals, sources_with_results
+        return all_deals, sources_with_results, quota_exceeded
     
     def _fetch_from_vendor(self, vendor_instance, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """
@@ -173,8 +232,8 @@ class DealOrchestrator:
             logger.warning(f"Vendor fetch error: {e}")
             return []
     
-    def _fetch_amazon(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch deals from Amazon via RapidAPI."""
+    def _fetch_amazon(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], bool]:
+        """Fetch deals from Amazon via RapidAPI. Returns (deals, quota_exceeded)."""
         try:
             search_query = parsed.get_search_terms() or parsed.original
             deals = amazon_service.search(
@@ -182,10 +241,13 @@ class DealOrchestrator:
                 limit=10,
                 max_price=parsed.budget,
             )
-            return [d.to_dict() for d in deals]
+            return [d.to_dict() for d in deals], False
+        except QuotaExceededException:
+            logger.warning("Amazon quota exceeded — skipping Amazon results")
+            return [], True
         except Exception as e:
             logger.warning(f"Amazon fetch error: {e}")
-            return []
+            return [], False
     
     def _fetch_ebay(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """Fetch deals from eBay."""

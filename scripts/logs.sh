@@ -20,7 +20,7 @@
 set -euo pipefail
 
 # --- Remote Config ---
-EC2_HOST="ubuntu@54.227.94.35"
+EC2_HOST="ubuntu@54.81.148.134"
 SSH_KEY="$HOME/.ssh/fynda-api-key.pem"
 PROJECT_DIR="/home/ubuntu/fynda"
 COMPOSE_FILE="docker-compose.prod.yml"

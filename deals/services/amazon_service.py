@@ -15,6 +15,11 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+class QuotaExceededException(Exception):
+    """Raised when the RapidAPI monthly quota is exceeded (429)."""
+    pass
+
+
 @dataclass
 class AmazonDeal:
     """Represents an Amazon product listing."""
@@ -107,6 +112,8 @@ class AmazonService:
         
         try:
             return self._search_api(query, limit, max_price, country)
+        except QuotaExceededException:
+            raise  # Let this propagate so orchestrator can flag it
         except Exception as e:
             logger.error(f"Amazon RapidAPI error: {e}")
             return []
@@ -139,6 +146,12 @@ class AmazonService:
             params=params,
             timeout=15
         )
+        
+        # Check for quota exceeded (429) specifically
+        if response.status_code == 429:
+            logger.warning("RapidAPI monthly quota exceeded (429). Amazon results unavailable.")
+            raise QuotaExceededException("Monthly API quota exceeded")
+        
         response.raise_for_status()
         
         data = response.json()
