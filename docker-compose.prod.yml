@@ -61,6 +61,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - ml_data:/app/data
+      - ./FYNDA_ML_Services/models:/app/models
     networks:
       - fynda-network
     healthcheck:
