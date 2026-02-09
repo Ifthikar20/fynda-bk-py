@@ -9,6 +9,8 @@ Endpoints optimized for mobile:
 """
 
 import time
+import io
+import base64
 import logging
 from django.utils import timezone
 from django.db import transaction
@@ -16,6 +18,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession
@@ -503,31 +506,34 @@ class MobileDealListView(APIView):
     GET /api/mobile/deals/
     
     Query params:
-    - cursor: Pagination cursor
     - limit: Items per page (max 50)
     - sort: relevance, price_low, price_high, rating
     """
     permission_classes = [AllowAny]
     
     def get(self, request):
-        # Parse parameters
-        cursor = request.query_params.get("cursor", "")
+        from deals.services.orchestrator import orchestrator
+        
         limit = min(int(request.query_params.get("limit", 20)), 50)
         sort = request.query_params.get("sort", "relevance")
-        
-        # Get deals from service
-        from deals.services.orchestrator import deal_orchestrator
         
         start_time = time.time()
         
         # Get featured/trending deals
-        results = deal_orchestrator.search(
-            query="trending deals",
-            budget=None,
-            limit=limit,
-        )
+        result = orchestrator.search("trending deals")
+        result_dict = result.to_dict()
         
-        deals = results.get("deals", [])
+        deals = result_dict.get("deals", [])
+        
+        # Apply sorting
+        if sort == "price_low":
+            deals.sort(key=lambda x: x.get("price", float("inf")))
+        elif sort == "price_high":
+            deals.sort(key=lambda x: x.get("price", 0), reverse=True)
+        elif sort == "rating":
+            deals.sort(key=lambda x: x.get("rating") or 0, reverse=True)
+        
+        deals = deals[:limit]
         
         # Mark saved deals if authenticated
         saved_ids = set()
@@ -538,7 +544,6 @@ class MobileDealListView(APIView):
                 .values_list("deal_id", flat=True)
             )
         
-        # Add is_saved flag
         for deal in deals:
             deal["is_saved"] = deal.get("id", "") in saved_ids
         
@@ -547,12 +552,16 @@ class MobileDealListView(APIView):
         response = {
             "deals": MobileDealSerializer(deals, many=True).data,
             "total": len(deals),
-            "cursor": None,  # TODO: Implement cursor pagination
+            "cursor": None,
             "has_more": False,
             "query": "trending",
             "search_time_ms": search_time,
-            "sources_searched": results.get("sources_searched", []),
+            "sources_searched": result_dict.get("meta", {}).get("sources_with_results", []),
         }
+        
+        # Propagate quota warning
+        if result_dict.get("quota_warning"):
+            response["quota_warning"] = result_dict["quota_warning"]
         
         return Response(MobileSearchResponseSerializer(response).data)
 
@@ -568,9 +577,7 @@ class MobileDealSearchView(APIView):
         "query": "sony camera",
         "min_price": 100,
         "max_price": 1000,
-        "sources": ["amazon", "ebay"],
         "sort": "price_low",
-        "cursor": "",
         "limit": 20
     }
     """
@@ -582,22 +589,19 @@ class MobileDealSearchView(APIView):
         
         data = serializer.validated_data
         
-        from deals.services.orchestrator import deal_orchestrator
+        from deals.services.orchestrator import orchestrator
         
         start_time = time.time()
         
-        # Build budget string if prices provided
-        budget = None
+        # Build query with budget embedded (orchestrator parses it)
+        query = data["query"]  # already sanitised by serializer
         if data.get("max_price"):
-            budget = f"under ${data['max_price']}"
+            query = f"{query} under ${data['max_price']}"
         
-        results = deal_orchestrator.search(
-            query=data["query"],
-            budget=budget,
-            limit=data["limit"],
-        )
+        result = orchestrator.search(query)
+        result_dict = result.to_dict()
         
-        deals = results.get("deals", [])
+        deals = result_dict.get("deals", [])
         
         # Apply sorting
         sort = data.get("sort", "relevance")
@@ -613,6 +617,13 @@ class MobileDealSearchView(APIView):
         if min_price:
             deals = [d for d in deals if d.get("price", 0) >= float(min_price)]
         
+        # ── Pagination ────────────────────────────────
+        total_deals = len(deals)
+        offset = data.get("offset", 0)
+        limit = data["limit"]
+        deals = deals[offset:offset + limit]
+        has_more = (offset + limit) < total_deals
+        
         # Mark saved deals
         saved_ids = set()
         if request.user.is_authenticated:
@@ -627,26 +638,35 @@ class MobileDealSearchView(APIView):
         
         # Save search if authenticated
         if request.user.is_authenticated:
-            from users.models import SearchHistory
-            SearchHistory.objects.create(
-                user=request.user,
-                query=data["query"],
-                parsed_product=results.get("parsed", {}).get("product", ""),
-                parsed_budget=data.get("max_price"),
-                results_count=len(deals),
-            )
+            try:
+                from users.models import SearchHistory
+                SearchHistory.objects.create(
+                    user=request.user,
+                    query=data["query"],
+                    parsed_product=result_dict.get("query", {}).get("product", ""),
+                    parsed_budget=data.get("max_price"),
+                    results_count=total_deals,
+                )
+            except Exception:
+                pass  # Never let history saving break search
         
         search_time = int((time.time() - start_time) * 1000)
         
         response = {
             "deals": MobileDealSerializer(deals, many=True).data,
-            "total": len(deals),
+            "total": total_deals,
+            "offset": offset,
+            "limit": limit,
             "cursor": None,
-            "has_more": False,
+            "has_more": has_more,
             "query": data["query"],
             "search_time_ms": search_time,
-            "sources_searched": results.get("sources_searched", []),
+            "sources_searched": result_dict.get("meta", {}).get("sources_with_results", []),
         }
+        
+        # Propagate quota warning
+        if result_dict.get("quota_warning"):
+            response["quota_warning"] = result_dict["quota_warning"]
         
         return Response(MobileSearchResponseSerializer(response).data)
 
@@ -836,3 +856,444 @@ class FavoriteDetailView(APIView):
             {"error": "Favorite not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# ============================================
+# Image Upload (Core Flutter Feature)
+# ============================================
+
+class MobileImageUploadView(APIView):
+    """
+    Upload a photo to find matching deals.
+    
+    POST /api/mobile/deals/image-search/
+    
+    Request: multipart/form-data with 'image' field
+    
+    Response:
+    {
+        "extracted": { "caption": "...", "colors": {...}, ... },
+        "search_queries": ["blue denim jacket", ...],
+        "deals": [...],
+        "total": 15,
+        "search_time_ms": 2340,
+        "quota_warning": "..." (optional)
+    }
+    """
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        import requests as http_requests
+        from deals.services.orchestrator import orchestrator
+        from deals.services import vision_service
+        from django.conf import settings
+        
+        if 'image' not in request.FILES:
+            return Response(
+                {"error": "No image file provided. Use 'image' field."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        image_file = request.FILES['image']
+        
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if image_file.content_type not in allowed_types:
+            return Response(
+                {"error": f"Invalid file type. Allowed: {', '.join(allowed_types)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate file size (max 10MB)
+        if image_file.size > 10 * 1024 * 1024:
+            return Response(
+                {"error": "File too large. Maximum size is 10MB."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        start_time = time.time()
+        
+        try:
+            # Read and resize image
+            image_data = image_file.read()
+            
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(io.BytesIO(image_data))
+            if max(pil_img.size) > 800:
+                pil_img.thumbnail((800, 800), PILImage.LANCZOS)
+                buf = io.BytesIO()
+                pil_img.save(buf, format='JPEG', quality=85)
+                image_data = buf.getvalue()
+                logger.info(f"Resized upload to {pil_img.size}")
+            
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
+            
+            # Step 1: Identify the product
+            extracted = None
+            search_queries = []
+            
+            # Primary: Own ML service (BLIP)
+            try:
+                ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
+                ml_url = f"{ml_url}/analyze"
+                logger.info(f"Calling ML service at {ml_url}")
+                ml_response = http_requests.post(
+                    ml_url,
+                    json={"image_base64": image_base64},
+                    timeout=30
+                )
+                if ml_response.status_code == 200:
+                    ml_data = ml_response.json()
+                    if ml_data.get("success"):
+                        extracted = {
+                            "caption": ml_data.get("caption", ""),
+                            "colors": ml_data.get("colors", {}),
+                            "textures": ml_data.get("textures", []),
+                            "category": ml_data.get("category", ""),
+                        }
+                        search_queries = ml_data.get("search_queries", [])
+                        logger.info(f"ML service identified: {search_queries}")
+            except http_requests.RequestException as e:
+                logger.warning(f"ML service unavailable: {e}")
+            
+            # Fallback: OpenAI Vision
+            if not search_queries:
+                try:
+                    analysis = vision_service.analyze_image(image_data=image_data)
+                    extracted = analysis.to_dict()
+                    if analysis.product_name:
+                        query = analysis.product_name
+                        if analysis.brand:
+                            query = f"{analysis.brand} {query}"
+                        search_queries = [query]
+                        logger.info(f"OpenAI Vision fallback: {search_queries}")
+                except Exception as e:
+                    logger.warning(f"OpenAI Vision fallback failed: {e}")
+            
+            # If no queries, return graceful empty
+            if not search_queries:
+                return Response({
+                    "extracted": extracted or {},
+                    "search_queries": [],
+                    "deals": [],
+                    "total": 0,
+                    "search_time_ms": int((time.time() - start_time) * 1000),
+                    "message": "Could not identify product. Try a clearer image."
+                })
+            
+            # Step 2: Search for deals using generated queries (parallel)
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            all_deals = []
+            quota_warning = None
+            
+            def search_query(q):
+                try:
+                    result = orchestrator.search(q)
+                    result_dict = result.to_dict()
+                    if result_dict.get("quota_warning"):
+                        return result_dict["deals"], result_dict["quota_warning"]
+                    return result_dict["deals"], None
+                except Exception as e:
+                    logger.warning(f"Search failed for '{q}': {e}")
+                    return [], None
+            
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                futures = {executor.submit(search_query, q): q for q in search_queries[:3]}
+                for future in as_completed(futures):
+                    deals, warning = future.result()
+                    if warning:
+                        quota_warning = warning
+                    for deal in deals:
+                        if not any(d.get("id") == deal.get("id") for d in all_deals):
+                            all_deals.append(deal)
+            
+            # Mark saved deals
+            saved_ids = set()
+            if request.user.is_authenticated:
+                from users.models import SavedDeal
+                saved_ids = set(
+                    SavedDeal.objects.filter(user=request.user)
+                    .values_list("deal_id", flat=True)
+                )
+            
+            for deal in all_deals:
+                deal["is_saved"] = deal.get("id", "") in saved_ids
+            
+            search_time = int((time.time() - start_time) * 1000)
+            
+            response = {
+                "extracted": extracted or {},
+                "search_queries": search_queries,
+                "deals": MobileDealSerializer(all_deals, many=True).data,
+                "total": len(all_deals),
+                "search_time_ms": search_time,
+            }
+            
+            if quota_warning:
+                response["quota_warning"] = quota_warning
+            
+            return Response(response)
+        
+        except Exception as e:
+            logger.exception(f"Image upload error: {e}")
+            return Response(
+                {"error": "Failed to process image. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# ============================================
+# OAuth (Google/Apple with Device Binding)
+# ============================================
+
+class MobileOAuthView(APIView):
+    """
+    OAuth login for mobile with device binding.
+    
+    POST /api/mobile/auth/oauth/
+    
+    Body:
+    {
+        "provider": "google" | "apple",
+        "code": "authorization_code",
+        "redirect_uri": "callback_url",
+        "device_id": "unique-device-id",
+        "platform": "ios" | "android",
+        "id_token": "apple_id_token" (Apple only),
+        "user": {"name": {...}} (Apple first login only),
+        "push_token": "fcm-or-apns-token" (optional)
+    }
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        provider = request.data.get('provider', '').lower()
+        code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri')
+        device_id = request.data.get('device_id')
+        platform = request.data.get('platform', 'ios')
+        
+        if not provider or not code:
+            return Response(
+                {"error": "Missing provider or code"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not device_id:
+            return Response(
+                {"error": "Missing device_id"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if provider not in ['google', 'apple']:
+            return Response(
+                {"error": "Invalid provider. Use 'google' or 'apple'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from users.oauth import get_oauth_provider
+            from users.models import User
+            
+            oauth = get_oauth_provider(provider)
+            
+            extra_params = {}
+            if provider == 'apple':
+                extra_params['id_token'] = request.data.get('id_token')
+                extra_params['user'] = request.data.get('user', {})
+            
+            user_info = oauth.get_user_info(
+                code=code,
+                redirect_uri=redirect_uri,
+                **extra_params
+            )
+            
+            if not user_info.get('email'):
+                return Response(
+                    {"error": "Could not retrieve email from provider"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Find or create user (same logic as web OAuthView)
+            user = None
+            
+            if user_info.get('uid'):
+                user = User.objects.filter(
+                    oauth_provider=provider,
+                    oauth_uid=user_info['uid']
+                ).first()
+            
+            if not user:
+                user = User.objects.filter(email=user_info['email']).first()
+                if user and not user.oauth_provider:
+                    user.oauth_provider = provider
+                    user.oauth_uid = user_info.get('uid')
+                    user.save(update_fields=['oauth_provider', 'oauth_uid'])
+            
+            if not user:
+                user = User.objects.create_user(
+                    email=user_info['email'],
+                    password=None,
+                    first_name=user_info.get('first_name', ''),
+                    last_name=user_info.get('last_name', ''),
+                    oauth_provider=provider,
+                    oauth_uid=user_info.get('uid'),
+                )
+            
+            if not user.is_active:
+                return Response(
+                    {"error": "Account is disabled"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            
+            # Register/update device
+            device, _ = DeviceToken.objects.update_or_create(
+                user=user,
+                device_id=device_id,
+                defaults={
+                    "platform": platform,
+                    "token": request.data.get("push_token", ""),
+                    "is_active": True,
+                }
+            )
+            
+            # Get or create preferences
+            preferences, _ = UserPreferences.objects.get_or_create(user=user)
+            
+            response_data = {
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "expires_in": int(refresh.access_token.lifetime.total_seconds()),
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+                "device_id": str(device.id),
+                "preferences": UserPreferencesSerializer(preferences).data,
+            }
+            
+            return Response(MobileLoginResponseSerializer(response_data).data)
+        
+        except ValueError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.exception("Mobile OAuth error")
+            return Response(
+                {"error": "OAuth authentication failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# ============================================
+# Storyboard
+# ============================================
+
+class MobileStoryboardView(APIView):
+    """
+    Fashion storyboard management for mobile.
+    
+    GET /api/mobile/storyboard/ - List my shared storyboards
+    POST /api/mobile/storyboard/ - Create a shared storyboard
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from deals.models import SharedStoryboard
+        
+        boards = SharedStoryboard.objects.filter(
+            user=request.user
+        ).order_by("-created_at")[:50]
+        
+        items = [
+            {
+                "token": b.token,
+                "title": b.title or "Untitled",
+                "share_url": f"https://fynda.shop/storyboard/{b.token}",
+                "view_count": b.view_count,
+                "created_at": b.created_at.isoformat(),
+                "expires_at": b.expires_at.isoformat() if b.expires_at else None,
+            }
+            for b in boards
+        ]
+        
+        return Response({"storyboards": items, "count": len(items)})
+    
+    def post(self, request):
+        from deals.models import SharedStoryboard
+        from datetime import timedelta
+        import secrets
+        
+        storyboard_data = request.data.get("storyboard_data")
+        if not storyboard_data:
+            return Response(
+                {"error": "storyboard_data is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        title = request.data.get("title", "")
+        expires_in_days = int(request.data.get("expires_in_days", 30))
+        
+        board = SharedStoryboard.objects.create(
+            user=request.user,
+            token=secrets.token_urlsafe(16),
+            title=title,
+            storyboard_data=storyboard_data,
+            expires_at=timezone.now() + timedelta(days=expires_in_days),
+        )
+        
+        return Response(
+            {
+                "token": board.token,
+                "share_url": f"https://fynda.shop/storyboard/{board.token}",
+                "expires_at": board.expires_at.isoformat(),
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class MobileStoryboardDetailView(APIView):
+    """
+    Get a shared storyboard by token (public access).
+    
+    GET /api/mobile/storyboard/<token>/
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request, token):
+        from deals.models import SharedStoryboard
+        
+        try:
+            board = SharedStoryboard.objects.get(token=token)
+        except SharedStoryboard.DoesNotExist:
+            return Response(
+                {"error": "Storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check expiry
+        if board.expires_at and board.expires_at < timezone.now():
+            return Response(
+                {"error": "This storyboard has expired"},
+                status=status.HTTP_410_GONE
+            )
+        
+        # Increment view count
+        board.view_count += 1
+        board.save(update_fields=["view_count"])
+        
+        return Response({
+            "token": board.token,
+            "title": board.title or "Untitled",
+            "storyboard_data": board.storyboard_data,
+            "view_count": board.view_count,
+            "created_at": board.created_at.isoformat(),
+        })

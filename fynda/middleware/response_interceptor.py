@@ -52,6 +52,14 @@ class ResponseInterceptor:
         "duplicate key": "Resource already exists",
     }
     
+    # Paths that must return sensitive data intact (auth tokens, etc.)
+    EXEMPT_PATHS = [
+        '/api/mobile/auth/login/',
+        '/api/mobile/auth/register/',
+        '/api/mobile/auth/oauth/',
+        '/api/auth/token/refresh/',
+    ]
+    
     def __init__(self, get_response):
         self.get_response = get_response
         self.patterns = [
@@ -70,8 +78,8 @@ class ResponseInterceptor:
         if response.status_code >= 400:
             response = self._sanitize_error(response)
         
-        # Mask sensitive data in successful responses
-        if response.status_code < 400:
+        # Mask sensitive data in successful responses (skip auth endpoints)
+        if response.status_code < 400 and request.path not in self.EXEMPT_PATHS:
             response = self._mask_sensitive_data(response)
         
         # Add anti-enumeration headers
@@ -192,11 +200,14 @@ class NotFoundNormalizerMiddleware:
 
 class ResponseTimingMiddleware:
     """
-    Normalize response timing to prevent timing-based enumeration.
+    ⚠️  WARNING: DO NOT ADD THIS TO MIDDLEWARE LIST — it sleeps 50-150ms per request!
     
-    Attackers can sometimes determine if a resource exists by measuring
-    how long requests take. This middleware adds variable delays to
-    normalize response times.
+    This was designed to normalize response timing for anti-enumeration, but the
+    performance cost is unacceptable. Anti-enumeration is better handled by
+    APIGuardMiddleware's honeypots and rate limiting.
+    
+    Kept here only as a reference. If timing normalization is truly needed,
+    implement it only for specific sensitive endpoints (e.g. login).
     """
     
     import time

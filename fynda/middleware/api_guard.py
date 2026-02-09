@@ -122,8 +122,9 @@ class APIGuardMiddleware:
             self._block_ip(ip, duration=600)  # Block for 10 minutes
             return self._block_response("Access denied", 403)
         
-        # 6. Add random delay to defeat timing attacks
-        self._add_timing_noise()
+        # NOTE: Timing noise removed for performance.
+        # The 5-50ms sleep was adding latency to every API request.
+        # Anti-enumeration is handled by honeypots, rate limiting, and IP blocking.
         
         # Process request
         response = self.get_response(request)
@@ -283,9 +284,13 @@ class APIGuardMiddleware:
         return JsonResponse({"error": message}, status=status)
     
     def _add_timing_noise(self):
-        """Add random delay to prevent timing-based enumeration."""
-        # Small random delay (5-50ms) to mask processing time differences
-        time.sleep(random.uniform(0.005, 0.05))
+        """DEPRECATED: Timing noise removed for performance.
+        
+        Previously added 5-50ms random delay on every request.
+        Anti-enumeration is better handled by honeypots, rate limiting,
+        and IP blocking without penalizing every legitimate request.
+        """
+        pass
     
     def _sanitize_error_response(self, response, request):
         """Remove sensitive info from error responses, but preserve DRF errors."""

@@ -11,8 +11,8 @@ FYNDA_ML_Services/
 # =============================================================================
 .env
 .env.local
-.env.example
 .env.*.local
+# NOTE: .env.example is NOT ignored — it's a template for developers
 *.pem
 *.key
 secrets.json

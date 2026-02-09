@@ -238,7 +238,7 @@ class MobileDealDetailSerializer(serializers.Serializer):
 class MobileSearchSerializer(serializers.Serializer):
     """Optimized search request for mobile."""
     
-    query = serializers.CharField(max_length=500)
+    query = serializers.CharField(max_length=200, min_length=2)
     min_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     max_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     sources = serializers.ListField(child=serializers.CharField(), required=False)
@@ -246,8 +246,18 @@ class MobileSearchSerializer(serializers.Serializer):
         choices=["relevance", "price_low", "price_high", "rating", "newest"],
         default="relevance"
     )
+    offset = serializers.IntegerField(min_value=0, default=0, required=False)
     cursor = serializers.CharField(required=False, allow_blank=True)
     limit = serializers.IntegerField(min_value=1, max_value=50, default=20)
+
+    def validate_query(self, value):
+        """Sanitise the search query."""
+        from deals.query_sanitizer import sanitize_query, validate_query
+        sanitized = sanitize_query(value)
+        error = validate_query(sanitized)
+        if error:
+            raise serializers.ValidationError(error)
+        return sanitized
 
 
 class MobileSearchResponseSerializer(serializers.Serializer):
@@ -255,6 +265,8 @@ class MobileSearchResponseSerializer(serializers.Serializer):
     
     deals = MobileDealSerializer(many=True)
     total = serializers.IntegerField()
+    offset = serializers.IntegerField(default=0)
+    limit = serializers.IntegerField(default=20)
     cursor = serializers.CharField(allow_null=True)
     has_more = serializers.BooleanField()
     

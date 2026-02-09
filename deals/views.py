@@ -41,45 +41,82 @@ class SearchView(APIView):
     """
     Search for deals using natural language queries.
     
-    GET /api/search/?q=<query>
+    GET /api/search/?q=<query>&page=1&limit=20
     
-    Example queries:
-        - "sony camera $1200 with lens"
-        - "best sony mirrorless camera under $1000"
+    Query params:
+        q       - Search query (required, 2-200 chars)
+        page    - Page number (default: 1)
+        limit   - Results per page (default: 20, max: 50)
+        offset  - Alternative to page (overrides page if present)
     
     Response includes:
         - Parsed query (product, budget, requirements)
-        - List of matching deals from affiliate networks (CJ, Rakuten, ShareASale)
-        - Metadata (total results, sources, search time)
+        - Paginated list of matching deals
+        - Pagination metadata (total, page, has_more)
     """
     permission_classes = [AllowAny]
     
     def get(self, request):
-        query = request.query_params.get('q', '').strip()
+        from .query_sanitizer import sanitize_query, validate_query, get_pagination_params
         
-        if not query:
+        # ── Sanitize & validate ───────────────────────
+        raw_query = request.query_params.get('q', '')
+        query = sanitize_query(raw_query)
+        
+        error = validate_query(query)
+        if error:
             return Response(
-                {"error": "Missing required parameter 'q' (search query)"},
+                {"error": error},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if len(query) < 3:
-            return Response(
-                {"error": "Query must be at least 3 characters long"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # ── Pagination params ─────────────────────────
+        offset, limit = get_pagination_params(request)
         
-        # Perform the deal search (affiliate networks only)
+        # ── Cache lookup (5-minute TTL) ──────────────
+        import hashlib
+        from django.core.cache import cache
+        
+        cache_key = f"search:{hashlib.md5(query.lower().encode()).hexdigest()}"
+        cached = cache.get(cache_key)
+        
+        if cached:
+            # Paginate cached results
+            all_deals = cached.get('deals', [])
+            page_deals = all_deals[offset:offset + limit]
+            cached_copy = {**cached}
+            cached_copy['deals'] = page_deals
+            cached_copy['total'] = len(all_deals)
+            cached_copy['page'] = (offset // limit) + 1
+            cached_copy['limit'] = limit
+            cached_copy['has_more'] = (offset + limit) < len(all_deals)
+            cached_copy['total_pages'] = max(1, -(-len(all_deals) // limit))  # ceil division
+            cached_copy['_cached'] = True
+            return Response(cached_copy)
+        
+        # ── Search ────────────────────────────────────
         result = orchestrator.search(query)
-        
-        # Return clean response with only affiliate deals
         response_data = result.to_dict()
+        
+        # Cache full results (before pagination) for 5 minutes
+        cache.set(cache_key, response_data, timeout=300)
+        
+        # ── Paginate ──────────────────────────────────
+        all_deals = response_data.get('deals', [])
+        page_deals = all_deals[offset:offset + limit]
+        
+        response_data['deals'] = page_deals
+        response_data['total'] = len(all_deals)
+        response_data['page'] = (offset // limit) + 1
+        response_data['limit'] = limit
+        response_data['has_more'] = (offset + limit) < len(all_deals)
+        response_data['total_pages'] = max(1, -(-len(all_deals) // limit))
         
         # Auto-index returned products into FAISS (background)
         try:
             from .tasks import index_products_to_faiss
-            if response_data.get('deals'):
-                index_products_to_faiss.delay(response_data['deals'])
+            if all_deals:
+                index_products_to_faiss.delay(all_deals)
         except Exception:
             pass  # Never let indexing failure affect search
         
