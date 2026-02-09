@@ -61,7 +61,6 @@ docs/
 # Frontend (built separately)
 frontend/
 coming-soon/
-mobile/
 
 # ML services (separate container)
 FYNDA_ML_Services/
