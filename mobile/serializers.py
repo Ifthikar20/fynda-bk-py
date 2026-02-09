@@ -172,19 +172,27 @@ class MobileDealSerializer(serializers.Serializer):
     
     id = serializers.CharField()
     title = serializers.CharField(max_length=100)  # Truncated for mobile
-    price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
-    discount = serializers.IntegerField(default=0)  # Pre-computed percent
-    currency = serializers.CharField(default="USD")
-    image = serializers.URLField(source="image_url")
-    source = serializers.CharField()
-    url = serializers.URLField()
-    rating = serializers.FloatField(allow_null=True)
-    in_stock = serializers.BooleanField(default=True)
-    is_saved = serializers.BooleanField(default=False)  # User's saved status
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0)
+    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
+    discount = serializers.IntegerField(source="discount_percent", default=0, required=False)
+    currency = serializers.CharField(default="USD", required=False)
+    image = serializers.URLField(source="image_url", required=False, default="")
+    source = serializers.CharField(required=False, default="")
+    url = serializers.URLField(required=False, default="")
+    rating = serializers.FloatField(allow_null=True, required=False)
+    in_stock = serializers.BooleanField(default=True, required=False)
+    is_saved = serializers.BooleanField(default=False, required=False)
     
     def to_representation(self, instance):
         """Optimize the output."""
+        # Ensure required keys exist with defaults
+        if isinstance(instance, dict):
+            instance.setdefault("image_url", "")
+            instance.setdefault("discount_percent", 0)
+            instance.setdefault("source", "")
+            instance.setdefault("url", "")
+            instance.setdefault("price", 0)
+        
         data = super().to_representation(instance)
         
         # Truncate title for mobile
