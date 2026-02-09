@@ -70,6 +70,8 @@ urlpatterns = [
     path('api/', include('deals.urls')),
     path('api/', include('emails.urls')),
     path('api/auth/', include('users.urls')),
+    # Mobile API (for Flutter app)
+    path('api/mobile/', include('mobile.urls')),
     # Blog API (for Vue frontend)
     path('api/blog/', include('blog.api_urls')),
     # Blog SSR (for SEO)

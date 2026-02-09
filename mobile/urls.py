@@ -12,6 +12,7 @@ from .views import (
     MobileLoginView,
     MobileRegisterView,
     MobileLogoutView,
+    MobileOAuthView,
     # Devices
     DeviceListView,
     DeviceDetailView,
@@ -22,12 +23,16 @@ from .views import (
     # Deals
     MobileDealListView,
     MobileDealSearchView,
+    MobileImageUploadView,
     # Alerts
     PriceAlertListView,
     PriceAlertDetailView,
     # Favorites
     FavoritesView,
     FavoriteDetailView,
+    # Storyboard
+    MobileStoryboardView,
+    MobileStoryboardDetailView,
 )
 
 app_name = "mobile"
@@ -44,6 +49,7 @@ urlpatterns = [
     path("auth/login/", MobileLoginView.as_view(), name="login"),
     path("auth/register/", MobileRegisterView.as_view(), name="register"),
     path("auth/logout/", MobileLogoutView.as_view(), name="logout"),
+    path("auth/oauth/", MobileOAuthView.as_view(), name="oauth"),
     
     # ============================================
     # Device Management
@@ -66,6 +72,7 @@ urlpatterns = [
     # ============================================
     path("deals/", MobileDealListView.as_view(), name="deal-list"),
     path("deals/search/", MobileDealSearchView.as_view(), name="deal-search"),
+    path("deals/image-search/", MobileImageUploadView.as_view(), name="image-search"),
     
     # ============================================
     # Price Alerts
@@ -78,4 +85,10 @@ urlpatterns = [
     # ============================================
     path("favorites/", FavoritesView.as_view(), name="favorites"),
     path("favorites/<str:deal_id>/", FavoriteDetailView.as_view(), name="favorite-detail"),
+    
+    # ============================================
+    # Storyboard
+    # ============================================
+    path("storyboard/", MobileStoryboardView.as_view(), name="storyboard-list"),
+    path("storyboard/<str:token>/", MobileStoryboardDetailView.as_view(), name="storyboard-detail"),
 ]
