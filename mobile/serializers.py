@@ -172,16 +172,22 @@ class MobileDealSerializer(serializers.Serializer):
     
     id = serializers.CharField()
     title = serializers.CharField(max_length=100)  # Truncated for mobile
+    description = serializers.CharField(allow_blank=True, default="", required=False)
     price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0)
     original_price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
     discount = serializers.IntegerField(source="discount_percent", default=0, required=False)
     currency = serializers.CharField(default="USD", required=False)
-    image = serializers.URLField(source="image_url", required=False, default="")
+    image = serializers.CharField(source="image_url", required=False, default="", allow_blank=True)
     source = serializers.CharField(required=False, default="")
+    seller = serializers.CharField(required=False, default="", allow_blank=True)
     url = serializers.URLField(required=False, default="")
     rating = serializers.FloatField(allow_null=True, required=False)
+    reviews_count = serializers.IntegerField(allow_null=True, required=False)
     in_stock = serializers.BooleanField(default=True, required=False)
     is_saved = serializers.BooleanField(default=False, required=False)
+    shipping = serializers.CharField(required=False, default="", allow_blank=True)
+    condition = serializers.CharField(required=False, default="", allow_blank=True)
+    features = serializers.ListField(child=serializers.CharField(), default=list, required=False)
     
     def to_representation(self, instance):
         """Optimize the output."""
@@ -192,6 +198,11 @@ class MobileDealSerializer(serializers.Serializer):
             instance.setdefault("source", "")
             instance.setdefault("url", "")
             instance.setdefault("price", 0)
+            instance.setdefault("description", "")
+            instance.setdefault("seller", "")
+            instance.setdefault("shipping", "")
+            instance.setdefault("condition", "")
+            instance.setdefault("features", [])
         
         data = super().to_representation(instance)
         
@@ -257,6 +268,11 @@ class MobileSearchSerializer(serializers.Serializer):
     offset = serializers.IntegerField(min_value=0, default=0, required=False)
     cursor = serializers.CharField(required=False, allow_blank=True)
     limit = serializers.IntegerField(min_value=1, max_value=50, default=20)
+    gender = serializers.ChoiceField(
+        choices=["men", "women", "unisex"],
+        required=False,
+        allow_blank=True,
+    )
 
     def validate_query(self, value):
         """Sanitise the search query."""
@@ -323,11 +339,11 @@ class SavedDealMobileSerializer(serializers.Serializer):
     
     id = serializers.CharField()
     deal_id = serializers.CharField()
-    title = serializers.CharField()
-    price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    image = serializers.URLField()
-    source = serializers.CharField()
-    url = serializers.URLField()
+    title = serializers.CharField(allow_blank=True)
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False)
+    image = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    source = serializers.CharField(allow_blank=True)
+    url = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     saved_at = serializers.DateTimeField()
     
     # Sync metadata
