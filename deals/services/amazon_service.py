@@ -223,21 +223,37 @@ class AmazonService:
         
         # Extract brand name from API response
         brand = item.get("product_brand") or ""
+        # API sometimes returns literal "N/A" or "Unknown"
+        if brand.strip().lower() in ("n/a", "unknown", "none", ""):
+            brand = ""
+        
         if not brand:
-            # Try to extract brand from title (first word or capitalized segment)
+            # Try to extract brand from title (first capitalized word that isn't generic)
             title = item.get("product_title", "")
             if title:
-                # Many Amazon titles start with brand name
+                # Common non-brand words that appear at start of Amazon titles
+                skip_words = {
+                    "women", "womens", "women's", "men", "mens", "men's",
+                    "kids", "boys", "girls", "unisex", "adult", "baby",
+                    "dress", "shirt", "shoe", "shoes", "pants", "jacket",
+                    "new", "pack", "set", "pair", "with", "for", "the",
+                }
                 parts = title.split(" ")
-                if len(parts) >= 2 and parts[0][0:1].isupper():
-                    # Take first 1-3 capitalized words as brand
-                    brand_parts = []
-                    for p in parts[:3]:
-                        if p and p[0:1].isupper() and p.isalpha():
-                            brand_parts.append(p)
-                        else:
-                            break
-                    brand = " ".join(brand_parts) if brand_parts else "Amazon"
+                brand_parts = []
+                for p in parts[:2]:  # Only check first 2 words
+                    clean = p.strip("',\"").rstrip("'s")
+                    if (clean and clean[0:1].isupper() and clean.isalpha()
+                            and clean.lower() not in skip_words and len(clean) > 1):
+                        # Skip if this word is a duplicate of the previous one
+                        if brand_parts and clean.lower() == brand_parts[-1].lower():
+                            continue
+                        brand_parts.append(clean)
+                    else:
+                        break
+                brand = " ".join(brand_parts) if brand_parts else ""
+        
+        # Clean up brand name
+        brand = brand.strip()
         
         return AmazonDeal(
             id=f"amazon-{item.get('asin', '')}",
