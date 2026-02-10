@@ -550,7 +550,7 @@ class MobileDealListView(APIView):
         search_time = int((time.time() - start_time) * 1000)
         
         response = {
-            "deals": MobileDealSerializer(deals, many=True).data,
+            "deals": deals,  # Raw dicts — MobileSearchResponseSerializer handles serialization
             "total": len(deals),
             "cursor": None,
             "has_more": False,
@@ -664,7 +664,7 @@ class MobileDealSearchView(APIView):
         search_time = int((time.time() - start_time) * 1000)
         
         response = {
-            "deals": MobileDealSerializer(deals, many=True).data,
+            "deals": deals,  # Raw dicts — MobileSearchResponseSerializer handles serialization
             "total": total_deals,
             "offset": offset,
             "limit": limit,
