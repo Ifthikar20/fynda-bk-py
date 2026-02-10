@@ -598,6 +598,11 @@ class MobileDealSearchView(APIView):
         if data.get("max_price"):
             query = f"{query} under ${data['max_price']}"
         
+        # Embed gender in query so the parser picks it up
+        gender = data.get("gender")
+        if gender and gender not in query.lower():
+            query = f"{gender}'s {query}"
+        
         result = orchestrator.search(query)
         result_dict = result.to_dict()
         
@@ -616,6 +621,12 @@ class MobileDealSearchView(APIView):
         min_price = data.get("min_price")
         if min_price:
             deals = [d for d in deals if d.get("price", 0) >= float(min_price)]
+        
+        # Filter by source/brand
+        sources = data.get("sources")
+        if sources:
+            sources_lower = [s.lower() for s in sources]
+            deals = [d for d in deals if d.get("source", "").lower() in sources_lower]
         
         # ── Pagination ────────────────────────────────
         total_deals = len(deals)
@@ -790,19 +801,19 @@ class FavoritesView(APIView):
             user=request.user
         ).order_by("-created_at")
         
-        items = [
-            {
+        items = []
+        for f in favorites[:100]:
+            data = f.deal_data or {}
+            items.append({
                 "id": str(f.id),
                 "deal_id": f.deal_id,
-                "title": f.deal_data.get("title", ""),
-                "price": f.deal_data.get("price"),
-                "image": f.deal_data.get("image_url", ""),
-                "source": f.deal_data.get("source", ""),
-                "url": f.deal_data.get("url", ""),
+                "title": data.get("title", ""),
+                "price": data.get("price"),
+                "image": data.get("image_url") or data.get("image") or data.get("thumbnail") or "",
+                "source": data.get("source", ""),
+                "url": data.get("url", ""),
                 "saved_at": f.created_at,
-            }
-            for f in favorites[:100]
-        ]
+            })
         
         return Response({
             "favorites": SavedDealMobileSerializer(items, many=True).data,

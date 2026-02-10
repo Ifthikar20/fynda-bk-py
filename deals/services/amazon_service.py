@@ -35,6 +35,7 @@ class AmazonDeal:
     rating: Optional[float]
     reviews_count: Optional[int]
     is_prime: bool
+    brand: str = "Amazon"
     
     def to_dict(self):
         return {
@@ -45,9 +46,9 @@ class AmazonDeal:
             "original_price": self.original_price or self.price,
             "discount_percent": self.discount_percent,
             "currency": self.currency,
-            "source": "Amazon",
-            "seller": "Amazon",
-            "seller_rating": 5.0,  # Amazon default
+            "source": self.brand if self.brand else "Amazon",
+            "seller": self.brand if self.brand else "Amazon",
+            "seller_rating": 5.0,
             "url": self.url,
             "image_url": self.image_url,
             "condition": "New",
@@ -220,19 +221,38 @@ class AmazonService:
             except ValueError:
                 pass
         
+        # Extract brand name from API response
+        brand = item.get("product_brand") or ""
+        if not brand:
+            # Try to extract brand from title (first word or capitalized segment)
+            title = item.get("product_title", "")
+            if title:
+                # Many Amazon titles start with brand name
+                parts = title.split(" ")
+                if len(parts) >= 2 and parts[0][0:1].isupper():
+                    # Take first 1-3 capitalized words as brand
+                    brand_parts = []
+                    for p in parts[:3]:
+                        if p and p[0:1].isupper() and p.isalpha():
+                            brand_parts.append(p)
+                        else:
+                            break
+                    brand = " ".join(brand_parts) if brand_parts else "Amazon"
+        
         return AmazonDeal(
             id=f"amazon-{item.get('asin', '')}",
             title=item.get("product_title", ""),
-            description=item.get("product_title", ""),  # API doesn't provide separate description
+            description=item.get("product_title", ""),
             price=price,
             original_price=original_price,
             discount_percent=discount,
             currency="USD",
             url=item.get("product_url", ""),
-            image_url=item.get("product_photo", ""),
+            image_url=item.get("product_photo", "") or item.get("product_image", "") or "",
             rating=rating,
             reviews_count=reviews,
             is_prime=item.get("is_prime", False),
+            brand=brand or "Amazon",
         )
     
     def get_product_details(self, asin: str, country: str = "US") -> Optional[AmazonDeal]:

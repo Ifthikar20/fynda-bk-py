@@ -475,3 +475,106 @@ class MySharedStoryboardsView(APIView):
                 {"error": "Shared storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+# ============================================
+# Saved Deals (Web API)
+# ============================================
+
+class SavedDealsView(APIView):
+    """
+    Saved deals for web frontend.
+    
+    GET /api/saved/        — list saved deals
+    POST /api/saved/       — save a deal
+    """
+    
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({"saved": [], "count": 0})
+        
+        from users.models import SavedDeal
+        
+        favorites = SavedDeal.objects.filter(
+            user=request.user
+        ).order_by("-created_at")[:100]
+        
+        items = []
+        for f in favorites:
+            data = f.deal_data or {}
+            items.append({
+                "id": str(f.id),
+                "deal_id": f.deal_id,
+                "title": data.get("title", ""),
+                "price": data.get("price"),
+                "original_price": data.get("original_price"),
+                "image": data.get("image_url") or data.get("image") or "",
+                "source": data.get("source", ""),
+                "url": data.get("url", ""),
+                "saved_at": f.created_at.isoformat() if f.created_at else None,
+            })
+        
+        return Response({
+            "saved": items,
+            "count": len(items),
+        })
+    
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        from users.models import SavedDeal
+        
+        deal_id = request.data.get("deal_id")
+        deal_data = request.data.get("deal_data", {})
+        
+        if not deal_id:
+            return Response(
+                {"error": "deal_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        favorite, created = SavedDeal.objects.get_or_create(
+            user=request.user,
+            deal_id=deal_id,
+            defaults={"deal_data": deal_data}
+        )
+        
+        return Response(
+            {"id": str(favorite.id), "created": created},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
+
+
+class SavedDealDetailView(APIView):
+    """
+    Single saved deal management for web.
+    
+    DELETE /api/saved/<deal_id>/
+    """
+    
+    def delete(self, request, deal_id):
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        from users.models import SavedDeal
+        
+        deleted, _ = SavedDeal.objects.filter(
+            user=request.user,
+            deal_id=deal_id
+        ).delete()
+        
+        if deleted:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        return Response(
+            {"error": "Saved deal not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
