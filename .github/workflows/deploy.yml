@@ -117,17 +117,26 @@ jobs:
             echo "Error: EC2_HOST is not set"
             exit 1
           fi
-          echo "EC2_HOST is: $EC2_HOST"
+          echo "EC2_HOST is set"
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          # Configure SSH defaults (skip host key verification for CI/CD)
+          cat >> ~/.ssh/config << EOF
+          Host *
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+            ConnectTimeout 30
+          EOF
+          chmod 600 ~/.ssh/config
           echo "SSH setup complete"
 
       - name: Test SSH Connection
         run: |
-          echo "Testing SSH connection to $EC2_HOST..."
-          ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST 'echo "SSH connection successful!" && whoami && pwd'
+          echo "Testing SSH connection to EC2..."
+          ssh -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST 'echo "SSH connection successful!" && whoami && pwd'
 
       - name: Deploy to EC2
         run: |
