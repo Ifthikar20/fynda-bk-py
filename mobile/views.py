@@ -1308,3 +1308,109 @@ class MobileStoryboardDetailView(APIView):
             "view_count": board.view_count,
             "created_at": board.created_at.isoformat(),
         })
+
+
+# ================================================================
+# Favorites / Saved Deals
+# ================================================================
+
+class FavoritesView(APIView):
+    """
+    Mobile saved deals / favorites.
+    
+    GET  /api/mobile/favorites/     — list user's saved deals
+    POST /api/mobile/favorites/     — save a deal
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from users.models import SavedDeal
+        
+        favorites = SavedDeal.objects.filter(
+            user=request.user
+        ).order_by("-created_at")[:200]
+        
+        items = []
+        for fav in favorites:
+            data = fav.deal_data or {}
+            items.append({
+                "id": fav.deal_id,
+                "deal_id": fav.deal_id,
+                "title": data.get("title", ""),
+                "description": data.get("description", ""),
+                "price": data.get("price"),
+                "original_price": data.get("original_price"),
+                "discount": data.get("discount_percent", 0),
+                "currency": data.get("currency", "USD"),
+                "image": data.get("image_url") or data.get("image") or "",
+                "source": data.get("source", ""),
+                "seller": data.get("seller", ""),
+                "url": data.get("url", ""),
+                "rating": data.get("rating"),
+                "reviews_count": data.get("reviews_count"),
+                "in_stock": data.get("in_stock", True),
+                "is_saved": True,
+                "shipping": data.get("shipping", ""),
+                "condition": data.get("condition", ""),
+                "features": data.get("features", []),
+                "saved_at": fav.created_at.isoformat() if fav.created_at else None,
+            })
+        
+        return Response({
+            "favorites": items,
+            "count": len(items),
+        })
+    
+    def post(self, request):
+        from users.models import SavedDeal
+        
+        deal_id = request.data.get("deal_id")
+        deal_data = request.data.get("deal_data", {})
+        
+        if not deal_id:
+            return Response(
+                {"error": "deal_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        favorite, created = SavedDeal.objects.get_or_create(
+            user=request.user,
+            deal_id=deal_id,
+            defaults={"deal_data": deal_data}
+        )
+        
+        # Update deal_data if re-saving
+        if not created and deal_data:
+            favorite.deal_data = deal_data
+            favorite.save(update_fields=["deal_data"])
+        
+        return Response(
+            {"id": str(favorite.id), "deal_id": deal_id, "created": created},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
+
+
+class FavoriteDetailView(APIView):
+    """
+    Single favorite management for mobile.
+    
+    DELETE /api/mobile/favorites/<deal_id>/  — unsave a deal
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, deal_id):
+        from users.models import SavedDeal
+        
+        deleted, _ = SavedDeal.objects.filter(
+            user=request.user,
+            deal_id=deal_id
+        ).delete()
+        
+        if deleted:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        return Response(
+            {"error": "Saved deal not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
