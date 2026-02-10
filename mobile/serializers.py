@@ -193,7 +193,16 @@ class MobileDealSerializer(serializers.Serializer):
         """Optimize the output."""
         # Ensure required keys exist with defaults
         if isinstance(instance, dict):
-            instance.setdefault("image_url", "")
+            # Robust image URL extraction — check multiple possible keys
+            img = (
+                instance.get("image_url")
+                or instance.get("product_photo")
+                or instance.get("product_image")
+                or instance.get("thumbnail")
+                or ""
+            )
+            instance["image_url"] = img
+            
             instance.setdefault("discount_percent", 0)
             instance.setdefault("source", "")
             instance.setdefault("url", "")
