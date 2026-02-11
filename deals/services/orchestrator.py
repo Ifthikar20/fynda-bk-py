@@ -79,7 +79,8 @@ class SearchResult:
                 "sources_with_results": self.sources_with_results,
                 "cache_hit": self.cache_hit,
                 "search_time_ms": self.search_time_ms,
-            }
+            },
+            "detected_gender": self.query.gender,
         }
         if self.quota_exceeded:
             result["quota_warning"] = "Some marketplace results may be limited right now. Please try again later."
@@ -164,6 +165,13 @@ class DealOrchestrator:
         deals = self._filter_non_fashion(deals)
         if pre_filter != len(deals):
             logger.info(f"Fashion filter removed {pre_filter - len(deals)} non-fashion items")
+        
+        # Step 4.6: Filter by gender when specified in query
+        if parsed.gender:
+            pre_gender = len(deals)
+            deals = self._filter_by_gender(deals, parsed.gender)
+            if pre_gender != len(deals):
+                logger.info(f"Gender filter removed {pre_gender - len(deals)} items (kept: {parsed.gender})")
         
         # Step 5: Rank results
         deals = self._rank_deals(deals, parsed)
@@ -385,6 +393,61 @@ class DealOrchestrator:
             return False
         
         return [d for d in deals if is_fashion(d)]
+    
+    def _filter_by_gender(self, deals: List[Dict[str, Any]], gender: str) -> List[Dict[str, Any]]:
+        """
+        Remove products that are clearly for the opposite gender.
+        
+        When the user searches "white coat men", filter out items with
+        women-specific terms in the title, and vice versa.
+        
+        Uses regex word boundaries for men's terms to prevent
+        "men" from matching inside "women".
+        """
+        import re
+        
+        # Women indicators — simple substring matching (no collision risk)
+        WOMEN_INDICATORS = {"women", "womens", "women's", "woman", "ladies", "lady", "girls", "girl", "female", "maternity"}
+        
+        # Men indicators — use regex word boundaries to avoid matching inside "women"
+        # \bmen\b matches "men" but NOT "women" or "menswear"→ wait, menswear IS men's
+        # So we use \bmen(?!'s|\w) pattern carefully:
+        MEN_PATTERNS = [
+            re.compile(r"\bmen\b", re.IGNORECASE),       # "men" as whole word (not "women")
+            re.compile(r"\bmens\b", re.IGNORECASE),       # "mens"
+            re.compile(r"\bmen's\b", re.IGNORECASE),      # "men's"
+            re.compile(r"\bboys?\b", re.IGNORECASE),      # "boy" or "boys"
+            re.compile(r"\bmale\b", re.IGNORECASE),       # "male"
+            re.compile(r"\bgentleman\b", re.IGNORECASE),  # "gentleman"
+        ]
+        
+        gender_lower = gender.lower()
+        
+        def passes_gender(deal: Dict[str, Any]) -> bool:
+            title = (deal.get("title") or "").lower()
+            
+            if gender_lower == "men":
+                # Remove women's products (simple substring is fine)
+                for indicator in WOMEN_INDICATORS:
+                    if indicator in title:
+                        return False
+            elif gender_lower == "women":
+                # Remove men's products (use regex to avoid "men" in "women")
+                for pattern in MEN_PATTERNS:
+                    if pattern.search(title):
+                        return False
+            elif gender_lower in ("kids", "children"):
+                # Remove adult-specific products
+                for indicator in WOMEN_INDICATORS:
+                    if indicator in title:
+                        return False
+                for pattern in MEN_PATTERNS:
+                    if pattern.search(title):
+                        return False
+            
+            return True
+        
+        return [d for d in deals if passes_gender(d)]
     
     def _deduplicate_deals(self, deals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

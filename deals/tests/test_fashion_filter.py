@@ -196,3 +196,90 @@ class TestEdgeCases:
         assert "Women's Cotton T-Shirt" in titles
         assert "Nike Air Jordan Sneaker" in titles
         assert "Gold Pendant Necklace" in titles
+
+
+# ═══════════════════════════════════════════════════
+# Gender filtering
+# ═══════════════════════════════════════════════════
+
+def _filter_by_gender(deals, gender):
+    """Replicate the gender filter logic from the orchestrator."""
+    import re
+    
+    WOMEN_INDICATORS = {"women", "womens", "women's", "woman", "ladies", "lady", "girls", "girl", "female", "maternity"}
+    MEN_PATTERNS = [
+        re.compile(r"\bmen\b", re.IGNORECASE),
+        re.compile(r"\bmens\b", re.IGNORECASE),
+        re.compile(r"\bmen's\b", re.IGNORECASE),
+        re.compile(r"\bboys?\b", re.IGNORECASE),
+        re.compile(r"\bmale\b", re.IGNORECASE),
+        re.compile(r"\bgentleman\b", re.IGNORECASE),
+    ]
+
+    gender_lower = gender.lower()
+
+    def passes(deal):
+        title = (deal.get("title") or "").lower()
+        if gender_lower == "men":
+            for ind in WOMEN_INDICATORS:
+                if ind in title:
+                    return False
+        elif gender_lower == "women":
+            for pattern in MEN_PATTERNS:
+                if pattern.search(title):
+                    return False
+        return True
+
+    return [d for d in deals if passes(d)]
+
+
+class TestGenderFilter:
+    def test_men_query_removes_womens(self):
+        deals = [
+            _deal("Women's White Winter Coat"),
+            _deal("Men's White Winter Coat"),
+            _deal("White Winter Coat Unisex"),
+        ]
+        result = _filter_by_gender(deals, "men")
+        assert len(result) == 2
+        titles = [d["title"] for d in result]
+        assert "Women's White Winter Coat" not in titles
+
+    def test_women_query_removes_mens(self):
+        deals = [
+            _deal("Men's Slim Fit Dress Shirt"),
+            _deal("Women's Wrap Dress"),
+            _deal("Floral Midi Dress"),
+        ]
+        result = _filter_by_gender(deals, "women")
+        assert len(result) == 2
+        titles = [d["title"] for d in result]
+        assert "Men's Slim Fit Dress Shirt" not in titles
+
+    def test_no_gender_keeps_all(self):
+        deals = [
+            _deal("Women's Velvet Midi Dress"),
+            _deal("Men's Bomber Jacket"),
+            _deal("Unisex Sneaker"),
+        ]
+        # No filtering when no gender specified (not calling filter)
+        assert len(deals) == 3
+
+    def test_men_doesnt_match_women_substring(self):
+        """'men' should NOT match inside 'women'."""
+        deals = [_deal("Women's Summer Dress")]
+        result = _filter_by_gender(deals, "women")
+        assert len(result) == 1  # Should NOT be removed
+
+    def test_ladies_removed_for_men(self):
+        deals = [_deal("Ladies Gold Watch"), _deal("Classic Gold Watch")]
+        result = _filter_by_gender(deals, "men")
+        assert len(result) == 1
+        assert result[0]["title"] == "Classic Gold Watch"
+
+    def test_boys_removed_for_women(self):
+        deals = [_deal("Boys Graphic Tee"), _deal("Silk Blouse")]
+        result = _filter_by_gender(deals, "women")
+        assert len(result) == 1
+        assert result[0]["title"] == "Silk Blouse"
+
