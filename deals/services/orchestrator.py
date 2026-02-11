@@ -22,6 +22,7 @@ from .facebook_service import facebook_service
 from .shopify_service import shopify_service
 from .affiliates import affiliate_aggregator
 from .amazon_service import amazon_service, QuotaExceededException
+from .spell_corrector import correct_query
 from .vendors import vendor_manager
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,7 @@ class SearchResult:
     cache_hit: bool
     search_time_ms: int
     quota_exceeded: bool = False
+    suggested_query: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -82,6 +84,8 @@ class SearchResult:
             },
             "detected_gender": self.query.gender,
         }
+        if self.suggested_query:
+            result["suggested_query"] = self.suggested_query
         if self.quota_exceeded:
             result["quota_warning"] = "Some marketplace results may be limited right now. Please try again later."
         return result
@@ -150,8 +154,8 @@ class DealOrchestrator:
         parsed = query_parser.parse(query)
         logger.info(f"Parsed query: product='{parsed.product}', budget={parsed.budget}, requirements={parsed.requirements}")
         
-        # Step 2: Fetch deals from all sources in parallel
-        deals, sources_with_results, quota_exceeded = self._fetch_all_deals(parsed)
+        # Step 2: Fetch deals + spell correction in parallel
+        deals, sources_with_results, quota_exceeded, spell_result = self._fetch_all_deals_with_spelling(parsed, query)
         
         # Step 3: Apply budget filter
         if parsed.budget:
@@ -191,6 +195,12 @@ class DealOrchestrator:
         }, SEARCH_CACHE_TTL)
         logger.info(f"Cached {len(deals)} deals for query: '{query}' (TTL: {SEARCH_CACHE_TTL}s)")
         
+        # Include spell suggestion if results are scarce and we have a correction
+        suggested_query = None
+        if spell_result and spell_result.was_corrected and len(deals) < 3:
+            suggested_query = spell_result.corrected
+            logger.info(f"Suggesting corrected query: '{query}' → '{suggested_query}'")
+        
         return SearchResult(
             query=parsed,
             deals=deals,
@@ -199,22 +209,26 @@ class DealOrchestrator:
             cache_hit=False,
             search_time_ms=search_time,
             quota_exceeded=quota_exceeded,
+            suggested_query=suggested_query,
         )
     
-    def _fetch_all_deals(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], List[str], bool]:
+    def _fetch_all_deals_with_spelling(self, parsed: ParsedQuery, raw_query: str):
         """
-        Fetch deals from affiliate networks, Amazon, and other sources.
+        Fetch deals from all sources + spell correction in parallel.
         
         Returns:
-            Tuple of (all_deals, list_of_sources_with_results, quota_exceeded)
+            Tuple of (all_deals, sources_with_results, quota_exceeded, spell_result)
         """
         all_deals = []
         sources_with_results = []
         quota_exceeded = False
+        spell_result = None
         
-        # Query all enabled vendors using VendorManager
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             futures = {}
+            
+            # Fire spell correction in parallel
+            spell_future = executor.submit(correct_query, raw_query)
             
             # Add enabled vendors from VendorManager
             for vendor_id, instance in vendor_manager.get_all_instances().items():
@@ -230,7 +244,6 @@ class DealOrchestrator:
                 source = futures[future]
                 try:
                     result = future.result()
-                    # Check if result is a tuple (deals, quota_flag) from Amazon
                     if isinstance(result, tuple):
                         deals, is_quota_exceeded = result
                         if is_quota_exceeded:
@@ -243,8 +256,14 @@ class DealOrchestrator:
                         logger.info(f"Fetched {len(deals)} deals from {source}")
                 except Exception as e:
                     logger.error(f"Error fetching from {source}: {e}")
+            
+            # Get spell result (non-blocking, already completed or will be fast)
+            try:
+                spell_result = spell_future.result(timeout=0.5)
+            except Exception as e:
+                logger.warning(f"Spell correction timed out or failed: {e}")
         
-        return all_deals, sources_with_results, quota_exceeded
+        return all_deals, sources_with_results, quota_exceeded, spell_result
     
     def _fetch_from_vendor(self, vendor_instance, parsed: ParsedQuery) -> List[Dict[str, Any]]:
         """
