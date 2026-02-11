@@ -29,6 +29,34 @@ logger = logging.getLogger(__name__)
 # Cache TTL: 6 hours (in seconds)
 SEARCH_CACHE_TTL = 6 * 60 * 60
 
+# ── Fashion taxonomy — loaded from JSON built from professional datasets ──
+# Source: Google Product Taxonomy + Fashionpedia + hand-curated extras
+# Rebuild: python deals/services/build_taxonomy.py
+import json as _json
+from pathlib import Path as _Path
+
+_TAXONOMY_PATH = _Path(__file__).parent / "fashion_taxonomy.json"
+
+def _load_taxonomy():
+    """Load fashion/non-fashion terms from taxonomy JSON."""
+    try:
+        with open(_TAXONOMY_PATH) as f:
+            data = _json.load(f)
+        return data["fashion_terms"], data["non_fashion_terms"]
+    except (FileNotFoundError, KeyError) as e:
+        logger.warning(f"Taxonomy file missing or invalid ({e}), using fallback")
+        # Minimal fallback so the app still works without the JSON
+        return (
+            ["dress", "shirt", "shoe", "bag", "jacket", "jeans", "sweater",
+             "boot", "sneaker", "necklace", "earring", "watch", "hat",
+             "scarf", "belt", "skirt", "coat", "blouse", "sandal", "heel"],
+            ["cake", "laptop", "toy", "furniture", "garden", "drill",
+             "dog food", "vitamin", "basketball", "vacuum"],
+        )
+
+FASHION_KEYWORDS, NON_FASHION_KEYWORDS = _load_taxonomy()
+logger.info(f"Taxonomy loaded: {len(FASHION_KEYWORDS)} fashion, {len(NON_FASHION_KEYWORDS)} non-fashion terms")
+
 
 @dataclass
 class SearchResult:
@@ -130,6 +158,12 @@ class DealOrchestrator:
         
         # Step 4: Deduplicate similar listings
         deals = self._deduplicate_deals(deals)
+        
+        # Step 4.5: Filter non-fashion products
+        pre_filter = len(deals)
+        deals = self._filter_non_fashion(deals)
+        if pre_filter != len(deals):
+            logger.info(f"Fashion filter removed {pre_filter - len(deals)} non-fashion items")
         
         # Step 5: Rank results
         deals = self._rank_deals(deals, parsed)
@@ -322,6 +356,35 @@ class DealOrchestrator:
         except Exception as e:
             logger.warning(f"Affiliate networks fetch error: {e}")
             return []
+    
+    def _filter_non_fashion(self, deals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Dual-layer filter to ensure only fashion products appear.
+        
+        Layer 1 (blocklist): Remove items with known non-fashion keywords.
+        Layer 2 (allowlist): Of remaining items, keep only those containing
+                            at least one fashion keyword in the title.
+        
+        This catches edge cases like "apple" (groceries) that aren't in
+        the blocklist but also don't contain any fashion terms.
+        """
+        def is_fashion(deal: Dict[str, Any]) -> bool:
+            title = (deal.get("title") or "").lower()
+            
+            # Layer 1: Block known non-fashion items
+            for keyword in NON_FASHION_KEYWORDS:
+                if keyword in title:
+                    return False
+            
+            # Layer 2: Must contain at least one fashion keyword
+            for keyword in FASHION_KEYWORDS:
+                if keyword in title:
+                    return True
+            
+            # No fashion keyword found — reject
+            return False
+        
+        return [d for d in deals if is_fashion(d)]
     
     def _deduplicate_deals(self, deals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
