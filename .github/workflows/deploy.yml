@@ -194,6 +194,61 @@ jobs:
             echo "Deployment complete!"
           ENDSSH
 
+      - name: Deploy Frontend
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'ENDSSH'
+            set -e
+            echo "=== Frontend Deployment ==="
+            
+            FRONTEND_REPO="https://github.com/Ifthikar20/fynda-frontend-vue.git"
+            FRONTEND_DIR="/home/ubuntu/fynda-frontend-vue"
+            FRONTEND_DEST="/var/www/frontend"
+            
+            # Ensure Node.js is available
+            if ! command -v node &> /dev/null; then
+              echo "Installing Node.js..."
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+            echo "Node.js version: $(node --version)"
+            echo "npm version: $(npm --version)"
+            
+            # Clone or pull the frontend repo
+            if [ -d "$FRONTEND_DIR" ]; then
+              echo "Pulling latest frontend code..."
+              cd "$FRONTEND_DIR"
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              echo "Cloning frontend repo..."
+              git clone "$FRONTEND_REPO" "$FRONTEND_DIR"
+              cd "$FRONTEND_DIR"
+            fi
+            
+            # Install dependencies
+            npm ci --prefer-offline --no-audit 2>/dev/null || npm install
+            
+            # Create production env if not exists
+            if [ ! -f ".env.production" ]; then
+              echo "VITE_API_URL=https://api.fynda.shop" > .env.production
+            fi
+            
+            # Build
+            echo "Building frontend..."
+            npm run build
+            
+            # Deploy to web root
+            echo "Copying to $FRONTEND_DEST..."
+            sudo mkdir -p "$FRONTEND_DEST"
+            sudo rm -rf "$FRONTEND_DEST"/*
+            sudo cp -r dist/* "$FRONTEND_DEST"/
+            
+            # Reload nginx to pick up any changes
+            sudo nginx -t && sudo systemctl reload nginx
+            
+            echo "Frontend deployment complete!"
+          ENDSSH
+
       - name: Health Check
         run: |
           sleep 10
