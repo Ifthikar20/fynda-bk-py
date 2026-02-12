@@ -123,6 +123,36 @@ class SearchView(APIView):
         return Response(response_data)
 
 
+class InstantSearchView(APIView):
+    """
+    Cache-only search for instant results (<50ms).
+    
+    GET /api/search/instant/?q=<query>
+    
+    Returns cached results immediately if available.
+    If no cache hit, returns empty list so the client
+    knows to wait for the full /api/search/ response.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        import hashlib
+        from django.core.cache import cache
+        
+        query = request.query_params.get('q', '').strip().lower()
+        if len(query) < 2:
+            return Response({"deals": [], "cached": False})
+        
+        cache_key = f"search:{hashlib.md5(query.encode()).hexdigest()}"
+        cached = cache.get(cache_key)
+        
+        if cached:
+            deals = cached.get('deals', [])[:15]
+            return Response({"deals": deals, "cached": True})
+        
+        return Response({"deals": [], "cached": False})
+
+
 class ImageUploadView(APIView):
     """
     Upload product screenshot for extraction and deal matching.
@@ -182,10 +212,19 @@ class ImageUploadView(APIView):
             pil_img = PILImage.open(io.BytesIO(image_data))
             if max(pil_img.size) > 800:
                 pil_img.thumbnail((800, 800), PILImage.LANCZOS)
-                buf = io.BytesIO()
-                pil_img.save(buf, format='JPEG', quality=85)
-                image_data = buf.getvalue()
                 logger.info(f"Resized upload to {pil_img.size}")
+            # Convert RGBA/P to RGB (JPEG doesn't support transparency)
+            if pil_img.mode in ('RGBA', 'P', 'LA'):
+                background = PILImage.new('RGB', pil_img.size, (255, 255, 255))
+                if pil_img.mode == 'P':
+                    pil_img = pil_img.convert('RGBA')
+                background.paste(pil_img, mask=pil_img.split()[-1])
+                pil_img = background
+            elif pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+            buf = io.BytesIO()
+            pil_img.save(buf, format='JPEG', quality=85)
+            image_data = buf.getvalue()
             
             image_base64 = base64.b64encode(image_data).decode('utf-8')
             
@@ -488,11 +527,9 @@ class SavedDealsView(APIView):
     GET /api/saved/        — list saved deals
     POST /api/saved/       — save a deal
     """
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        if not request.user.is_authenticated:
-            return Response({"saved": [], "count": 0})
-        
         from users.models import SavedDeal
         
         favorites = SavedDeal.objects.filter(
@@ -520,11 +557,6 @@ class SavedDealsView(APIView):
         })
     
     def post(self, request):
-        if not request.user.is_authenticated:
-            return Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
         
         from users.models import SavedDeal
         
@@ -555,13 +587,9 @@ class SavedDealDetailView(APIView):
     
     DELETE /api/saved/<deal_id>/
     """
+    permission_classes = [IsAuthenticated]
     
     def delete(self, request, deal_id):
-        if not request.user.is_authenticated:
-            return Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
         
         from users.models import SavedDeal
         
@@ -577,4 +605,127 @@ class SavedDealDetailView(APIView):
             {"error": "Saved deal not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# ============================================
+# Featured Content API
+# ============================================
+
+from django.views.decorators.cache import cache_page
+
+from .featured import FEATURED_BRANDS, SEARCH_PROMPTS, QUICK_SUGGESTIONS, CATEGORIES as FEATURED_CATEGORIES
+
+
+class FeaturedContentView(APIView):
+    """
+    Serve curated featured content for the landing page and category pages.
+
+    GET /api/featured/                — all featured brands + search prompts
+    GET /api/featured/?category=women — category-specific brands, trending, etc.
+
+    Response is cached for 1 hour. No auth required.
+    """
+    permission_classes = [AllowAny]
+
+    @method_decorator(cache_page(60 * 60))  # 1 hour cache
+    def get(self, request):
+        category = request.query_params.get('category')
+
+        response_data = {
+            "featured_brands": FEATURED_BRANDS,
+            "search_prompts": SEARCH_PROMPTS,
+            "quick_suggestions": QUICK_SUGGESTIONS,
+        }
+
+        if category and category in FEATURED_CATEGORIES:
+            response_data["category"] = FEATURED_CATEGORIES[category]
+        elif category:
+            return Response(
+                {"error": f"Unknown category: {category}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Include all category metadata for navigation
+        response_data["categories"] = {
+            slug: {
+                "title": data["title"],
+                "description": data["description"],
+                "subcategories": data["subcategories"],
+            }
+            for slug, data in FEATURED_CATEGORIES.items()
+        }
+
+        return Response(response_data)
+
+
+# ============================================
+# Explore / Landing Page API
+# ============================================
+
+# Category → default search query mapping
+EXPLORE_CATEGORY_QUERIES = {
+    "all-products": "women men fashion outfit trending",
+    "women": "women dress outfit trending fashion",
+    "men": "men fashion jacket streetwear outfit",
+    "shoes": "sneakers boots heels sandals trending",
+    "accessories": "bag watch jewelry sunglasses trending",
+    "beauty": "makeup skincare lipstick trending",
+    "activewear": "gym workout leggings sports bra trending",
+}
+
+
+class ExploreView(APIView):
+    """
+    Explore page products — served through the backend.
+    
+    GET /api/explore/?category=all-products&limit=20
+    
+    This replaces the frontend's direct RapidAPI call,
+    keeping the API key server-side and enabling caching,
+    fashion filtering, and result ranking.
+    """
+    permission_classes = [AllowAny]
+    
+    @method_decorator(cache_page(30 * 60))  # 30 minute cache
+    def get(self, request):
+        category = request.query_params.get("category", "all-products")
+        limit = min(int(request.query_params.get("limit", 20)), 50)
+        
+        query = EXPLORE_CATEGORY_QUERIES.get(category, "trending fashion clothing")
+        result = orchestrator.search(query)
+        
+        deals = result.to_dict().get("deals", [])[:limit]
+        
+        return Response({
+            "category": category,
+            "query": query,
+            "deals": deals,
+            "total": len(deals),
+            "sources": result.sources_with_results,
+        })
+
+
+# ============================================
+# Vendor Status API
+# ============================================
+
+class VendorStatusView(APIView):
+    """
+    Check the status of all registered vendors.
+    
+    GET /api/vendors/status/
+    
+    Shows which vendors are enabled, loaded, configured,
+    and whether their circuit breakers are open.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        from .services.vendors import vendor_manager as vm
+        
+        return Response({
+            "vendors": vm.get_all_status(),
+            "total_enabled": len(vm.get_enabled_vendors()),
+            "total_loaded": len(vm.get_all_instances()),
+        })
 

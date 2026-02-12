@@ -933,10 +933,19 @@ class MobileImageUploadView(APIView):
             pil_img = PILImage.open(io.BytesIO(image_data))
             if max(pil_img.size) > 800:
                 pil_img.thumbnail((800, 800), PILImage.LANCZOS)
-                buf = io.BytesIO()
-                pil_img.save(buf, format='JPEG', quality=85)
-                image_data = buf.getvalue()
                 logger.info(f"Resized upload to {pil_img.size}")
+            # Convert RGBA/P to RGB (JPEG doesn't support transparency)
+            if pil_img.mode in ('RGBA', 'P', 'LA'):
+                background = PILImage.new('RGB', pil_img.size, (255, 255, 255))
+                if pil_img.mode == 'P':
+                    pil_img = pil_img.convert('RGBA')
+                background.paste(pil_img, mask=pil_img.split()[-1])
+                pil_img = background
+            elif pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+            buf = io.BytesIO()
+            pil_img.save(buf, format='JPEG', quality=85)
+            image_data = buf.getvalue()
             
             image_base64 = base64.b64encode(image_data).decode('utf-8')
             
@@ -1229,6 +1238,7 @@ class MobileStoryboardView(APIView):
                 "token": b.token,
                 "title": b.title or "Untitled",
                 "share_url": f"https://fynda.shop/storyboard/{b.token}",
+                "storyboard_data": b.storyboard_data or {},
                 "view_count": b.view_count,
                 "created_at": b.created_at.isoformat(),
                 "expires_at": b.expires_at.isoformat() if b.expires_at else None,
@@ -1273,9 +1283,10 @@ class MobileStoryboardView(APIView):
 
 class MobileStoryboardDetailView(APIView):
     """
-    Get a shared storyboard by token (public access).
+    Get or delete a shared storyboard by token.
     
-    GET /api/mobile/storyboard/<token>/
+    GET /api/mobile/storyboard/<token>/  (public)
+    DELETE /api/mobile/storyboard/<token>/  (owner only)
     """
     permission_classes = [AllowAny]
     
@@ -1308,6 +1319,26 @@ class MobileStoryboardDetailView(APIView):
             "view_count": board.view_count,
             "created_at": board.created_at.isoformat(),
         })
+
+    def delete(self, request, token):
+        from deals.models import SharedStoryboard
+        
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            board = SharedStoryboard.objects.get(token=token, user=request.user)
+        except SharedStoryboard.DoesNotExist:
+            return Response(
+                {"error": "Storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        board.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # ================================================================
