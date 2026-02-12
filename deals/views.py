@@ -15,7 +15,7 @@ from django.utils.decorators import method_decorator
 import io
 import base64
 
-from .services import orchestrator, vision_service, tiktok_service, instagram_service, pinterest_service
+from .services import orchestrator, tiktok_service, instagram_service, pinterest_service
 from .serializers import SearchResponseSerializer
 
 
@@ -257,21 +257,7 @@ class ImageUploadView(APIView):
             except requests.RequestException as e:
                 logger.warning(f"ML service unavailable: {e}")
             
-            # Fallback: OpenAI Vision (if ML service failed or returned no queries)
-            if not search_queries:
-                try:
-                    analysis = vision_service.analyze_image(image_data=image_data)
-                    extracted = analysis.to_dict()
-                    if analysis.product_name:
-                        query = analysis.product_name
-                        if analysis.brand:
-                            query = f"{analysis.brand} {query}"
-                        search_queries = [query]
-                        logger.info(f"OpenAI Vision fallback identified: {search_queries}")
-                except Exception as e:
-                    logger.warning(f"OpenAI Vision fallback also failed: {e}")
-            
-            # If we still have no queries, return a graceful empty response
+            # If ML service returned no queries, return a graceful empty response
             if not search_queries:
                 return Response({
                     "extracted": extracted or {},

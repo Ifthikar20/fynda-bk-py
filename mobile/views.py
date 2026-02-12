@@ -897,7 +897,7 @@ class MobileImageUploadView(APIView):
     def post(self, request):
         import requests as http_requests
         from deals.services.orchestrator import orchestrator
-        from deals.services import vision_service
+        
         from django.conf import settings
         
         if 'image' not in request.FILES:
@@ -977,21 +977,8 @@ class MobileImageUploadView(APIView):
             except http_requests.RequestException as e:
                 logger.warning(f"ML service unavailable: {e}")
             
-            # Fallback: OpenAI Vision
-            if not search_queries:
-                try:
-                    analysis = vision_service.analyze_image(image_data=image_data)
-                    extracted = analysis.to_dict()
-                    if analysis.product_name:
-                        query = analysis.product_name
-                        if analysis.brand:
-                            query = f"{analysis.brand} {query}"
-                        search_queries = [query]
-                        logger.info(f"OpenAI Vision fallback: {search_queries}")
-                except Exception as e:
-                    logger.warning(f"OpenAI Vision fallback failed: {e}")
             
-            # If no queries, return graceful empty
+            # If ML service returned no queries, return graceful empty
             if not search_queries:
                 return Response({
                     "extracted": extracted or {},
