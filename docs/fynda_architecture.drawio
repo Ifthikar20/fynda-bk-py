@@ -1,0 +1,244 @@
+<mxfile host="65bd71144e">
+    <diagram id="fynda-main-arch" name="System Architecture">
+        <mxGraphModel dx="2038" dy="1827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1700" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="FYNDA — Production System Architecture" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#1a1a2e;fontFamily=Helvetica;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="30" width="600" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="AI-Powered Fashion Discovery Platform  ·  AWS us-east-1  ·  Updated Feb 2026" style="text;html=1;align=center;fontSize=12;fontColor=#999;fontFamily=Helvetica;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="65" width="600" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="clients-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#e0e0e0;strokeWidth=1;arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="120" width="380" height="460" as="geometry"/>
+                </mxCell>
+                <mxCell id="clients-label" value="CLIENTS" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#9e9e9e;letterSpacing=2;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="130" width="100" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="web" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;span style='font-size:16px'&gt;🌐&lt;/span&gt;  &lt;b style='font-size:14px;color:#2d3436'&gt;Web Application&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#636e72;font-size:11px'&gt;Vue 3  ·  Vite  ·  Pinia  ·  Vue Router&lt;br/&gt;Fashion Board (Canvas API)&lt;br/&gt;Shoppable Blog (SSR)&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;code style='font-size:10px;color:#0984e3;background:#edf5ff;padding:2px 6px;border-radius:3px'&gt;fynda.shop&lt;/code&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#a5d6a7;fontSize=12;arcSize=8;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="160" width="330" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="mobile" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;span style='font-size:16px'&gt;📱&lt;/span&gt;  &lt;b style='font-size:14px;color:#2d3436'&gt;Mobile Application&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#636e72;font-size:11px'&gt;Flutter  ·  BLoC  ·  Dio HTTP  ·  JWT Auth&lt;br/&gt;Native Google/Apple OAuth&lt;br/&gt;Camera + Image Picker (Visual Search)&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;code style='font-size:10px;color:#0984e3;background:#edf5ff;padding:2px 6px;border-radius:3px'&gt;iOS / Android&lt;/code&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#90caf9;fontSize=12;arcSize=8;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="310" width="330" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="admin" value="🖥️  Admin Dashboard  —  api.fynda.shop/admin/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#e0e0e0;fontSize=10;fontColor=#616161;arcSize=8;" parent="1" vertex="1">
+                    <mxGeometry x="65" y="460" width="330" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="repos-clients" value="&lt;span style='font-size:9px;color:#999'&gt;&lt;b&gt;Repos:&lt;/b&gt; fynda-frontend-vue · fin-flt-nd&lt;/span&gt;" style="text;html=1;align=center;" vertex="1" parent="1">
+                    <mxGeometry x="65" y="510" width="330" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="cf-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#ffe082;strokeWidth=1;arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="155" width="260" height="340" as="geometry"/>
+                </mxCell>
+                <mxCell id="cf-label" value="CLOUDFLARE" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#f57f17;letterSpacing=2;" parent="1" vertex="1">
+                    <mxGeometry x="535" y="170" width="120" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="cf-main" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;span style='font-size:16px'&gt;☁️&lt;/span&gt;  &lt;b style='font-size:13px;color:#2d3436'&gt;Cloudflare Proxy&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#636e72;font-size:11px'&gt;DDoS Protection&lt;br/&gt;WAF (Web App Firewall)&lt;br/&gt;DNS Management&lt;br/&gt;Edge Caching&lt;br/&gt;SSL for fynda.shop&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#ffcc80;fontSize=11;arcSize=8;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="540" y="188" width="220" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="cf-dns" value="&lt;div style='padding:8px;text-align:left;font-size:10px;color:#555'&gt;&lt;b style='color:#333'&gt;DNS Records&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#2e7d32'&gt;●&lt;/span&gt;  fynda.shop → &lt;b&gt;Proxied&lt;/b&gt; (CF SSL)&lt;br/&gt;&lt;span style='color:#e65100'&gt;●&lt;/span&gt;  api.fynda.shop → &lt;b&gt;Direct&lt;/b&gt; to EC2&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#c62828;font-size:9px'&gt;⚠ api.fynda.shop bypasses CF&lt;br/&gt;Uses Let's Encrypt directly&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffe082;fontSize=10;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="360" width="220" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="aws-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafbff;strokeColor=#b3c6ff;strokeWidth=2;arcSize=4;dashed=1;dashPattern=10 5;" vertex="1" parent="1">
+                    <mxGeometry x="880" y="120" width="1160" height="1050" as="geometry"/>
+                </mxCell>
+                <mxCell id="aws-label" value="☁️  AWS  ·  us-east-1  (N. Virginia)" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#5c6bc0;letterSpacing=1;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="130" width="350" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="ec2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f7ff;strokeColor=#7986cb;strokeWidth=2;arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="920" y="170" width="1080" height="960" as="geometry"/>
+                </mxCell>
+                <mxCell id="ec2-label" value="EC2 INSTANCE  ·  t3.medium  ·  Ubuntu 22.04 LTS" style="text;html=1;align=left;fontSize=11;fontStyle=1;fontColor=#5c6bc0;letterSpacing=1;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="180" width="450" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="ec2-ip-box" value="&lt;div style='padding:8px;text-align:left;font-size:10px;color:#333'&gt;&lt;b&gt;Elastic IP&lt;/b&gt;  54.227.94.35&lt;br/&gt;&lt;b&gt;SSH&lt;/b&gt;  ubuntu@54.227.94.35&lt;br/&gt;&lt;b&gt;Key&lt;/b&gt;  RSA-2048 (.pem file)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7986cb;fontSize=10;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1680" y="175" width="290" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="sg-box" value="&lt;div style='padding:10px;text-align:left;font-size:10px;color:#333'&gt;&lt;b style='font-size:11px;color:#c62828'&gt;🔒  Security Group&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#2e7d32'&gt;✅&lt;/span&gt;  Port 22 — SSH (restricted)&lt;br/&gt;&lt;span style='color:#2e7d32'&gt;✅&lt;/span&gt;  Port 80 — HTTP (0.0.0.0/0)&lt;br/&gt;&lt;span style='color:#2e7d32'&gt;✅&lt;/span&gt;  Port 443 — HTTPS (0.0.0.0/0)&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#c62828'&gt;🚫&lt;/span&gt;  Port 5432 — PostgreSQL&lt;br/&gt;&lt;span style='color:#c62828'&gt;🚫&lt;/span&gt;  Port 6379 — Redis&lt;br/&gt;&lt;span style='color:#c62828'&gt;🚫&lt;/span&gt;  Port 8000 — Django&lt;br/&gt;&lt;span style='color:#c62828'&gt;🚫&lt;/span&gt;  Port 8001 — ML Service&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#ef9a9a;fontSize=10;arcSize=6;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1680" y="250" width="290" height="175" as="geometry"/>
+                </mxCell>
+                <mxCell id="docker-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#9fa8da;strokeWidth=1;arcSize=4;" parent="1" vertex="1">
+                    <mxGeometry x="960" y="250" width="680" height="630" as="geometry"/>
+                </mxCell>
+                <mxCell id="docker-label" value="🐳  DOCKER COMPOSE" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#3f51b5;letterSpacing=2;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="258" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="nginx" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;b style='font-size:13px;color:#1b5e20'&gt;fynda-nginx&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;REVERSE PROXY&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;Ports &lt;b&gt;:80&lt;/b&gt; / &lt;b&gt;:443&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;SSL — Let's Encrypt (Certbot)&lt;br/&gt;Static — Vue SPA at /&lt;br/&gt;Proxy — /api/* → api:8000&lt;br/&gt;Blog — /blog/* → api:8000 (SSR)&lt;br/&gt;Microcaching + gzip + brotli&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#a5d6a7;strokeWidth=1;fontSize=11;arcSize=6;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="290" width="290" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="django" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;b style='font-size:13px;color:#1b5e20'&gt;fynda-api&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;BACKEND ORCHESTRATOR&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;Django 4.2 + DRF · Port &lt;b&gt;:8000&lt;/b&gt;&lt;br/&gt;Gunicorn (gthread workers)&lt;br/&gt;&lt;br/&gt;DealOrchestrator&lt;br/&gt;HybridQueryParser (NLP)&lt;br/&gt;JWT + Google/Apple OAuth&lt;br/&gt;Mobile API (/api/mobile/*)&lt;br/&gt;Blog SSR Templates&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;code style='font-size:9px;color:#999'&gt;Repo: fynda-bk-py&lt;/code&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#ffcc80;strokeWidth=1;fontSize=11;arcSize=6;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="510" width="290" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="ml" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;b style='font-size:13px;color:#4a148c'&gt;fynda-ml&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;AI VISUAL SEARCH ENGINE&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;FastAPI + PyTorch · Port &lt;b&gt;:8001&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#c62828;font-size:10px'&gt;(internal only — never exposed)&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;Fashion CLIP v2 (ViT-B/32)&lt;br/&gt;BLIP-2 Captioner&lt;br/&gt;EasyOCR (brand detection)&lt;br/&gt;FAISS (vector similarity)&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;code style='font-size:9px;color:#999'&gt;Repo: fyn-bk-py-ml-svs&lt;/code&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#ce93d8;strokeWidth=1;fontSize=11;arcSize=6;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="290" width="290" height="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="celery" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;b style='font-size:13px;color:#1b5e20'&gt;fynda-celery&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;BACKGROUND WORKER&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;Email Delivery&lt;br/&gt;Analytics Processing&lt;br/&gt;Broker: Redis&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#a5d6a7;strokeWidth=1;fontSize=11;arcSize=6;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="530" width="290" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="postgres" value="&lt;div style='padding:10px;text-align:left'&gt;&lt;b style='font-size:13px;color:#1565c0'&gt;fynda-db&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;PRIMARY DATABASE&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;PostgreSQL 15  ·  Port &lt;b&gt;:5432&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;Users &amp; Profiles&lt;br/&gt;Favorites &amp; Storyboards&lt;br/&gt;Blog Posts &amp; Media&lt;br/&gt;Device Registry&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#e65100;font-size:9px'&gt;⚠ Docker Volume — not S3&lt;br/&gt;⚠ No automated backups&lt;/span&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e3f2fd;strokeColor=#90caf9;strokeWidth=1;fontSize=11;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="770" width="290" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis" value="&lt;div style='padding:10px;text-align:left'&gt;&lt;b style='font-size:13px;color:#c62828'&gt;fynda-redis&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#9e9e9e;font-size:9px'&gt;CACHE &amp; MESSAGE BROKER&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;Redis 7 (AOF)  ·  Port &lt;b&gt;:6379&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;Search Cache (5min TTL)&lt;br/&gt;Celery Task Queue&lt;br/&gt;Rate Limiting Counters&lt;/span&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#e65100;font-size:9px'&gt;⚠ No password configured&lt;/span&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#ffebee;strokeColor=#ef9a9a;strokeWidth=1;fontSize=11;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="770" width="290" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="host-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#e0e0e0;strokeWidth=1;arcSize=4;" vertex="1" parent="1">
+                    <mxGeometry x="1680" y="460" width="290" height="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="host-label" value="HOST FILESYSTEM" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#9e9e9e;letterSpacing=2;" vertex="1" parent="1">
+                    <mxGeometry x="1695" y="468" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="h1" value="&lt;div style='padding:6px;text-align:left;font-size:10px'&gt;&lt;b style='color:#333'&gt;/var/www/frontend/&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#888'&gt;Vue.js production build&lt;br/&gt;Mounted into Nginx (ro)&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#e0e0e0;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1700" y="495" width="250" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="h2" value="&lt;div style='padding:6px;text-align:left;font-size:10px'&gt;&lt;b style='color:#333'&gt;/etc/letsencrypt/&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#888'&gt;SSL certs for api.fynda.shop&lt;br/&gt;Mounted into Nginx (ro)&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#e0e0e0;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1700" y="560" width="250" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="h3" value="&lt;div style='padding:6px;text-align:left;font-size:10px'&gt;&lt;b style='color:#333'&gt;/home/ubuntu/FB_APP/&lt;/b&gt;&lt;br/&gt;&lt;span style='color:#888'&gt;Git repo · docker-compose.yml&lt;br/&gt;.env · FYNDA_ML_Services/&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#e0e0e0;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1700" y="625" width="250" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#e0e0e0;strokeWidth=1;arcSize=6;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="640" width="760" height="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext-label" value="EXTERNAL SERVICES" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#9e9e9e;letterSpacing=2;" parent="1" vertex="1">
+                    <mxGeometry x="55" y="650" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="aff-label" value="Affiliate Networks &amp; Marketplaces" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="685" width="250" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="amazon" value="&lt;b style='color:#333'&gt;Amazon&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;PA-API v5&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#ffe0b2;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="ebay" value="&lt;b style='color:#333'&gt;eBay&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Browse API&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#f8bbd0;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="185" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="awin" value="&lt;b style='color:#333'&gt;Awin&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Product API&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#bbdefb;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="310" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="rakuten" value="&lt;b style='color:#333'&gt;Rakuten&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Advertiser API&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#ffcdd2;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="435" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="cj" value="&lt;b style='color:#333'&gt;CJ Affiliate&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Product API&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#c5cae9;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="shareasale" value="&lt;b style='color:#333'&gt;ShareASale&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Merchant API&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#c8e6c9;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="685" y="710" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="oauth-label" value="Authentication Providers" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="785" width="200" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="google" value="&lt;b style='color:#333'&gt;Google OAuth 2.0&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;ID token verification&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#bbdefb;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="810" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="apple" value="&lt;b style='color:#333'&gt;Apple Sign In&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;JWT verification&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#e0e0e0;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="235" y="810" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="cicd-label" value="CI / CD Pipeline" style="text;html=1;align=left;fontSize=10;fontStyle=1;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="885" width="200" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="ghactions" value="&lt;b style='color:#333'&gt;GitHub Actions&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Test → Build → SSH Deploy to EC2&lt;br/&gt;Local docker build on EC2&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#e0e0e0;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="910" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="ghcr" value="&lt;b style='color:#333'&gt;GHCR&lt;/b&gt;&lt;br/&gt;&lt;span style='font-size:9px;color:#888'&gt;Container Registry&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#e0e0e0;fontSize=11;arcSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="310" y="910" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="train" value="&lt;div style='padding:12px;text-align:left'&gt;&lt;b style='font-size:12px;color:#4a148c'&gt;🔬  ML Training  (External)&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#555;font-size:11px'&gt;&lt;b&gt;Platform:&lt;/b&gt;  Google Colab T4 GPU&lt;br/&gt;&lt;b&gt;Storage:&lt;/b&gt;  Google Drive (checkpoints)&lt;br/&gt;&lt;b&gt;Current:&lt;/b&gt;  v3 training (20 epochs)&lt;br/&gt;&lt;b&gt;Next:&lt;/b&gt;  v4 + Fashion-200K dataset&lt;br/&gt;&lt;br/&gt;Trained .pt model is manually&lt;br/&gt;uploaded to EC2 and mounted&lt;br/&gt;into fynda-ml container.&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#ce93d8;strokeWidth=1;fontSize=11;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="520" width="270" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="notes" value="&lt;div style='padding:12px;text-align:left;font-size:10px;color:#333'&gt;&lt;b style='font-size:12px;color:#c62828'&gt;⚠  Critical Notes&lt;/b&gt;&lt;br/&gt;&lt;br/&gt;&lt;b&gt;If EC2 IP changes, update:&lt;/b&gt;&lt;br/&gt;  1. Cloudflare DNS (api.fynda.shop)&lt;br/&gt;  2. GitHub Secret (EC2_HOST)&lt;br/&gt;  3. Let's Encrypt cert renewal&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Ports 5432/6379/8000/8001&lt;/b&gt;&lt;br/&gt;  Must stay BLOCKED in Security Group&lt;br/&gt;&lt;br/&gt;&lt;b&gt;S3 Usage:&lt;/b&gt; None. All storage is EC2 local.&lt;br/&gt;&lt;b&gt;RDS:&lt;/b&gt; Not used. PostgreSQL runs in Docker.&lt;br/&gt;&lt;br/&gt;&lt;span style='color:#e65100'&gt;• Redis has no password&lt;br/&gt;• PostgreSQL has no backup cron&lt;br/&gt;• Frontend files served from EC2, not S3/CF&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#ef9a9a;strokeWidth=1;fontSize=10;arcSize=6;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="1680" y="750" width="290" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#555;endArrow=blockThin;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="web" target="cf-main">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a1-l" value="HTTPS" style="text;html=1;fontSize=9;fontColor=#555;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="210" width="45" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#555;endArrow=blockThin;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="mobile" target="cf-main">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a2-l" value="HTTPS" style="text;html=1;fontSize=9;fontColor=#555;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="340" width="45" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=3;strokeColor=#333;endArrow=blockThin;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="cf-main" target="nginx">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a3-l" value="  :443  " style="text;html=1;fontSize=10;fontColor=#333;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="840" y="290" width="45" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#555;endArrow=blockThin;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nginx" target="django">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a4-l" value="  /api/*  /blog/*  /admin/  " style="text;html=1;fontSize=9;fontColor=#555;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="1140" y="492" width="140" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#7B2D8E;endArrow=blockThin;endFill=1;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" parent="1" source="django" target="ml">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1300" y="576"/>
+                            <mxPoint x="1300" y="437"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a5-l" value="  http://ml:8001  " style="text;html=1;fontSize=9;fontColor=#7B2D8E;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="1290" y="495" width="100" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#1565c0;endArrow=blockThin;endFill=1;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="django" target="postgres">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a6-l" value="  :5432  " style="text;html=1;fontSize=9;fontColor=#1565c0;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="1060" y="742" width="50" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#c62828;endArrow=blockThin;endFill=1;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="django" target="redis">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a7-l" value="  cache  " style="text;html=1;fontSize=9;fontColor=#c62828;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="1295" y="742" width="42" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1;strokeColor=#c62828;dashed=1;dashPattern=5 3;endArrow=blockThin;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="celery" target="redis">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="a8-l" value="  broker  " style="text;html=1;fontSize=9;fontColor=#c62828;fontStyle=0;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="1480" y="680" width="45" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#555;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="django" target="ext-box">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="910" y="620"/>
+                            <mxPoint x="910" y="1070"/>
+                            <mxPoint x="420" y="1070"/>
+                            <mxPoint x="420" y="1020"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a9-l" value="  Parallel Search + OAuth  " style="text;html=1;fontSize=9;fontColor=#555;fontStyle=1;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="450" y="1060" width="150" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1;strokeColor=#999;dashed=1;dashPattern=5 3;endArrow=blockThin;endFill=1;" edge="1" parent="1" source="ghactions" target="h3">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="175" y="990"/>
+                            <mxPoint x="850" y="990"/>
+                            <mxPoint x="850" y="652"/>
+                            <mxPoint x="1700" y="652"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a10-l" value="  SSH Deploy  " style="text;html=1;fontSize=9;fontColor=#999;fontStyle=0;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="840" y="975" width="75" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="a11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=1;strokeColor=#9c27b0;dashed=1;dashPattern=5 3;endArrow=blockThin;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="train" target="ml">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="810" y="620"/>
+                            <mxPoint x="810" y="395"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="a11-l" value="  manual .pt upload  " style="text;html=1;fontSize=9;fontColor=#9c27b0;fontStyle=0;fillColor=#fff;spacingLeft=3;spacingRight=3;" vertex="1" parent="1">
+                    <mxGeometry x="810" y="495" width="100" height="15" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

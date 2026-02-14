@@ -3,80 +3,130 @@ Vendor Registry
 
 Central configuration for all available vendors.
 Toggle vendors on/off via environment variables.
+
+Each entry maps a vendor_id -> VendorConfig, which includes
+the Python class to instantiate and whether the vendor is enabled.
 """
 
 from .base_vendor import VendorConfig, VendorCategory
 
 
-# All available vendors
+# ─── All available vendors ──────────────────────────────────────
 VENDOR_REGISTRY: dict[str, VendorConfig] = {
     
-    # ===== AFFILIATE NETWORKS =====
+    # ===== MARKETPLACE APIs =====
+    
+    "amazon": VendorConfig(
+        id="amazon",
+        name="Amazon",
+        service_class="AmazonVendor",
+        enabled=True,
+        requires_auth=True,
+        priority=95,
+        category=VendorCategory.MARKETPLACE,
+        env_toggle_key="VENDOR_AMAZON",
+        description="Amazon via RapidAPI Real-Time Amazon Data",
+    ),
+    
+    "ebay": VendorConfig(
+        id="ebay",
+        name="eBay",
+        service_class="EbayVendor",
+        enabled=True,
+        requires_auth=True,
+        priority=85,
+        category=VendorCategory.MARKETPLACE,
+        env_toggle_key="VENDOR_EBAY",
+        description="eBay Browse API",
+    ),
+    
+    "bestbuy": VendorConfig(
+        id="bestbuy",
+        name="Best Buy",
+        service_class="BestBuyVendor",
+        enabled=True,
+        requires_auth=True,
+        priority=70,
+        category=VendorCategory.MARKETPLACE,
+        env_toggle_key="VENDOR_BESTBUY",
+        description="Best Buy Products API",
+    ),
+    
+    # ===== SOCIAL =====
+    
+    "facebook": VendorConfig(
+        id="facebook",
+        name="Facebook Marketplace",
+        service_class="FacebookVendor",
+        enabled=True,
+        requires_auth=False,      # Uses RapidAPI key, falls back to mock
+        priority=50,
+        category=VendorCategory.SOCIAL,
+        env_toggle_key="VENDOR_FACEBOOK",
+        description="Facebook Marketplace via RapidAPI",
+    ),
+    
+    # ===== DIRECT / SHOPIFY =====
+    
+    "shopify": VendorConfig(
+        id="shopify",
+        name="Shopify",
+        service_class="ShopifyVendor",
+        enabled=True,
+        requires_auth=False,      # Public /products.json
+        priority=60,
+        category=VendorCategory.DIRECT,
+        env_toggle_key="VENDOR_SHOPIFY",
+        description="Shopify stores via public /products.json",
+    ),
+    
+    # ===== AFFILIATE NETWORKS (wrapped as single vendor) =====
+    
+    "affiliates": VendorConfig(
+        id="affiliates",
+        name="Affiliate Networks",
+        service_class="AffiliatesVendor",
+        enabled=True,
+        requires_auth=True,
+        priority=75,
+        category=VendorCategory.AFFILIATE,
+        env_toggle_key="VENDOR_AFFILIATES",
+        description="CJ, Rakuten, ShareASale — ~21,500 merchants",
+    ),
+    
+    # ===== INDIVIDUAL AFFILIATE NETWORKS (disabled — use 'affiliates' above) =====
     
     "rakuten": VendorConfig(
         id="rakuten",
         name="Rakuten",
         service_class="RakutenService",
-        enabled=False,  # Enable when approved
+        enabled=False,  # Managed via AffiliatesVendor
         requires_auth=True,
         priority=80,
         category=VendorCategory.AFFILIATE,
-        description="Rakuten Advertising - 2,500+ retailers"
+        description="Rakuten Advertising — 2,500+ retailers",
     ),
     
     "cj": VendorConfig(
         id="cj",
         name="CJ Affiliate",
         service_class="CJService",
-        enabled=False,
+        enabled=False,  # Managed via AffiliatesVendor
         requires_auth=True,
         priority=75,
         category=VendorCategory.AFFILIATE,
-        description="Commission Junction - 3,000+ brands"
-    ),
-    
-    "sovrn": VendorConfig(
-        id="sovrn",
-        name="Sovrn Commerce",
-        service_class="SovrnService",
-        enabled=False,
-        requires_auth=True,
-        priority=70,
-        category=VendorCategory.AFFILIATE,
-        description="Sovrn Commerce - 50,000+ merchants"
-    ),
-    
-    "flexoffers": VendorConfig(
-        id="flexoffers",
-        name="FlexOffers",
-        service_class="FlexOffersService",
-        enabled=False,
-        requires_auth=True,
-        priority=65,
-        category=VendorCategory.AFFILIATE,
-        description="FlexOffers - Nordstrom, Target, Walmart"
+        description="Commission Junction — 3,000+ brands",
     ),
     
     "shareasale": VendorConfig(
         id="shareasale",
         name="ShareASale",
         service_class="ShareASaleService",
-        enabled=False,
+        enabled=False,  # Managed via AffiliatesVendor
         requires_auth=True,
         priority=60,
         category=VendorCategory.AFFILIATE,
-        description="ShareASale - 16,000+ merchants"
-    ),
-    
-    "awin": VendorConfig(
-        id="awin",
-        name="Awin",
-        service_class="AwinService",
-        enabled=False,
-        requires_auth=True,
-        priority=55,
-        category=VendorCategory.AFFILIATE,
-        description="Awin - Global affiliate network"
+        description="ShareASale — 16,000+ merchants",
     ),
 }
 

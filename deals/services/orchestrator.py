@@ -1,8 +1,11 @@
 """
 API Orchestrator
 
-Coordinates multiple marketplace APIs.
-Aggregates results from Amazon, affiliate networks, and other real data sources.
+Coordinates multiple marketplace APIs via the unified vendor layer.
+Aggregates results from all enabled vendors (Amazon, eBay, affiliates, etc.).
+
+Adding a new vendor requires ZERO changes here — just create a vendor
+file in vendors/ and register it in vendor_registry.py.
 """
 
 from typing import List, Dict, Any, Optional
@@ -16,14 +19,8 @@ import concurrent.futures
 from django.core.cache import cache
 
 from .query_parser import query_parser, ParsedQuery
-from .ebay_service import ebay_service
-from .bestbuy_service import bestbuy_service
-from .facebook_service import facebook_service
-from .shopify_service import shopify_service
-from .affiliates import affiliate_aggregator
-from .amazon_service import amazon_service, QuotaExceededException
 from .spell_corrector import correct_query
-from .vendors import vendor_manager
+from .vendors import vendor_manager, QuotaExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +90,19 @@ class SearchResult:
 
 class DealOrchestrator:
     """
-    Orchestrates deal searches across multiple marketplace sources.
+    Orchestrates deal searches across all enabled vendors.
     
-    Data sources (in priority order):
-    1. eBay Browse API - Requires EBAY_APP_ID, EBAY_CERT_ID
-    2. Best Buy Products API - Requires BESTBUY_API_KEY
-    3. Facebook Marketplace - Requires RAPIDAPI_KEY (or uses mock)
-    4. Shopify Stores - No auth required, scrapes /products.json
-    5. Mock Data - Always available as fallback
+    Uses the VendorManager to discover and query all registered vendors.
+    Adding a new vendor requires zero changes to this file.
+    
+    Pipeline:
+    1. Parse query (NLP)
+    2. Fetch from all vendors in parallel + spell correction
+    3. Budget filter
+    4. Deduplicate
+    5. Fashion filter
+    6. Gender filter
+    7. Rank & limit
     """
     
     def __init__(self):
@@ -136,7 +138,6 @@ class DealOrchestrator:
         if cached:
             logger.info(f"Cache HIT for query: '{query}'")
             search_time = int((datetime.now() - start_time).total_seconds() * 1000)
-            # Reconstruct SearchResult from cached data
             parsed = query_parser.parse(query)
             return SearchResult(
                 query=parsed,
@@ -212,9 +213,14 @@ class DealOrchestrator:
             suggested_query=suggested_query,
         )
     
+    # ── Vendor fetching (generic — no per-vendor methods) ───────
+    
     def _fetch_all_deals_with_spelling(self, parsed: ParsedQuery, raw_query: str):
         """
-        Fetch deals from all sources + spell correction in parallel.
+        Fetch deals from ALL enabled vendors + spell correction in parallel.
+        
+        Uses vendor_manager.get_all_instances() so new vendors are
+        automatically included without editing this method.
         
         Returns:
             Tuple of (all_deals, sources_with_results, quota_exceeded, spell_result)
@@ -230,23 +236,20 @@ class DealOrchestrator:
             # Fire spell correction in parallel
             spell_future = executor.submit(correct_query, raw_query)
             
-            # Add enabled vendors from VendorManager
+            # Submit search to ALL enabled vendors — generic loop
             for vendor_id, instance in vendor_manager.get_all_instances().items():
-                futures[executor.submit(self._fetch_from_vendor, instance, parsed)] = instance.VENDOR_NAME
+                futures[executor.submit(
+                    self._fetch_from_vendor, instance, parsed
+                )] = instance.VENDOR_NAME
             
-            # Also include affiliate aggregator for compatibility
-            futures[executor.submit(self._fetch_affiliates, parsed)] = "Affiliates"
-            
-            # Include Amazon via RapidAPI
-            futures[executor.submit(self._fetch_amazon, parsed)] = "Amazon"
-            
+            # Collect results as they complete
             for future in concurrent.futures.as_completed(futures, timeout=20):
                 source = futures[future]
                 try:
                     result = future.result()
                     if isinstance(result, tuple):
-                        deals, is_quota_exceeded = result
-                        if is_quota_exceeded:
+                        deals, is_quota = result
+                        if is_quota:
                             quota_exceeded = True
                     else:
                         deals = result
@@ -257,7 +260,7 @@ class DealOrchestrator:
                 except Exception as e:
                     logger.error(f"Error fetching from {source}: {e}")
             
-            # Get spell result (non-blocking, already completed or will be fast)
+            # Get spell result (non-blocking)
             try:
                 spell_result = spell_future.result(timeout=0.5)
             except Exception as e:
@@ -265,124 +268,47 @@ class DealOrchestrator:
         
         return all_deals, sources_with_results, quota_exceeded, spell_result
     
-    def _fetch_from_vendor(self, vendor_instance, parsed: ParsedQuery) -> List[Dict[str, Any]]:
+    def _fetch_from_vendor(self, vendor_instance, parsed: ParsedQuery):
         """
-        Fetch deals from a vendor instance.
+        Fetch deals from a single vendor.
         
-        Uses the standardized VendorProduct format.
+        The circuit breaker in BaseVendorService.search_products()
+        handles failures automatically — no try/except needed here
+        for vendor-level errors.
+        
+        Returns:
+            (deals_list, quota_exceeded) tuple, or just deals_list
         """
+        search_query = parsed.get_search_terms() or parsed.original
+        quota_exceeded = False
+        
         try:
-            search_query = parsed.get_search_terms() or parsed.original
             products = vendor_instance.search_products(
                 query=search_query,
                 limit=15,
             )
-            # Convert VendorProduct to dict if needed
-            results = []
-            for p in products:
-                if hasattr(p, 'to_dict'):
-                    results.append(p.to_dict())
-                elif isinstance(p, dict):
-                    results.append(p)
-            
-            # Filter by budget if specified
-            if parsed.budget:
-                results = [p for p in results if p.get('price', 0) <= parsed.budget]
-            return results
-        except Exception as e:
-            logger.warning(f"Vendor fetch error: {e}")
-            return []
-    
-    def _fetch_amazon(self, parsed: ParsedQuery) -> tuple[List[Dict[str, Any]], bool]:
-        """Fetch deals from Amazon via RapidAPI. Returns (deals, quota_exceeded)."""
-        try:
-            search_query = parsed.get_search_terms() or parsed.original
-            deals = amazon_service.search(
-                query=search_query,
-                limit=10,
-                max_price=parsed.budget,
-            )
-            return [d.to_dict() for d in deals], False
-        except QuotaExceededException:
-            logger.warning("Amazon quota exceeded — skipping Amazon results")
+        except QuotaExceededError:
+            logger.warning(f"{vendor_instance.VENDOR_NAME} quota exceeded")
             return [], True
         except Exception as e:
-            logger.warning(f"Amazon fetch error: {e}")
-            return [], False
-    
-    def _fetch_ebay(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch deals from eBay."""
-        try:
-            deals = ebay_service.search(
-                query=parsed.product,
-                limit=10,
-                max_price=parsed.budget,
-            )
-            return [d.to_dict() for d in deals]
-        except Exception as e:
-            logger.warning(f"eBay fetch error: {e}")
+            logger.warning(f"{vendor_instance.VENDOR_NAME} fetch error: {e}")
             return []
-    
-    def _fetch_bestbuy(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch deals from Best Buy."""
-        try:
-            deals = bestbuy_service.search(
-                query=parsed.product,
-                limit=10,
-                max_price=parsed.budget,
-            )
-            return [d.to_dict() for d in deals]
-        except Exception as e:
-            logger.warning(f"Best Buy fetch error: {e}")
-            return []
-    
-    def _fetch_facebook(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch deals from Facebook Marketplace."""
-        try:
-            deals = facebook_service.search(
-                query=parsed.product,
-                limit=8,
-                max_price=parsed.budget,
-            )
-            return [d.to_dict() for d in deals]
-        except Exception as e:
-            logger.warning(f"Facebook Marketplace fetch error: {e}")
-            return []
-    
-
-    
-    def _fetch_shopify(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """Fetch deals from Shopify stores."""
-        try:
-            products = shopify_service.search(
-                query=parsed.product,
-                limit=10,
-                max_price=parsed.budget,
-            )
-            return [p.to_dict() for p in products]
-        except Exception as e:
-            logger.warning(f"Shopify fetch error: {e}")
-            return []
-    
-    def _fetch_affiliates(self, parsed: ParsedQuery) -> List[Dict[str, Any]]:
-        """
-        Fetch deals from affiliate networks (CJ, Rakuten, ShareASale).
         
-        Provides access to 40,000+ retailers.
-        """
-        try:
-            products = affiliate_aggregator.search_all(
-                query=parsed.product,
-                limit=15,
-                sort_by="price",
-            )
-            # Filter by budget if specified
-            if parsed.budget:
-                products = [p for p in products if p.price <= parsed.budget or p.price == 0]
-            return [p.to_dict() for p in products]
-        except Exception as e:
-            logger.warning(f"Affiliate networks fetch error: {e}")
-            return []
+        # Convert VendorProduct to dict
+        results = []
+        for p in products:
+            if hasattr(p, 'to_dict'):
+                results.append(p.to_dict())
+            elif isinstance(p, dict):
+                results.append(p)
+        
+        # Filter by budget if specified
+        if parsed.budget:
+            results = [p for p in results if p.get('price', 0) <= parsed.budget]
+        
+        return results, quota_exceeded
+    
+    # ── Filtering and ranking (unchanged) ──────────────────────
     
     def _filter_non_fashion(self, deals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -391,9 +317,6 @@ class DealOrchestrator:
         Layer 1 (blocklist): Remove items with known non-fashion keywords.
         Layer 2 (allowlist): Of remaining items, keep only those containing
                             at least one fashion keyword in the title.
-        
-        This catches edge cases like "apple" (groceries) that aren't in
-        the blocklist but also don't contain any fashion terms.
         """
         def is_fashion(deal: Dict[str, Any]) -> bool:
             title = (deal.get("title") or "").lower()
@@ -417,27 +340,20 @@ class DealOrchestrator:
         """
         Remove products that are clearly for the opposite gender.
         
-        When the user searches "white coat men", filter out items with
-        women-specific terms in the title, and vice versa.
-        
         Uses regex word boundaries for men's terms to prevent
         "men" from matching inside "women".
         """
         import re
         
-        # Women indicators — simple substring matching (no collision risk)
         WOMEN_INDICATORS = {"women", "womens", "women's", "woman", "ladies", "lady", "girls", "girl", "female", "maternity"}
         
-        # Men indicators — use regex word boundaries to avoid matching inside "women"
-        # \bmen\b matches "men" but NOT "women" or "menswear"→ wait, menswear IS men's
-        # So we use \bmen(?!'s|\w) pattern carefully:
         MEN_PATTERNS = [
-            re.compile(r"\bmen\b", re.IGNORECASE),       # "men" as whole word (not "women")
-            re.compile(r"\bmens\b", re.IGNORECASE),       # "mens"
-            re.compile(r"\bmen's\b", re.IGNORECASE),      # "men's"
-            re.compile(r"\bboys?\b", re.IGNORECASE),      # "boy" or "boys"
-            re.compile(r"\bmale\b", re.IGNORECASE),       # "male"
-            re.compile(r"\bgentleman\b", re.IGNORECASE),  # "gentleman"
+            re.compile(r"\bmen\b", re.IGNORECASE),
+            re.compile(r"\bmens\b", re.IGNORECASE),
+            re.compile(r"\bmen's\b", re.IGNORECASE),
+            re.compile(r"\bboys?\b", re.IGNORECASE),
+            re.compile(r"\bmale\b", re.IGNORECASE),
+            re.compile(r"\bgentleman\b", re.IGNORECASE),
         ]
         
         gender_lower = gender.lower()
@@ -446,17 +362,14 @@ class DealOrchestrator:
             title = (deal.get("title") or "").lower()
             
             if gender_lower == "men":
-                # Remove women's products (simple substring is fine)
                 for indicator in WOMEN_INDICATORS:
                     if indicator in title:
                         return False
             elif gender_lower == "women":
-                # Remove men's products (use regex to avoid "men" in "women")
                 for pattern in MEN_PATTERNS:
                     if pattern.search(title):
                         return False
             elif gender_lower in ("kids", "children"):
-                # Remove adult-specific products
                 for indicator in WOMEN_INDICATORS:
                     if indicator in title:
                         return False
@@ -477,14 +390,12 @@ class DealOrchestrator:
         unique_deals = []
         
         for deal in deals:
-            # Normalize title for comparison
             title_key = deal.get("title", "").lower()[:50]
             
             if title_key not in seen_titles:
                 seen_titles[title_key] = deal
                 unique_deals.append(deal)
             else:
-                # Keep the cheaper one
                 existing = seen_titles[title_key]
                 if deal.get("price", float("inf")) < existing.get("price", float("inf")):
                     unique_deals.remove(existing)
@@ -507,7 +418,6 @@ class DealOrchestrator:
         5. Source priority (real APIs ranked higher)
         """
         def score(deal: Dict) -> float:
-            # Weighted scoring - ensure all values are numbers, not None
             relevance = deal.get("relevance_score") if deal.get("relevance_score") is not None else 50
             discount = deal.get("discount_percent") if deal.get("discount_percent") is not None else 0
             rating = deal.get("rating") if deal.get("rating") is not None else 4.0
@@ -521,10 +431,14 @@ class DealOrchestrator:
                 "eBay": 15,
                 "Best Buy": 15,
                 "Facebook Marketplace": 10,
-                "Shopify": 8,
-                "Affiliates": 5,
-                "Mock": 0,
-            }.get(source, 5)  # Default bonus for affiliate sources
+            }.get(source, 0)
+            
+            # Shopify and Affiliate sources (partial match)
+            if not source_bonus:
+                if "Shopify" in source:
+                    source_bonus = 8
+                elif "Affiliate" in source:
+                    source_bonus = 5
             
             # Check if deal meets requirements
             requirement_bonus = 0

@@ -4,12 +4,18 @@ from .orchestrator import orchestrator, DealOrchestrator, SearchResult
 from .nlp_service import nlp_service, NLPService, ExtractedIntent
 from .vision_service import vision_service, VisionService, ImageAnalysis
 from .tiktok_service import tiktok_service, TikTokService, TikTokVideo
+from .instagram_service import instagram_service, InstagramService, InstagramPost
+from .pinterest_service import pinterest_service, PinterestService, PinterestPin, PinterestTrend
+
+# Unified vendor layer (NEW — preferred way to access vendors)
+from .vendors import vendor_manager
+
+# Legacy per-vendor singletons (kept for backward compatibility)
+# The orchestrator no longer uses these — it uses vendor_manager instead.
 from .ebay_service import ebay_service, EbayService, EbayDeal
 from .bestbuy_service import bestbuy_service, BestBuyService, BestBuyDeal
 from .facebook_service import facebook_service, FacebookMarketplaceService, FacebookDeal
 from .shopify_service import shopify_service, ShopifyScraperService, ShopifyProduct
-from .instagram_service import instagram_service, InstagramService, InstagramPost
-from .pinterest_service import pinterest_service, PinterestService, PinterestPin, PinterestTrend
 from .amazon_service import amazon_service, AmazonService, AmazonDeal
 
 __all__ = [

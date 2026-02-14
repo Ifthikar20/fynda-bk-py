@@ -1,8 +1,8 @@
 """
 Vendor Manager
 
-Entitlement service to toggle vendors on/off dynamically.
-Reads configuration from environment variables.
+Manages vendor lifecycle, entitlements, and instance creation.
+Reads configuration from environment variables to toggle vendors on/off.
 """
 
 import os
@@ -14,6 +14,22 @@ from .vendor_registry import VENDOR_REGISTRY, VendorConfig, VendorCategory
 from .base_vendor import BaseVendorService, VendorProduct
 
 logger = logging.getLogger(__name__)
+
+
+# Map service_class names -> module path and class name
+_SERVICE_CLASS_MAP = {
+    # Unified vendors (new)
+    "AmazonVendor":     "deals.services.vendors.amazon.AmazonVendor",
+    "EbayVendor":       "deals.services.vendors.ebay.EbayVendor",
+    "BestBuyVendor":    "deals.services.vendors.bestbuy.BestBuyVendor",
+    "FacebookVendor":   "deals.services.vendors.facebook.FacebookVendor",
+    "ShopifyVendor":    "deals.services.vendors.shopify.ShopifyVendor",
+    "AffiliatesVendor": "deals.services.vendors.affiliates.AffiliatesVendor",
+    # Legacy affiliate services (individually toggled, usually disabled)
+    "RakutenService":   "deals.services.affiliates.rakuten.RakutenService",
+    "CJService":        "deals.services.affiliates.cj_affiliate.CJAffiliateService",
+    "ShareASaleService":"deals.services.affiliates.shareasale.ShareASaleService",
+}
 
 
 class VendorManager:
@@ -43,15 +59,7 @@ class VendorManager:
     def _instantiate_vendor(self, config: VendorConfig) -> Optional[BaseVendorService]:
         """Create an instance of a vendor service."""
         try:
-            # Map service class names to actual classes
-            service_map = {
-                # Affiliate services
-                "RakutenService": "deals.services.affiliates.rakuten.RakutenService",
-                "CJService": "deals.services.affiliates.cj_affiliate.CJAffiliateService",
-                "ShareASaleService": "deals.services.affiliates.shareasale.ShareASaleService",
-            }
-            
-            class_path = service_map.get(config.service_class)
+            class_path = _SERVICE_CLASS_MAP.get(config.service_class)
             if not class_path:
                 logger.warning(f"No service mapping for {config.service_class}")
                 return None
@@ -95,7 +103,7 @@ class VendorManager:
         ]
     
     def get_vendor_instance(self, vendor_id: str) -> Optional[BaseVendorService]:
-        """Get a vendor service instance."""
+        """Get a vendor service instance (lazy-load if needed)."""
         if vendor_id not in self._vendor_instances:
             config = VENDOR_REGISTRY.get(vendor_id)
             if config and self.is_vendor_enabled(vendor_id):
@@ -112,12 +120,8 @@ class VendorManager:
         """
         Search across all enabled vendors.
         
-        Args:
-            query: Search term
-            limit: Max results per vendor
-            
-        Returns:
-            Combined list of products from all vendors
+        Each vendor's search_products is protected by circuit breaker,
+        so slow/failing vendors are automatically bypassed.
         """
         all_products = []
         
@@ -139,16 +143,25 @@ class VendorManager:
         
         instance = self._vendor_instances.get(vendor_id)
         
-        return {
+        status = {
             "id": vendor_id,
             "name": config.name,
             "enabled": self.is_vendor_enabled(vendor_id),
             "loaded": instance is not None,
             "configured": instance.is_configured() if instance else False,
             "category": config.category.value,
+            "priority": config.priority,
             "requires_auth": config.requires_auth,
             "env_key": config.env_key,
+            "description": config.description,
         }
+        
+        # Include circuit breaker status if loaded
+        if instance:
+            status["circuit_open"] = instance._is_circuit_open()
+            status["consecutive_failures"] = instance._consecutive_failures
+        
+        return status
     
     def get_all_status(self) -> List[Dict[str, Any]]:
         """Get status for all registered vendors."""

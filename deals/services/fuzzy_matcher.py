@@ -43,7 +43,7 @@ def levenshtein_distance(s1: str, s2: str) -> int:
     return previous_row[-1]
 
 
-@lru_cache(maxsize=10000)
+@lru_cache(maxsize=50000)
 def cached_levenshtein(s1: str, s2: str) -> int:
     """Cached version of levenshtein_distance for repeated lookups."""
     return levenshtein_distance(s1, s2)
