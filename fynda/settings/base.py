@@ -64,6 +64,8 @@ MIDDLEWARE = [
     # Response interceptors (run last - sanitize output)
     "fynda.middleware.ResponseInterceptor",
     "fynda.middleware.NotFoundNormalizerMiddleware",
+    # API versioning deprecation headers
+    "core.middleware.deprecation.APIDeprecationMiddleware",
 ]
 
 ROOT_URLCONF = "fynda.urls"
