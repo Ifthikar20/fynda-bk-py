@@ -136,7 +136,7 @@ REST_FRAMEWORK = {
         "anon": "100/hour",
         "user": "1000/hour",
     },
-    "EXCEPTION_HANDLER": "fynda.exceptions.fynda_exception_handler",
+    "EXCEPTION_HANDLER": "core.exceptions.handlers.fynda_exception_handler",
 }
 
 # JWT Settings

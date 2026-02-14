@@ -1098,7 +1098,7 @@ class MobileOAuthView(APIView):
         try:
             from users.services import UserService
             from mobile.services import MobileDeviceService
-            from fynda.exceptions import ValidationError as FyndaValidation, AuthenticationError
+            from core.exceptions import ValidationError as FyndaValidation, AuthenticationError
             
             # Build extra params for Apple
             extra_params = {}

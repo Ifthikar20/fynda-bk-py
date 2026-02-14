@@ -8,7 +8,7 @@ Business logic for user operations, extracted from views.
 from django.contrib.auth import get_user_model
 
 from core.services import BaseService
-from fynda.exceptions import AuthenticationError, ValidationError
+from core.exceptions import AuthenticationError, ValidationError
 
 User = get_user_model()
 

@@ -172,7 +172,7 @@ class OAuthView(APIView):
     
     def post(self, request):
         from users.services import UserService
-        from fynda.exceptions import ValidationError as FyndaValidation, AuthenticationError
+        from core.exceptions import ValidationError as FyndaValidation, AuthenticationError
 
         provider = request.data.get('provider', '').lower()
         code = request.data.get('code')
