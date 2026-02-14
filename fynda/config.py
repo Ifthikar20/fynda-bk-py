@@ -154,6 +154,19 @@ class MLServiceConfig:
 
 
 @dataclass(frozen=True)
+class EmailConfig:
+    """Email (AWS SES) settings."""
+    backend: str = field(default_factory=lambda: os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"))
+    host: str = field(default_factory=lambda: os.getenv("EMAIL_HOST", "email-smtp.us-east-1.amazonaws.com"))
+    port: int = field(default_factory=lambda: int(os.getenv("EMAIL_PORT", "587")))
+    use_tls: bool = True
+    user: str = field(default_factory=lambda: os.getenv("AWS_SES_ACCESS_KEY", ""))
+    password: str = field(default_factory=lambda: os.getenv("AWS_SES_SECRET_KEY", ""))
+    from_email: str = field(default_factory=lambda: os.getenv("DEFAULT_FROM_EMAIL", "Fynda <noreply@fynda.shop>"))
+    site_url: str = field(default_factory=lambda: os.getenv("SITE_URL", "https://fynda.shop"))
+
+
+@dataclass(frozen=True)
 class AppConfig:
     """Main application configuration - aggregates all config sections."""
     
@@ -167,6 +180,7 @@ class AppConfig:
     apis: APIKeysConfig = field(default_factory=APIKeysConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     ml_service: MLServiceConfig = field(default_factory=MLServiceConfig)
+    email: EmailConfig = field(default_factory=EmailConfig)
     
     @property
     def is_production(self) -> bool:

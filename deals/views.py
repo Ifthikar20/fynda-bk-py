@@ -17,6 +17,7 @@ import base64
 
 from .services import orchestrator, tiktok_service, instagram_service, pinterest_service
 from .serializers import SearchResponseSerializer
+from .repositories import StoryboardRepository, SavedDealRepository
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -386,12 +387,12 @@ class CreateSharedStoryboardView(APIView):
         expires_at = timezone.now() + timedelta(days=expires_in_days)
         
         # Create the shared storyboard
-        shared = SharedStoryboard.objects.create(
-            token=token,
+        shared = StoryboardRepository.create(
             user=request.user,
             title=title,
             storyboard_data=storyboard_data,
-            expires_at=expires_at
+            expires_at=expires_at,
+            token=token,
         )
         
         # Build share URL
@@ -420,9 +421,8 @@ class GetSharedStoryboardView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request, token):
-        try:
-            shared = SharedStoryboard.objects.get(token=token)
-        except SharedStoryboard.DoesNotExist:
+        shared = StoryboardRepository.get_by_token(token)
+        if not shared:
             return Response(
                 {"error": "Shared storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
@@ -443,7 +443,7 @@ class GetSharedStoryboardView(APIView):
             )
         
         # Increment view count
-        shared.increment_views()
+        StoryboardRepository.increment_views(shared)
         
         return Response({
             "title": shared.title,
@@ -463,7 +463,7 @@ class MySharedStoryboardsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        shares = SharedStoryboard.objects.filter(user=request.user)
+        shares = StoryboardRepository.list_by_user(request.user)
         
         return Response({
             "shares": [
@@ -492,10 +492,14 @@ class MySharedStoryboardsView(APIView):
             )
         
         try:
-            shared = SharedStoryboard.objects.get(id=share_id, user=request.user)
-            shared.delete()
-            return Response({"message": "Shared storyboard deleted"})
-        except SharedStoryboard.DoesNotExist:
+            deleted = StoryboardRepository.delete_by_id(request.user, share_id)
+            if deleted:
+                return Response({"message": "Shared storyboard deleted"})
+            return Response(
+                {"error": "Shared storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception:
             return Response(
                 {"error": "Shared storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
@@ -516,11 +520,7 @@ class SavedDealsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        from users.models import SavedDeal
-        
-        favorites = SavedDeal.objects.filter(
-            user=request.user
-        ).order_by("-created_at")[:100]
+        favorites = SavedDealRepository.list_for_user(request.user)
         
         items = []
         for f in favorites:
@@ -543,9 +543,6 @@ class SavedDealsView(APIView):
         })
     
     def post(self, request):
-        
-        from users.models import SavedDeal
-        
         deal_id = request.data.get("deal_id")
         deal_data = request.data.get("deal_data", {})
         
@@ -555,10 +552,10 @@ class SavedDealsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        favorite, created = SavedDeal.objects.get_or_create(
+        favorite, created = SavedDealRepository.save_deal(
             user=request.user,
             deal_id=deal_id,
-            defaults={"deal_data": deal_data}
+            deal_data=deal_data,
         )
         
         return Response(
@@ -576,13 +573,10 @@ class SavedDealDetailView(APIView):
     permission_classes = [IsAuthenticated]
     
     def delete(self, request, deal_id):
-        
-        from users.models import SavedDeal
-        
-        deleted, _ = SavedDeal.objects.filter(
+        deleted = SavedDealRepository.delete_deal(
             user=request.user,
-            deal_id=deal_id
-        ).delete()
+            deal_id=deal_id,
+        )
         
         if deleted:
             return Response(status=status.HTTP_204_NO_CONTENT)

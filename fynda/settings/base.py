@@ -133,6 +133,7 @@ REST_FRAMEWORK = {
         "anon": "100/hour",
         "user": "1000/hour",
     },
+    "EXCEPTION_HANDLER": "fynda.exceptions.fynda_exception_handler",
 }
 
 # JWT Settings
@@ -259,16 +260,16 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 
 # =============================================================================
-# EMAIL CONFIGURATION - AWS SES
+# EMAIL CONFIGURATION - AWS SES (from config)
 # =============================================================================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'email-smtp.us-east-1.amazonaws.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('AWS_SES_ACCESS_KEY', '')
-EMAIL_HOST_PASSWORD = os.getenv('AWS_SES_SECRET_KEY', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Fynda <noreply@fynda.shop>')
-SITE_URL = os.getenv('SITE_URL', 'https://fynda.shop')
+EMAIL_BACKEND = config.email.backend
+EMAIL_HOST = config.email.host
+EMAIL_PORT = config.email.port
+EMAIL_USE_TLS = config.email.use_tls
+EMAIL_HOST_USER = config.email.user
+EMAIL_HOST_PASSWORD = config.email.password
+DEFAULT_FROM_EMAIL = config.email.from_email
+SITE_URL = config.email.site_url
 
 # =============================================================================
 # JAZZMIN - MODERN ADMIN UI

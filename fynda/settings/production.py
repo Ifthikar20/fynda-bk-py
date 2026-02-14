@@ -3,33 +3,24 @@ Production Settings - Security Hardened
 """
 
 from .base import *
-import os
+from fynda.config import config, get_database_config
 
 DEBUG = False
-SECRET_KEY = os.environ["SECRET_KEY"]
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+SECRET_KEY = config.security.secret_key
+ALLOWED_HOSTS = config.security.allowed_hosts
 
-# PostgreSQL for production
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "fynda"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-        "CONN_MAX_AGE": 60,  # Persistent connections
-        "OPTIONS": {
-            "sslmode": os.getenv("DB_SSL_MODE", "prefer"),
-        },
-    }
+# PostgreSQL for production (from config, with production overrides)
+DATABASES = get_database_config()
+DATABASES["default"]["CONN_MAX_AGE"] = 60  # Persistent connections
+DATABASES["default"]["OPTIONS"] = {
+    "sslmode": os.getenv("DB_SSL_MODE", "prefer"),
 }
 
-# Redis cache for production
+# Redis cache for production (from config)
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/1"),
+        "LOCATION": config.redis.url,
     }
 }
 
@@ -72,22 +63,17 @@ CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # =============================================================================
-# CORS - Strict Production Settings
+# CORS - Strict Production Settings (from config + hardcoded essentials)
 # =============================================================================
 CORS_ALLOW_ALL_ORIGINS = False
 
-# Always allow our own domains + any extras from env var
+# Always allow our own domains + any extras from config
 _HARDCODED_ORIGINS = [
     "https://fynda.shop",
     "https://www.fynda.shop",
     "https://api.fynda.shop",
 ]
-_ENV_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
-CORS_ALLOWED_ORIGINS = list(set(_HARDCODED_ORIGINS + _ENV_ORIGINS))
+CORS_ALLOWED_ORIGINS = list(set(_HARDCODED_ORIGINS + config.security.cors_origins))
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = [
@@ -119,12 +105,12 @@ LOGGING["root"]["level"] = "WARNING"
 LOGGING["handlers"]["console"]["level"] = "WARNING"
 
 # =============================================================================
-# JWT - Shorter Tokens for Security
+# JWT - Shorter Tokens for Security (from config)
 # =============================================================================
 from datetime import timedelta
 SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"] = timedelta(minutes=30)
 SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] = timedelta(days=1)
-SIMPLE_JWT["SIGNING_KEY"] = os.environ["SECRET_KEY"]
+SIMPLE_JWT["SIGNING_KEY"] = config.security.secret_key
 
 # =============================================================================
 # STATIC/MEDIA - Production CDN
@@ -136,3 +122,4 @@ STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesSto
 # AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 # AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_CLOUDFRONT_DOMAIN")
 # STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
