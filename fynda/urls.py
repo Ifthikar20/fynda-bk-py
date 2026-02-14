@@ -23,11 +23,23 @@ sitemaps = {
 
 
 def api_root(request):
-    """API root with documentation."""
-    return JsonResponse({
+    """
+    API root — public surface is minimal.
+    Full endpoint docs only shown to authenticated users.
+    """
+    # Minimal public response — no endpoint enumeration
+    public = {
         "service": "Fynda API",
         "version": "1.0.0",
-        "description": "Search for the best deals across multiple marketplaces",
+    }
+
+    if not request.user or not request.user.is_authenticated:
+        return JsonResponse(public)
+
+    # Authenticated users see full documentation
+    mp = config.security.mobile_api_prefix  # obfuscated mobile path
+
+    public.update({
         "notice": "Use /api/v1/ prefix. Unversioned /api/ is deprecated.",
         "endpoints": {
             "web": {
@@ -37,20 +49,20 @@ def api_root(request):
                 "auth": "/api/v1/auth/",
             },
             "mobile": {
-                "base": "/api/v1/mobile/",
-                "health": "/api/v1/mobile/health/",
+                "base": f"/api/v1/{mp}/",
+                "health": f"/api/v1/{mp}/health/",
                 "auth": {
-                    "login": "/api/v1/mobile/auth/login/",
-                    "register": "/api/v1/mobile/auth/register/",
-                    "logout": "/api/v1/mobile/auth/logout/",
+                    "login": f"/api/v1/{mp}/auth/login/",
+                    "register": f"/api/v1/{mp}/auth/register/",
+                    "logout": f"/api/v1/{mp}/auth/logout/",
                 },
-                "devices": "/api/v1/mobile/devices/",
-                "preferences": "/api/v1/mobile/preferences/",
-                "sync": "/api/v1/mobile/sync/",
-                "deals": "/api/v1/mobile/deals/",
-                "search": "/api/v1/mobile/deals/search/",
-                "alerts": "/api/v1/mobile/alerts/",
-                "favorites": "/api/v1/mobile/favorites/",
+                "devices": f"/api/v1/{mp}/devices/",
+                "preferences": f"/api/v1/{mp}/preferences/",
+                "sync": f"/api/v1/{mp}/sync/",
+                "deals": f"/api/v1/{mp}/deals/",
+                "search": f"/api/v1/{mp}/deals/search/",
+                "alerts": f"/api/v1/{mp}/alerts/",
+                "favorites": f"/api/v1/{mp}/favorites/",
             },
             "blog": {
                 "home": "/blog/",
@@ -64,6 +76,8 @@ def api_root(request):
         "example": "/api/v1/search/?q=sony+camera+$1200+with+lens",
     })
 
+    return JsonResponse(public)
+
 
 urlpatterns = [
     path('', api_root, name='api_root'),
@@ -74,14 +88,14 @@ urlpatterns = [
     path('api/v1/', include('deals.urls')),
     path('api/v1/', include('emails.urls')),
     path('api/v1/auth/', include('users.urls')),
-    path('api/v1/mobile/', include('mobile.urls')),
+    path(f'api/v1/{config.security.mobile_api_prefix}/', include('mobile.urls')),
     path('api/v1/blog/', include('blog.api_urls')),
 
     # ── Legacy unversioned API (deprecated, kept for backward compat) ─
     path('api/', include('deals.urls')),
     path('api/', include('emails.urls')),
     path('api/auth/', include('users.urls')),
-    path('api/mobile/', include(('mobile.urls', 'mobile'), namespace='mobile-legacy')),
+    path(f'api/{config.security.mobile_api_prefix}/', include(('mobile.urls', 'mobile'), namespace='mobile-legacy')),
     path('api/blog/', include(('blog.api_urls', 'blog_api'), namespace='blog_api-legacy')),
 
     # Blog SSR (for SEO) — not versioned

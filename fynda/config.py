@@ -139,6 +139,10 @@ class SecurityConfig:
     # Set to a secret value in production for security through obscurity
     admin_url: str = field(default_factory=lambda: os.getenv("ADMIN_URL", "admin"))
     
+    # Obfuscated mobile API path prefix (without leading/trailing slashes)
+    # In production, set to a random string (e.g. "m9x4k2f") to prevent enumeration
+    mobile_api_prefix: str = field(default_factory=lambda: os.getenv("MOBILE_API_PREFIX", "mobile"))
+    
     @property
     def is_secure_key(self) -> bool:
         """Check if using a proper secret key."""
