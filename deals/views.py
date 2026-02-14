@@ -17,7 +17,8 @@ import base64
 
 from .services import orchestrator, tiktok_service, instagram_service, pinterest_service
 from .serializers import SearchResponseSerializer
-from .repositories import StoryboardRepository, SavedDealRepository
+from .repositories import SharedStoryboardRepository
+from users.repositories import SavedDealRepository
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -387,7 +388,7 @@ class CreateSharedStoryboardView(APIView):
         expires_at = timezone.now() + timedelta(days=expires_in_days)
         
         # Create the shared storyboard
-        shared = StoryboardRepository.create(
+        shared = SharedStoryboardRepository.create_shared(
             user=request.user,
             title=title,
             storyboard_data=storyboard_data,
@@ -421,7 +422,7 @@ class GetSharedStoryboardView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request, token):
-        shared = StoryboardRepository.get_by_token(token)
+        shared = SharedStoryboardRepository.get_by_token(token)
         if not shared:
             return Response(
                 {"error": "Shared storyboard not found"},
@@ -443,7 +444,7 @@ class GetSharedStoryboardView(APIView):
             )
         
         # Increment view count
-        StoryboardRepository.increment_views(shared)
+        SharedStoryboardRepository.increment_views(shared)
         
         return Response({
             "title": shared.title,
@@ -463,7 +464,7 @@ class MySharedStoryboardsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        shares = StoryboardRepository.list_by_user(request.user)
+        shares = SharedStoryboardRepository.get_user_storyboards(request.user)
         
         return Response({
             "shares": [
@@ -492,7 +493,7 @@ class MySharedStoryboardsView(APIView):
             )
         
         try:
-            deleted = StoryboardRepository.delete_by_id(request.user, share_id)
+            deleted = SharedStoryboardRepository.delete_by_id(request.user, share_id)
             if deleted:
                 return Response({"message": "Shared storyboard deleted"})
             return Response(
@@ -520,7 +521,7 @@ class SavedDealsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        favorites = SavedDealRepository.list_for_user(request.user)
+        favorites = SavedDealRepository.get_user_deals(request.user)
         
         items = []
         for f in favorites:
@@ -573,7 +574,7 @@ class SavedDealDetailView(APIView):
     permission_classes = [IsAuthenticated]
     
     def delete(self, request, deal_id):
-        deleted = SavedDealRepository.delete_deal(
+        deleted = SavedDealRepository.unsave_deal(
             user=request.user,
             deal_id=deal_id,
         )
