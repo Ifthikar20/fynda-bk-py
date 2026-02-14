@@ -31,6 +31,13 @@ from functools import lru_cache
 from typing import Optional, List
 import logging
 
+# Load .env file if present (dev convenience, no-op in Docker production)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, rely on real env vars
+
 logger = logging.getLogger(__name__)
 
 
@@ -196,18 +203,40 @@ class AppConfig:
         Call this on startup to catch misconfigurations early.
         """
         issues = []
-        
+
+        # ── Production-critical checks ────────────────────────────────
         if self.is_production:
             if not self.security.is_secure_key:
                 issues.append("CRITICAL: Using insecure SECRET_KEY in production!")
+            if len(self.security.secret_key) < 50:
+                issues.append("CRITICAL: SECRET_KEY must be at least 50 characters")
             if self.debug:
                 issues.append("WARNING: DEBUG=True in production!")
+            if not self.security.allowed_hosts or self.security.allowed_hosts == ["localhost,127.0.0.1"]:
+                issues.append("CRITICAL: ALLOWED_HOSTS not configured for production")
+            if not self.database.user:
+                issues.append("CRITICAL: DB_USER not set for production")
+            if not self.database.password:
+                issues.append("CRITICAL: DB_PASSWORD not set for production")
+            if not self.email.user or not self.email.password:
+                issues.append("WARNING: AWS SES credentials not configured (email disabled)")
             if not self.apis.configured_services:
                 issues.append("WARNING: No external API services configured")
-        
+
+        # ── Port range checks ─────────────────────────────────────────
+        if not (1 <= self.database.port <= 65535):
+            issues.append(f"CRITICAL: DB_PORT {self.database.port} out of valid range (1-65535)")
+        if not (1 <= self.email.port <= 65535):
+            issues.append(f"CRITICAL: EMAIL_PORT {self.email.port} out of valid range (1-65535)")
+
+        # ── Redis URL format ──────────────────────────────────────────
+        if not self.redis.url.startswith(("redis://", "rediss://", "unix://")):
+            issues.append(f"WARNING: REDIS_URL '{self.redis.url}' has unexpected scheme")
+
+        # ── General info ──────────────────────────────────────────────
         if not self.apis.rapidapi_key:
             issues.append("INFO: RapidAPI key not configured (Pinterest, TikTok, Instagram disabled)")
-        
+
         return issues
     
     def log_status(self) -> None:
@@ -268,15 +297,19 @@ def get_database_config() -> dict:
     """
     if config.database.is_sqlite:
         return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": config.database.name,
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": config.database.name,
+            }
         }
-    
+
     return {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config.database.name,
-        "HOST": config.database.host,
-        "PORT": config.database.port,
-        "USER": config.database.user,
-        "PASSWORD": config.database.password,
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config.database.name,
+            "HOST": config.database.host,
+            "PORT": config.database.port,
+            "USER": config.database.user,
+            "PASSWORD": config.database.password,
+        }
     }

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "nested_admin",  # For nested inlines in admin
     # Local apps
+    "core.apps.CoreConfig",
     "deals",
     "users",
     "emails",
