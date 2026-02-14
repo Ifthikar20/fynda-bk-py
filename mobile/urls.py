@@ -34,6 +34,7 @@ from .views import (
     MobileStoryboardView,
     MobileStoryboardDetailView,
 )
+from .remove_bg_view import RemoveBackgroundView
 
 app_name = "mobile"
 
@@ -91,4 +92,9 @@ urlpatterns = [
     # ============================================
     path("storyboard/", MobileStoryboardView.as_view(), name="storyboard-list"),
     path("storyboard/<str:token>/", MobileStoryboardDetailView.as_view(), name="storyboard-detail"),
+    
+    # ============================================
+    # Tools
+    # ============================================
+    path("tools/remove-bg/", RemoveBackgroundView.as_view(), name="remove-bg"),
 ]
