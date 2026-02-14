@@ -132,20 +132,18 @@ class MobileLoginView(APIView):
         refresh = RefreshToken.for_user(user)
         
         # Register/update device
-        device, _ = DeviceToken.objects.update_or_create(
+        from mobile.services import MobileDeviceService
+        device, _ = MobileDeviceService.register_device(
             user=user,
             device_id=data["device_id"],
-            defaults={
-                "platform": data["platform"],
-                "token": data.get("push_token", ""),
-                "device_name": data.get("device_name", ""),
-                "app_version": data.get("app_version", ""),
-                "is_active": True,
-            }
+            platform=data["platform"],
+            push_token=data.get("push_token", ""),
+            device_name=data.get("device_name", ""),
+            app_version=data.get("app_version", ""),
         )
         
         # Get or create preferences
-        preferences, _ = UserPreferences.objects.get_or_create(user=user)
+        preferences, _ = MobileDeviceService.get_or_create_preferences(user)
         
         response_data = {
             "access_token": str(refresh.access_token),
@@ -191,16 +189,16 @@ class MobileRegisterView(APIView):
         refresh = RefreshToken.for_user(user)
         
         # Register device
-        device = DeviceToken.objects.create(
+        from mobile.services import MobileDeviceService
+        device, _ = MobileDeviceService.register_device(
             user=user,
             device_id=data["device_id"],
             platform=data["platform"],
-            token=data.get("push_token", ""),
-            is_active=True,
+            push_token=data.get("push_token", ""),
         )
         
         # Create default preferences
-        preferences = UserPreferences.objects.create(user=user)
+        preferences, _ = MobileDeviceService.get_or_create_preferences(user)
         
         response_data = {
             "access_token": str(refresh.access_token),
@@ -234,10 +232,8 @@ class MobileLogoutView(APIView):
         device_id = request.data.get("device_id")
         
         if device_id:
-            DeviceToken.objects.filter(
-                user=request.user,
-                device_id=device_id
-            ).update(is_active=False)
+            from mobile.services import MobileDeviceService
+            MobileDeviceService.deactivate_device(request.user, device_id)
         
         return Response({"status": "logged_out"})
 
@@ -1100,76 +1096,37 @@ class MobileOAuthView(APIView):
             )
         
         try:
-            from users.oauth import get_oauth_provider
-            from users.models import User
+            from users.services import UserService
+            from mobile.services import MobileDeviceService
+            from fynda.exceptions import ValidationError as FyndaValidation, AuthenticationError
             
-            oauth = get_oauth_provider(provider)
-            
+            # Build extra params for Apple
             extra_params = {}
             if provider == 'apple':
                 extra_params['id_token'] = request.data.get('id_token')
                 extra_params['user'] = request.data.get('user', {})
             
-            user_info = oauth.get_user_info(
-                code=code,
-                redirect_uri=redirect_uri,
-                **extra_params
+            # Exchange code for user info
+            user_info = UserService.get_oauth_user_info(
+                provider, code, redirect_uri, **extra_params
             )
             
-            if not user_info.get('email'):
-                return Response(
-                    {"error": "Could not retrieve email from provider"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Find or create user (same logic as web OAuthView)
-            user = None
-            
-            if user_info.get('uid'):
-                user = User.objects.filter(
-                    oauth_provider=provider,
-                    oauth_uid=user_info['uid']
-                ).first()
-            
-            if not user:
-                user = User.objects.filter(email=user_info['email']).first()
-                if user and not user.oauth_provider:
-                    user.oauth_provider = provider
-                    user.oauth_uid = user_info.get('uid')
-                    user.save(update_fields=['oauth_provider', 'oauth_uid'])
-            
-            if not user:
-                user = User.objects.create_user(
-                    email=user_info['email'],
-                    password=None,
-                    first_name=user_info.get('first_name', ''),
-                    last_name=user_info.get('last_name', ''),
-                    oauth_provider=provider,
-                    oauth_uid=user_info.get('uid'),
-                )
-            
-            if not user.is_active:
-                return Response(
-                    {"error": "Account is disabled"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+            # Authenticate or create user
+            user, created = UserService.authenticate_oauth(provider, user_info)
             
             # Generate tokens
             refresh = RefreshToken.for_user(user)
             
             # Register/update device
-            device, _ = DeviceToken.objects.update_or_create(
+            device, _ = MobileDeviceService.register_device(
                 user=user,
                 device_id=device_id,
-                defaults={
-                    "platform": platform,
-                    "token": request.data.get("push_token", ""),
-                    "is_active": True,
-                }
+                platform=platform,
+                push_token=request.data.get("push_token", ""),
             )
             
             # Get or create preferences
-            preferences, _ = UserPreferences.objects.get_or_create(user=user)
+            preferences, _ = MobileDeviceService.get_or_create_preferences(user)
             
             response_data = {
                 "access_token": str(refresh.access_token),
@@ -1187,12 +1144,17 @@ class MobileOAuthView(APIView):
             
             return Response(MobileLoginResponseSerializer(response_data).data)
         
-        except ValueError as e:
+        except (FyndaValidation, ValueError) as e:
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        except Exception as e:
+        except AuthenticationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        except Exception:
             logger.exception("Mobile OAuth error")
             return Response(
                 {"error": "OAuth authentication failed"},

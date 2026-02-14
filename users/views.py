@@ -171,6 +171,9 @@ class OAuthView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        from users.services import UserService
+        from fynda.exceptions import ValidationError as FyndaValidation, AuthenticationError
+
         provider = request.data.get('provider', '').lower()
         code = request.data.get('code')
         redirect_uri = request.data.get('redirect_uri')
@@ -188,65 +191,19 @@ class OAuthView(APIView):
             )
         
         try:
-            from .oauth import get_oauth_provider
-            
-            oauth = get_oauth_provider(provider)
-            
-            # Additional params for Apple
+            # Build extra params for Apple
             extra_params = {}
             if provider == 'apple':
                 extra_params['id_token'] = request.data.get('id_token')
                 extra_params['user'] = request.data.get('user', {})
-            
-            user_info = oauth.get_user_info(
-                code=code,
-                redirect_uri=redirect_uri,
-                **extra_params
+
+            # Exchange code for user info
+            user_info = UserService.get_oauth_user_info(
+                provider, code, redirect_uri, **extra_params
             )
-            
-            if not user_info.get('email'):
-                return Response(
-                    {"error": "Could not retrieve email from provider"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Try to find existing user by email or OAuth UID
-            user = None
-            
-            # First, check if user exists with this OAuth UID
-            if user_info.get('uid'):
-                user = User.objects.filter(
-                    oauth_provider=provider,
-                    oauth_uid=user_info['uid']
-                ).first()
-            
-            # If not found, check by email
-            if not user:
-                user = User.objects.filter(email=user_info['email']).first()
-                
-                if user:
-                    # Link existing email account to OAuth
-                    if not user.oauth_provider:
-                        user.oauth_provider = provider
-                        user.oauth_uid = user_info.get('uid')
-                        user.save(update_fields=['oauth_provider', 'oauth_uid'])
-            
-            # Create new user if not found
-            if not user:
-                user = User.objects.create_user(
-                    email=user_info['email'],
-                    password=None,  # OAuth users don't have passwords
-                    first_name=user_info.get('first_name', ''),
-                    last_name=user_info.get('last_name', ''),
-                    oauth_provider=provider,
-                    oauth_uid=user_info.get('uid'),
-                )
-            
-            if not user.is_active:
-                return Response(
-                    {"error": "Account is disabled"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+
+            # Authenticate or create user
+            user, created = UserService.authenticate_oauth(provider, user_info)
             
             # Generate tokens
             refresh = RefreshToken.for_user(user)
@@ -257,15 +214,25 @@ class OAuthView(APIView):
                     "access": str(refresh.access_token),
                     "refresh": str(refresh),
                 },
-                "created": user._state.adding if hasattr(user, '_state') else False
+                "created": created,
             })
             
+        except FyndaValidation as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except AuthenticationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         except ValueError as e:
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        except Exception as e:
+        except Exception:
             import logging
             logging.getLogger(__name__).exception("OAuth error")
             return Response(
