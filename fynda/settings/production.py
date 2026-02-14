@@ -12,9 +12,10 @@ ALLOWED_HOSTS = config.security.allowed_hosts
 # PostgreSQL for production (from config, with production overrides)
 DATABASES = get_database_config()
 DATABASES["default"]["CONN_MAX_AGE"] = 60  # Persistent connections
-DATABASES["default"]["OPTIONS"] = {
-    "sslmode": os.getenv("DB_SSL_MODE", "prefer"),
-}
+if "postgresql" in DATABASES["default"]["ENGINE"]:
+    DATABASES["default"]["OPTIONS"] = {
+        "sslmode": os.getenv("DB_SSL_MODE", "prefer"),
+    }
 
 # Redis cache for production (from config)
 CACHES = {

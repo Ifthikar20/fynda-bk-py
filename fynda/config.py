@@ -57,6 +57,10 @@ class DatabaseConfig:
     
     @property
     def is_sqlite(self) -> bool:
+        # If DB_HOST is explicitly set to something other than localhost,
+        # the user intends PostgreSQL even if DATABASE_URL is not set
+        if self.host not in ("localhost", "127.0.0.1", "") and self.user:
+            return False
         return "sqlite" in self.url.lower()
 
 
