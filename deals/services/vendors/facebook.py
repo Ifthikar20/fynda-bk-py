@@ -39,14 +39,15 @@ class FacebookVendor(BaseVendorService):
     
     def _do_search(self, query: str, limit: int) -> List[VendorProduct]:
         if not self.is_configured():
-            # Return mock listings when not configured
-            return self._get_mock_listings(query, limit)
+            # No API key — return nothing instead of fake mock listings
+            logger.debug("Facebook Marketplace vendor not configured, skipping")
+            return []
         
         try:
             return self._search_api(query, limit)
         except Exception as e:
-            logger.warning(f"Facebook Marketplace API error, using mock: {e}")
-            return self._get_mock_listings(query, limit)
+            logger.warning(f"Facebook Marketplace API error: {e}")
+            return []
     
     def _search_api(self, query: str, limit: int) -> List[VendorProduct]:
         """Search Facebook Marketplace via RapidAPI."""
