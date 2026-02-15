@@ -188,6 +188,9 @@ jobs:
             # Collect static files
             docker compose -f $COMPOSE_FILE exec -T api python manage.py collectstatic --noinput || echo "Collectstatic skipped or failed"
             
+            # Clear search cache (stale results from previous code)
+            docker compose -f $COMPOSE_FILE exec -T api python manage.py shell -c "from django.core.cache import cache; cache.clear(); print('Search cache cleared')" || echo "Cache clear skipped"
+            
             # Cleanup old images
             docker image prune -f
             
