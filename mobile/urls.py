@@ -33,6 +33,8 @@ from .views import (
     # Storyboard
     MobileStoryboardView,
     MobileStoryboardDetailView,
+    # Featured
+    MobileFeaturedView,
 )
 from .remove_bg_view import RemoveBackgroundView
 
@@ -92,6 +94,11 @@ urlpatterns = [
     # ============================================
     path("storyboard/", MobileStoryboardView.as_view(), name="storyboard-list"),
     path("storyboard/<str:token>/", MobileStoryboardDetailView.as_view(), name="storyboard-detail"),
+    
+    # ============================================
+    # Featured Content
+    # ============================================
+    path("featured/", MobileFeaturedView.as_view(), name="featured"),
     
     # ============================================
     # Tools

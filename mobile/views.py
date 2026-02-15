@@ -524,6 +524,17 @@ class MobileDealListView(APIView):
         # Extra safety: remove deals without images (useless on mobile)
         deals = [d for d in deals if d.get("image") or d.get("image_url") or d.get("product_photo") or d.get("thumbnail")]
         
+        # Remove novelty scenery/nature print items
+        _SCENERY_BLOCKLIST = {
+            "mountain", "scenery", "waterfall", "forest", "ocean view",
+            "galaxy print", "aurora", "nebula", "sunset print", "sunrise print",
+            "nature print", "landscape print", "wildlife", "3d print",
+        }
+        deals = [
+            d for d in deals
+            if not any(kw in (d.get("title") or "").lower() for kw in _SCENERY_BLOCKLIST)
+        ]
+        
         # Apply sorting
         if sort == "price_low":
             deals.sort(key=lambda x: x.get("price", float("inf")))
@@ -609,6 +620,18 @@ class MobileDealSearchView(APIView):
         
         # Remove deals without images (useless on mobile cards)
         deals = [d for d in deals if d.get("image") or d.get("image_url") or d.get("product_photo") or d.get("thumbnail")]
+        
+        # Remove novelty scenery/nature print items (passes fashion filter
+        # because they contain "pants"/"jogger" but show mountain/scenery images)
+        _SCENERY_BLOCKLIST = {
+            "mountain", "scenery", "waterfall", "forest", "ocean view",
+            "galaxy print", "aurora", "nebula", "sunset print", "sunrise print",
+            "nature print", "landscape print", "wildlife", "3d print",
+        }
+        deals = [
+            d for d in deals
+            if not any(kw in (d.get("title") or "").lower() for kw in _SCENERY_BLOCKLIST)
+        ]
         
         # Apply sorting
         sort = data.get("sort", "relevance")
@@ -1399,4 +1422,29 @@ class FavoriteDetailView(APIView):
             {"error": "Saved deal not found"},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# ============================================
+# Featured Content
+# ============================================
+
+class MobileFeaturedView(APIView):
+    """
+    Featured content for mobile home screen.
+    
+    GET /api/mobile/featured/
+    
+    Returns curated brands, search prompts, and quick suggestions
+    from the same source as the web frontend.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        from deals.featured import FEATURED_BRANDS, SEARCH_PROMPTS, QUICK_SUGGESTIONS
+        
+        return Response({
+            "featured_brands": FEATURED_BRANDS,
+            "search_prompts": SEARCH_PROMPTS,
+            "quick_suggestions": QUICK_SUGGESTIONS,
+        })
 
