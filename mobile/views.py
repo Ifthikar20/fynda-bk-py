@@ -515,11 +515,14 @@ class MobileDealListView(APIView):
         
         start_time = time.time()
         
-        # Get featured/trending deals
-        result = orchestrator.search("trending deals")
+        # Get fashion-specific trending deals
+        result = orchestrator.search("trending women fashion clothing shoes accessories")
         result_dict = result.to_dict()
         
         deals = result_dict.get("deals", [])
+        
+        # Extra safety: remove deals without images (useless on mobile)
+        deals = [d for d in deals if d.get("image") or d.get("image_url") or d.get("product_photo") or d.get("thumbnail")]
         
         # Apply sorting
         if sort == "price_low":
@@ -603,6 +606,9 @@ class MobileDealSearchView(APIView):
         result_dict = result.to_dict()
         
         deals = result_dict.get("deals", [])
+        
+        # Remove deals without images (useless on mobile cards)
+        deals = [d for d in deals if d.get("image") or d.get("image_url") or d.get("product_photo") or d.get("thumbnail")]
         
         # Apply sorting
         sort = data.get("sort", "relevance")
