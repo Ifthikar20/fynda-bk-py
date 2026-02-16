@@ -15,9 +15,9 @@ from django.utils.decorators import method_decorator
 import io
 import base64
 
-from .services import orchestrator, tiktok_service, instagram_service, pinterest_service
-from .serializers import SearchResponseSerializer
-from .repositories import SharedStoryboardRepository
+from deals.services import orchestrator, tiktok_service, instagram_service, pinterest_service
+from deals.serializers import SearchResponseSerializer
+from deals.repositories import SharedStoryboardRepository
 from users.repositories import SavedDealRepository
 
 
@@ -59,7 +59,7 @@ class SearchView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
-        from .query_sanitizer import sanitize_query, validate_query, get_pagination_params
+        from deals.query_sanitizer import sanitize_query, validate_query, get_pagination_params
         
         # ── Sanitize & validate ───────────────────────
         raw_query = request.query_params.get('q', '')
@@ -116,7 +116,7 @@ class SearchView(APIView):
         
         # Auto-index returned products into FAISS (background)
         try:
-            from .tasks import index_products_to_faiss
+            from deals.tasks import index_products_to_faiss
             if all_deals:
                 index_products_to_faiss.delay(all_deals)
         except Exception:
@@ -349,7 +349,7 @@ class HealthView(APIView):
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from datetime import timedelta
-from .models import SharedStoryboard
+from deals.models import SharedStoryboard
 
 
 class CreateSharedStoryboardView(APIView):
@@ -594,7 +594,7 @@ class SavedDealDetailView(APIView):
 
 from django.views.decorators.cache import cache_page
 
-from .featured import FEATURED_BRANDS, SEARCH_PROMPTS, QUICK_SUGGESTIONS, CATEGORIES as FEATURED_CATEGORIES
+from deals.featured import FEATURED_BRANDS, SEARCH_PROMPTS, QUICK_SUGGESTIONS, CATEGORIES as FEATURED_CATEGORIES
 
 
 class FeaturedContentView(APIView):
@@ -702,7 +702,7 @@ class VendorStatusView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
-        from .services.vendors import vendor_manager as vm
+        from deals.services.vendors import vendor_manager as vm
         
         return Response({
             "vendors": vm.get_all_status(),
