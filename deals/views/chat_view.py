@@ -9,7 +9,6 @@ and generate conversational responses alongside product results.
 import os
 import json
 import logging
-import requests
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -17,11 +16,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 
 logger = logging.getLogger(__name__)
-
-RAPIDAPI_KEY = os.getenv(
-    "RAPIDAPI_KEY",
-    "ad5affb386msh86b1de74187a3cep186fbejsn29e5c0f03e34",
-)
 
 
 def _get_openai_client():
@@ -37,53 +31,15 @@ def _get_openai_client():
         return None
 
 
-def _search_amazon(query, limit=20):
-    """Search Amazon via RapidAPI and return normalized products."""
+def _search_products(query, limit=20):
+    """Search for products using the existing orchestrator (same as /api/search/)."""
     try:
-        resp = requests.get(
-            "https://real-time-amazon-data.p.rapidapi.com/search",
-            params={"query": query, "page": "1", "country": "US"},
-            headers={
-                "x-rapidapi-host": "real-time-amazon-data.p.rapidapi.com",
-                "x-rapidapi-key": RAPIDAPI_KEY,
-            },
-            timeout=10,
-        )
-        products = resp.json().get("data", {}).get("products", [])
-        results = []
-        for p in products[:limit]:
-            price_str = (p.get("product_price") or "$0").replace("$", "").replace(",", "").strip()
-            orig_str = (p.get("product_original_price") or "").replace("$", "").replace(",", "").strip()
-            try:
-                price = float(price_str) if price_str else 0
-            except ValueError:
-                price = 0
-            try:
-                orig = float(orig_str) if orig_str else None
-            except ValueError:
-                orig = None
-
-            discount = None
-            if orig and price and orig > price:
-                discount = round(((orig - price) / orig) * 100)
-
-            results.append({
-                "id": p.get("asin", ""),
-                "title": p.get("product_title", ""),
-                "price": price,
-                "original_price": orig,
-                "image_url": p.get("product_photo", ""),
-                "source": "Amazon",
-                "merchant_name": "Amazon",
-                "url": p.get("product_url", ""),
-                "rating": p.get("product_star_rating"),
-                "reviews": p.get("product_num_ratings"),
-                "is_prime": p.get("is_prime"),
-                "discount_percent": discount,
-            })
-        return results
+        from deals.services import orchestrator
+        result = orchestrator.search(query)
+        deals = result.to_dict().get("deals", [])[:limit]
+        return deals
     except Exception as e:
-        logger.error(f"Amazon search failed: {e}")
+        logger.error(f"Product search failed: {e}")
         return []
 
 
@@ -166,7 +122,7 @@ class ChatView(APIView):
         client = _get_openai_client()
         if not client:
             # Fallback: use message as search query directly
-            products = _search_amazon(message)
+            products = _search_products(message)
             return Response({
                 "response": f"Here's what I found for \"{message}\".",
                 "products": products,
@@ -200,7 +156,7 @@ class ChatView(APIView):
             ai_response = f"Here's what I found for \"{message}\"."
 
         # Search Amazon with extracted query
-        products = _search_amazon(search_query)
+        products = _search_products(search_query)
 
         return Response({
             "response": ai_response,
