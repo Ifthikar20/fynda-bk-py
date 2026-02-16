@@ -12,6 +12,7 @@ from .views import (
     FeaturedContentView,
     ExploreView, VendorStatusView,
 )
+from .views.chat_view import ChatView
 
 urlpatterns = [
     path('csrf/', CsrfView.as_view(), name='csrf'),
@@ -22,6 +23,7 @@ urlpatterns = [
     path('featured/', FeaturedContentView.as_view(), name='featured'),
     path('explore/', ExploreView.as_view(), name='explore'),
     path('vendors/status/', VendorStatusView.as_view(), name='vendor-status'),
+    path('chat/', ChatView.as_view(), name='chat'),
     
     # Shared Storyboard endpoints
     path('storyboard/share/', CreateSharedStoryboardView.as_view(), name='create-share'),
