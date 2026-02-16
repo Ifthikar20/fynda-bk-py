@@ -98,17 +98,21 @@ def _search_products(query, limit=20):
 # OpenAI function-calling schema for the chat assistant
 CHAT_FUNCTION_SCHEMA = {
     "name": "search_products",
-    "description": "Search for fashion products based on the user's request. Extract the best search query from their message.",
+    "description": "Search for fashion products based on the user's request. Extract the best search query and any price constraints.",
     "parameters": {
         "type": "object",
         "properties": {
             "search_query": {
                 "type": "string",
-                "description": "A concise product search query for Amazon (e.g. 'brown sneakers white sole men'). Strip conversational filler and keep only product-relevant keywords.",
+                "description": "A concise product search query for Amazon (e.g. 'blue jeans men', 'brown sneakers'). Strip conversational filler, price mentions, and keep only product-relevant keywords. Do NOT include price words like 'under $50' or 'cheap'.",
             },
             "response": {
                 "type": "string",
-                "description": "A short, friendly 1-2 sentence response to the user. Do NOT list products — just acknowledge their request and add any helpful shopping tips. Keep it under 40 words.",
+                "description": "A short, friendly 1-2 sentence response to the user. Do NOT list products. Keep it under 40 words.",
+            },
+            "max_price": {
+                "type": "number",
+                "description": "Maximum price budget in USD if the user mentions one (e.g. 'under 50 dollars' = 50, 'less than $30' = 30). Omit if no budget mentioned.",
             },
         },
         "required": ["search_query", "response"],
@@ -117,14 +121,16 @@ CHAT_FUNCTION_SCHEMA = {
 
 SYSTEM_PROMPT = """You are Fynda, a friendly AI fashion shopping assistant. Your job:
 1. Understand what the user is looking for (product type, color, style, budget, brand).
-2. Extract a concise search query to find matching products.
-3. Write a short, helpful response (1-2 sentences, under 40 words). Be warm but concise.
+2. Extract a concise search query — remove price/budget words from the query.
+3. If the user mentions a budget (e.g. 'under $50', 'less than 30 dollars'), extract it as max_price.
+4. Write a short, helpful response (1-2 sentences, under 40 words). Be warm but concise.
 
 Rules:
 - Never list products yourself — products are shown separately.
 - If the user asks about brands, mention 2-3 popular ones for that category.
 - If the query is vague, still extract the best search query you can.
 - Do not use emojis.
+- IMPORTANT: Do NOT include price constraints in search_query. Use max_price instead.
 """
 
 
@@ -200,12 +206,14 @@ class ChatView(APIView):
             tool_call = completion.choices[0].message.tool_calls[0]
             args = json.loads(tool_call.function.arguments)
             search_query = args.get("search_query", message)
-            ai_response = args.get("response", f"Let me find that for you.")
+            ai_response = args.get("response", "Let me find that for you.")
+            max_price = args.get("max_price")
 
         except Exception as e:
             logger.error(f"OpenAI chat failed: {e}")
             search_query = message
             ai_response = f"Here's what I found for \"{message}\"."
+            max_price = None
 
         # Search Amazon with extracted query
         products = _search_products(search_query)
@@ -214,4 +222,5 @@ class ChatView(APIView):
             "response": ai_response,
             "products": products,
             "search_query": search_query,
+            "max_price": max_price,
         })
