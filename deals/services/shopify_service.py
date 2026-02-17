@@ -19,19 +19,27 @@ logger = logging.getLogger(__name__)
 
 # Popular Shopify stores to search (add more as needed)
 DEFAULT_SHOPIFY_STORES = [
-    # Fashion
+    # Women's Fashion
     {"name": "Fashion Nova", "domain": "fashionnova.com", "category": "fashion"},
+    {"name": "Princess Polly", "domain": "us.princesspolly.com", "category": "fashion"},
+    {"name": "Oh Polly", "domain": "ohpolly.com", "category": "fashion"},
+    {"name": "Meshki", "domain": "meshki.us", "category": "fashion"},
+    {"name": "Beginning Boutique", "domain": "beginningboutique.com", "category": "fashion"},
+    # Men's & Unisex Fashion
     {"name": "Gymshark", "domain": "gymshark.com", "category": "fitness"},
-    {"name": "Allbirds", "domain": "allbirds.com", "category": "shoes"},
-    {"name": "MVMT", "domain": "mvmt.com", "category": "watches"},
     {"name": "Chubbies", "domain": "chubbiesshorts.com", "category": "fashion"},
-    # Tech & Gadgets
-    {"name": "Anker", "domain": "anker.com", "category": "tech"},
-    {"name": "Peak Design", "domain": "peakdesign.com", "category": "camera"},
-    {"name": "Moment", "domain": "shopmoment.com", "category": "camera"},
-    # Home & Lifestyle
-    {"name": "Brooklinen", "domain": "brooklinen.com", "category": "home"},
-    {"name": "Ruggable", "domain": "ruggable.com", "category": "home"},
+    {"name": "Taylor Stitch", "domain": "taylorstitch.com", "category": "fashion"},
+    {"name": "BYLT Basics", "domain": "byltbasics.com", "category": "fashion"},
+    {"name": "True Classic", "domain": "trueclassictees.com", "category": "fashion"},
+    {"name": "Cuts Clothing", "domain": "cutsclothing.com", "category": "fashion"},
+    # Shoes & Bags
+    {"name": "Steve Madden", "domain": "stevemadden.com", "category": "shoes"},
+    {"name": "Allbirds", "domain": "allbirds.com", "category": "shoes"},
+    {"name": "Rebecca Minkoff", "domain": "rebeccaminkoff.com", "category": "bags"},
+    # Accessories & Jewelry
+    {"name": "MVMT", "domain": "mvmt.com", "category": "watches"},
+    {"name": "Mejuri", "domain": "mejuri.com", "category": "jewelry"},
+    {"name": "Ana Luisa", "domain": "analuisa.com", "category": "jewelry"},
     # Beauty
     {"name": "ColourPop", "domain": "colourpop.com", "category": "beauty"},
     {"name": "Kylie Cosmetics", "domain": "kyliecosmetics.com", "category": "beauty"},
@@ -120,10 +128,10 @@ class ShopifyScraperService:
         # Search stores in parallel
         all_products = []
         
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {
                 executor.submit(self._search_store, store, query, max_price): store
-                for store in stores_to_search[:8]  # Limit to 8 stores
+                for store in stores_to_search[:15]  # Limit to 15 stores
             }
             
             for future in as_completed(futures, timeout=15):
