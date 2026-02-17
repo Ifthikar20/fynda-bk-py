@@ -105,7 +105,7 @@ class ShopifyVendor(BaseVendorService):
                 url = f"{protocol}://{domain}/products.json"
                 response = requests.get(
                     url,
-                    params={"limit": 50},
+                    params={"limit": 250},
                     headers=self.headers,
                     timeout=self.timeout,
                 )

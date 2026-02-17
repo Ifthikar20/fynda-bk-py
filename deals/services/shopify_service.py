@@ -162,7 +162,7 @@ class ShopifyScraperService:
             try:
                 url = f"{protocol}://{domain}/products.json"
                 params = {
-                    "limit": 50,  # Shopify allows up to 250
+                    "limit": 250,  # Shopify allows up to 250
                 }
                 
                 response = requests.get(

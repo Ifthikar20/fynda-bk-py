@@ -17,6 +17,9 @@ import json
 import concurrent.futures
 
 from django.core.cache import cache
+import requests as http_requests
+
+from django.conf import settings
 
 from .query_parser import query_parser, ParsedQuery
 from .spell_corrector import correct_query
@@ -178,8 +181,11 @@ class DealOrchestrator:
             if pre_gender != len(deals):
                 logger.info(f"Gender filter removed {pre_gender - len(deals)} items (kept: {parsed.gender})")
         
-        # Step 5: Rank results
+        # Step 5: Rank results (keyword-based)
         deals = self._rank_deals(deals, parsed)
+        
+        # Step 6: CLIP visual re-ranking (send top 30 to ML model)
+        deals = self._clip_rerank(deals[:30], query)
         
         # Limit to top 20
         deals = deals[:20]
@@ -459,6 +465,90 @@ class DealOrchestrator:
             )
         
         return sorted(deals, key=score, reverse=True)
+    
+    def _clip_rerank(self, deals: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+        """
+        Re-rank deals using Fashion-CLIP visual similarity.
+        
+        Sends the top keyword-filtered candidates to the ML service,
+        which downloads each product image, encodes it with CLIP,
+        and scores how well it visually matches the text query.
+        
+        Falls back gracefully to the original ranking if the ML service
+        is unavailable or fails.
+        """
+        if not deals:
+            return deals
+        
+        # Build product list for CLIP (only those with images)
+        products_for_clip = []
+        deal_map = {}
+        for deal in deals:
+            image_url = deal.get("image_url", "")
+            deal_id = deal.get("id", "")
+            if image_url and deal_id:
+                products_for_clip.append({
+                    "product_id": str(deal_id),
+                    "image_url": image_url,
+                })
+                deal_map[str(deal_id)] = deal
+        
+        if len(products_for_clip) < 2:
+            logger.info("CLIP re-rank skipped: not enough products with images")
+            return deals
+        
+        try:
+            ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://127.0.0.1:8001')
+            response = http_requests.post(
+                f"{ml_url}/api/clip-rerank",
+                json={
+                    "query": query,
+                    "products": products_for_clip,
+                },
+                timeout=getattr(settings, 'ML_SERVICE_TIMEOUT', 15),
+            )
+            
+            if response.status_code != 200:
+                logger.warning(f"CLIP re-rank failed: HTTP {response.status_code}")
+                return deals
+            
+            result = response.json()
+            if not result.get("success"):
+                logger.warning("CLIP re-rank returned success=false")
+                return deals
+            
+            # Re-order deals based on CLIP similarity scores
+            reranked = []
+            scored_items = result.get("results", [])
+            for item in scored_items:
+                pid = item["product_id"]
+                if pid in deal_map:
+                    deal = deal_map[pid]
+                    deal["clip_score"] = item["similarity_score"]
+                    reranked.append(deal)
+            
+            # Add any deals that weren't in the CLIP results (no image)
+            reranked_ids = {str(d.get('id', '')) for d in reranked}
+            for deal in deals:
+                if str(deal.get('id', '')) not in reranked_ids:
+                    deal["clip_score"] = 0.0
+                    reranked.append(deal)
+            
+            logger.info(
+                f"CLIP re-rank: {result.get('total_scored', 0)} products scored "
+                f"in {result.get('processing_time_ms', 0):.0f}ms for '{query}'"
+            )
+            return reranked
+        
+        except http_requests.exceptions.ConnectionError:
+            logger.info("CLIP re-rank skipped: ML service not available")
+            return deals
+        except http_requests.exceptions.Timeout:
+            logger.warning("CLIP re-rank skipped: ML service timed out")
+            return deals
+        except Exception as e:
+            logger.warning(f"CLIP re-rank failed: {e}")
+            return deals
 
 
 # Singleton instance
