@@ -133,24 +133,30 @@ class ShopifyVendor(BaseVendorService):
             title = product.get("title", "")
             title_lower = title.lower()
             
-            # Build searchable text from multiple fields
-            tags = [t.lower() for t in product.get("tags", [])]
+            # Build searchable text — exclude cross-sell tags (pair:...)
+            raw_tags = product.get("tags", [])
+            clean_tags = [t.lower() for t in raw_tags if not t.lower().startswith("pair:")]
             product_type = product.get("product_type", "").lower()
-            # Variant titles often contain colors (e.g. "Blue / Large")
             variant_text = " ".join(
                 v.get("title", "").lower() for v in product.get("variants", [])
             )
             
-            searchable = f"{title_lower} {product_type} {' '.join(tags)} {variant_text}"
+            # Use word-level matching (split into individual words) to avoid
+            # substring false-positives like 'bag' matching inside 'handbag'
+            searchable_words = set(
+                re.split(r'[\s\-/,]+', f"{title_lower} {product_type} {' '.join(clean_tags)} {variant_text}")
+            )
             
-            # Count how many query words appear in the combined text
-            matched_words = sum(1 for word in query_words if word in searchable)
+            # Count how many query words appear as whole words
+            matched_words = sum(1 for word in query_words if word in searchable_words)
             
             if matched_words < min_match:
                 continue
             
-            # Relevance score: fraction of query words matched
-            relevance = matched_words / num_query_words if num_query_words else 0
+            # Relevance score: boost if matches are in title (most relevant)
+            title_words = set(re.split(r'[\s\-/,]+', title_lower))
+            title_matches = sum(1 for word in query_words if word in title_words)
+            relevance = (matched_words + title_matches) / (num_query_words * 2) if num_query_words else 0
             
             variants = product.get("variants", [])
             if not variants:

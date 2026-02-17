@@ -197,22 +197,29 @@ class ShopifyScraperService:
             title = product.get("title", "")
             title_lower = title.lower()
             
-            # Build searchable text from multiple fields
-            tags = [t.lower() for t in product.get("tags", [])]
+            # Build searchable text — exclude cross-sell tags (pair:...)
+            raw_tags = product.get("tags", [])
+            clean_tags = [t.lower() for t in raw_tags if not t.lower().startswith("pair:")]
             product_type = product.get("product_type", "").lower()
             variant_text = " ".join(
                 v.get("title", "").lower() for v in product.get("variants", [])
             )
             
-            searchable = f"{title_lower} {product_type} {' '.join(tags)} {variant_text}"
+            # Word-level matching to avoid substring false-positives
+            import re
+            searchable_words = set(
+                re.split(r'[\s\-/,]+', f"{title_lower} {product_type} {' '.join(clean_tags)} {variant_text}")
+            )
             
-            # Count how many query words appear in the combined text
-            matched_words = sum(1 for word in query_words if word in searchable)
+            matched_words = sum(1 for word in query_words if word in searchable_words)
             
             if matched_words < min_match:
                 continue
             
-            relevance = matched_words / num_query_words if num_query_words else 0
+            # Relevance score: boost if matches are in title
+            title_words = set(re.split(r'[\s\-/,]+', title_lower))
+            title_matches = sum(1 for word in query_words if word in title_words)
+            relevance = (matched_words + title_matches) / (num_query_words * 2) if num_query_words else 0
             
             # Get first available variant with price
             variants = product.get("variants", [])
