@@ -143,10 +143,9 @@ class ShopifyScraperService:
                 except Exception as e:
                     logger.warning(f"Error scraping {store['name']}: {e}")
         
-        # Sort by relevance (title match) and return top results
-        query_lower = query.lower()
+        # Sort by relevance score and return top results
         all_products.sort(
-            key=lambda p: sum(1 for word in query_lower.split() if word in p.title.lower()),
+            key=lambda p: getattr(p, '_relevance_score', 0),
             reverse=True
         )
         
@@ -189,19 +188,30 @@ class ShopifyScraperService:
         """Parse products from Shopify JSON response."""
         products = []
         query_words = set(query.lower().split())
+        num_query_words = len(query_words)
+        # For multi-word queries, require at least 40% word match
+        min_match = max(1, int(num_query_words * 0.4)) if num_query_words > 1 else 1
         
         for product in data.get("products", []):
             title = product.get("title", "")
             title_lower = title.lower()
             
-            # Filter by query - at least one word must match
-            if not any(word in title_lower for word in query_words):
-                # Also check tags and product type
-                tags = [t.lower() for t in product.get("tags", [])]
-                product_type = product.get("product_type", "").lower()
-                if not any(word in tag for word in query_words for tag in tags):
-                    if not any(word in product_type for word in query_words):
-                        continue
+            # Build searchable text from multiple fields
+            tags = [t.lower() for t in product.get("tags", [])]
+            product_type = product.get("product_type", "").lower()
+            variant_text = " ".join(
+                v.get("title", "").lower() for v in product.get("variants", [])
+            )
+            
+            searchable = f"{title_lower} {product_type} {' '.join(tags)} {variant_text}"
+            
+            # Count how many query words appear in the combined text
+            matched_words = sum(1 for word in query_words if word in searchable)
+            
+            if matched_words < min_match:
+                continue
+            
+            relevance = matched_words / num_query_words if num_query_words else 0
             
             # Get first available variant with price
             variants = product.get("variants", [])
@@ -216,7 +226,7 @@ class ShopifyScraperService:
                     break
             
             if not variant:
-                variant = variants[0]  # Use first variant
+                variant = variants[0]
             
             # Parse price
             try:
@@ -253,14 +263,14 @@ class ShopifyScraperService:
             description = re.sub(r'<[^>]+>', '', description)
             description = description.strip()[:300]
             
-            products.append(ShopifyProduct(
+            sp = ShopifyProduct(
                 id=f"{domain}-{product.get('id', '')}",
                 title=title,
                 description=description,
                 price=price,
                 compare_at_price=compare_at,
                 discount_percent=discount,
-                currency="USD",  # Most Shopify stores use USD
+                currency="USD",
                 url=f"https://{domain}/products/{product.get('handle', '')}",
                 image_url=image_url,
                 vendor=product.get("vendor", ""),
@@ -269,7 +279,9 @@ class ShopifyScraperService:
                 product_type=product.get("product_type", ""),
                 tags=product.get("tags", []),
                 in_stock=variant.get("available", True),
-            ))
+            )
+            sp._relevance_score = relevance
+            products.append(sp)
         
         return products
     

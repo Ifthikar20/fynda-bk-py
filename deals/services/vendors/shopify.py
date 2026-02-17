@@ -85,10 +85,9 @@ class ShopifyVendor(BaseVendorService):
                 except Exception as e:
                     logger.warning(f"Error scraping {store['name']}: {e}")
         
-        # Sort by relevance (title word overlap)
-        query_lower = query.lower()
+        # Sort by relevance score (set during _parse_products)
         all_products.sort(
-            key=lambda p: sum(1 for word in query_lower.split() if word in p.title.lower()),
+            key=lambda p: getattr(p, '_relevance_score', 0),
             reverse=True,
         )
         
@@ -125,18 +124,32 @@ class ShopifyVendor(BaseVendorService):
         """Parse products from Shopify JSON response."""
         products = []
         query_words = set(query.lower().split())
+        num_query_words = len(query_words)
+        # For multi-word queries, require at least 40% word match
+        min_match = max(1, int(num_query_words * 0.4)) if num_query_words > 1 else 1
         
         for product in data.get("products", []):
             title = product.get("title", "")
             title_lower = title.lower()
             
-            # Filter by query — at least one word must match
-            if not any(word in title_lower for word in query_words):
-                tags = [t.lower() for t in product.get("tags", [])]
-                product_type = product.get("product_type", "").lower()
-                if not any(word in tag for word in query_words for tag in tags):
-                    if not any(word in product_type for word in query_words):
-                        continue
+            # Build searchable text from multiple fields
+            tags = [t.lower() for t in product.get("tags", [])]
+            product_type = product.get("product_type", "").lower()
+            # Variant titles often contain colors (e.g. "Blue / Large")
+            variant_text = " ".join(
+                v.get("title", "").lower() for v in product.get("variants", [])
+            )
+            
+            searchable = f"{title_lower} {product_type} {' '.join(tags)} {variant_text}"
+            
+            # Count how many query words appear in the combined text
+            matched_words = sum(1 for word in query_words if word in searchable)
+            
+            if matched_words < min_match:
+                continue
+            
+            # Relevance score: fraction of query words matched
+            relevance = matched_words / num_query_words if num_query_words else 0
             
             variants = product.get("variants", [])
             if not variants:
@@ -181,7 +194,7 @@ class ShopifyVendor(BaseVendorService):
             
             tags = product.get("tags", [])
             
-            products.append(VendorProduct(
+            vp = VendorProduct(
                 id=f"shopify-{domain}-{product.get('id', '')}",
                 title=title,
                 description=description,
@@ -200,7 +213,9 @@ class ShopifyVendor(BaseVendorService):
                 features=tags[:5],
                 shipping="Varies",
                 fetched_at=datetime.now().isoformat(),
-            ))
+            )
+            vp._relevance_score = relevance
+            products.append(vp)
         
         return products
     
