@@ -119,17 +119,30 @@ CHAT_FUNCTION_SCHEMA = {
     },
 }
 
-SYSTEM_PROMPT = """You are Fynda, a friendly AI fashion shopping assistant. Your job:
-1. Understand what the user is looking for (product type, color, style, budget, brand).
-2. Extract a concise search query — remove price/budget words from the query.
-3. If the user mentions a budget (e.g. 'under $50', 'less than 30 dollars'), extract it as max_price.
-4. Write a short, helpful response (1-2 sentences, under 40 words). Be warm but concise.
+SYSTEM_PROMPT = """You are Fynda, a friendly AI fashion shopping assistant.
+
+Your approach:
+- If the user's request is SPECIFIC (mentions product type + at least one detail like color, style, or brand), call search_products immediately.
+- If the user's request is VAGUE (e.g. "I want something nice", "show me bags", "help me find an outfit"), ask ONE short follow-up question to narrow it down. Good questions: color preference, style/type, occasion, budget.
+- After 2-3 follow-up exchanges, always search — don't keep asking forever.
+- When you have enough context from the conversation history, call search_products.
+
+Examples of SPECIFIC (search immediately):
+- "men's college shirt blue" → search
+- "red dress for a wedding" → search
+- "black crossbody bag under $100" → search
+- "Nike running shoes" → search
+
+Examples of VAGUE (ask a follow-up):
+- "I want a bag" → ask about type (crossbody, tote, clutch?)
+- "something for a date night" → ask about item type (dress, top, shoes?)
+- "show me jackets" → ask about style or color
 
 Rules:
-- Never list products yourself — products are shown separately.
-- If the user asks about brands, mention 2-3 popular ones for that category.
-- If the query is vague, still extract the best search query you can.
+- Keep responses to 1-2 sentences, under 40 words.
+- Never list products — they are shown separately.
 - Do not use emojis.
+- When asking follow-ups, suggest 2-3 options to make it easy.
 - IMPORTANT: Do NOT include price constraints in search_query. Use max_price instead.
 """
 
@@ -195,32 +208,41 @@ class ChatView(APIView):
                     "type": "function",
                     "function": CHAT_FUNCTION_SCHEMA,
                 }],
-                tool_choice={
-                    "type": "function",
-                    "function": {"name": "search_products"},
-                },
+                tool_choice="auto",
                 temperature=0.7,
                 max_tokens=200,
             )
 
-            tool_call = completion.choices[0].message.tool_calls[0]
-            args = json.loads(tool_call.function.arguments)
-            search_query = args.get("search_query", message)
-            ai_response = args.get("response", "Let me find that for you.")
-            max_price = args.get("max_price")
+            choice = completion.choices[0].message
+
+            # Case 1: GPT called search_products → ready to show products
+            if choice.tool_calls:
+                tool_call = choice.tool_calls[0]
+                args = json.loads(tool_call.function.arguments)
+                search_query = args.get("search_query", message)
+                ai_response = args.get("response", "Let me find that for you.")
+                max_price = args.get("max_price")
+
+                return Response({
+                    "response": ai_response,
+                    "search_query": search_query,
+                    "max_price": max_price,
+                })
+
+            # Case 2: GPT responded conversationally → asking a follow-up
+            else:
+                ai_response = choice.content or "Could you tell me more about what you're looking for?"
+                return Response({
+                    "response": ai_response,
+                    "search_query": None,
+                    "max_price": None,
+                })
 
         except Exception as e:
             logger.error(f"OpenAI chat failed: {e}")
-            search_query = message
-            ai_response = f"Here's what I found for \"{message}\"."
-            max_price = None
-
-        # Search Amazon with extracted query
-        products = _search_products(search_query)
-
-        return Response({
-            "response": ai_response,
-            "products": products,
-            "search_query": search_query,
-            "max_price": max_price,
-        })
+            # Fallback: treat message as search query
+            return Response({
+                "response": f'Here\'s what I found for "{message}".',
+                "search_query": message,
+                "max_price": None,
+            })
