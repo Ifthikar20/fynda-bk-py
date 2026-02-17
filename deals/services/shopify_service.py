@@ -191,7 +191,7 @@ class ShopifyScraperService:
         query_words = set(query.lower().split())
         num_query_words = len(query_words)
         # For multi-word queries, require at least 60% word match (ceil rounds up)
-        min_match = max(1, math.ceil(num_query_words * 0.6)) if num_query_words > 1 else 1
+        min_match = max(1, math.ceil(num_query_words * 0.4)) if num_query_words > 1 else 1
         
         for product in data.get("products", []):
             title = product.get("title", "")
