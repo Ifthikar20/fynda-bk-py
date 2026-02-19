@@ -1,9 +1,11 @@
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import CursorPagination
 from django.shortcuts import get_object_or_404
-from django.db.models import F
+from django.db.models import F, Count
+from django.conf import settings
 
 from .models import Post, Like, Comment
 from .serializers import PostSerializer, PostCreateSerializer, CommentSerializer
@@ -136,3 +138,38 @@ class MyPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         return Post.objects.filter(author=self.request.user).select_related("author")
+
+
+# ---------------------------------------------------------------------------
+# Public user profile + their posts
+# ---------------------------------------------------------------------------
+
+class UserProfileView(APIView):
+    """GET /api/v1/feed/user/<uuid>/ → public profile + posts."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, user_id):
+        User = __import__('django.conf', fromlist=['settings']).settings.AUTH_USER_MODEL
+        from django.contrib.auth import get_user_model
+        UserModel = get_user_model()
+        user = get_object_or_404(UserModel, id=user_id)
+
+        posts = Post.objects.filter(author=user).select_related("author").order_by("-created_at")
+        post_count = posts.count()
+        total_likes = posts.aggregate(total=Count('likes'))['total'] or 0
+
+        serializer = PostSerializer(posts[:50], many=True, context={"request": request})
+
+        return Response({
+            "user": {
+                "id": str(user.id),
+                "name": user.get_short_name(),
+                "email": user.email,
+                "date_joined": user.date_joined,
+            },
+            "stats": {
+                "posts": post_count,
+                "total_likes": total_likes,
+            },
+            "posts": serializer.data,
+        })
