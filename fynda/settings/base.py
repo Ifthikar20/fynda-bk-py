@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "emails",
     "blog",
     "mobile",
+    "feed",
 ]
 
 

@@ -90,6 +90,7 @@ urlpatterns = [
     path('api/v1/auth/', include('users.urls')),
     path(f'api/v1/{config.security.mobile_api_prefix}/', include('mobile.urls')),
     path('api/v1/blog/', include('blog.api_urls')),
+    path('api/v1/feed/', include('feed.urls')),
 
     # ── Legacy unversioned API (deprecated, kept for backward compat) ─
     path('api/', include('deals.urls')),
