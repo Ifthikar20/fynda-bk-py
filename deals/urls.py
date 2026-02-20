@@ -12,6 +12,7 @@ from .views import (
     FeaturedContentView,
     ExploreView, VendorStatusView,
 )
+from .views.brand_views import BrandListView, BrandLikeView
 from .views.chat_view import ChatView
 
 urlpatterns = [
@@ -33,5 +34,9 @@ urlpatterns = [
     # Saved Deals (web)
     path('saved/', SavedDealsView.as_view(), name='saved-deals'),
     path('saved/<str:deal_id>/', SavedDealDetailView.as_view(), name='saved-deal-detail'),
+    
+    # Brands
+    path('brands/', BrandListView.as_view(), name='brand-list'),
+    path('brands/<slug:slug>/like/', BrandLikeView.as_view(), name='brand-like'),
 ]
 
