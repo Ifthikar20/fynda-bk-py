@@ -1,4 +1,4 @@
-# Fynda Application Architecture
+# Outfi Application Architecture
 
 > **Last Updated**: February 5, 2026  
 > **Status**: Production
@@ -39,9 +39,9 @@ graph TB
 
 | Domain | Purpose | Handler |
 |--------|---------|---------|
-| `fynda.shop` | Main Vue SPA + Blog | Nginx → Vue static / Django SSR |
-| `api.fynda.shop` | REST API + Admin | Nginx → Django container |
-| `blog.fynda.shop` | Redirects to `/blog/` | 301 → `fynda.shop/blog/` |
+| `outfi.ai` | Main Vue SPA + Blog | Nginx → Vue static / Django SSR |
+| `api.outfi.ai` | REST API + Admin | Nginx → Django container |
+| `blog.outfi.ai` | Redirects to `/blog/` | 301 → `outfi.ai/blog/` |
 
 ---
 
@@ -158,7 +158,7 @@ User → Upload Image → /api/upload/ (FormData)
 
 ## Security
 
-- **Admin**: Only at `api.fynda.shop/admin/` (404 on other domains)
+- **Admin**: Only at `api.outfi.ai/admin/` (404 on other domains)
 - **CORS**: Configured in Django settings
 - **Rate Limiting**: Nginx zone + DRF throttling
 - **SSL**: Let's Encrypt + Cloudflare

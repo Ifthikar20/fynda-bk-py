@@ -177,8 +177,8 @@ class EmailConfig:
     use_tls: bool = True
     user: str = field(default_factory=lambda: os.getenv("AWS_SES_ACCESS_KEY", ""))
     password: str = field(default_factory=lambda: os.getenv("AWS_SES_SECRET_KEY", ""))
-    from_email: str = field(default_factory=lambda: os.getenv("DEFAULT_FROM_EMAIL", "Fynda <noreply@fynda.shop>"))
-    site_url: str = field(default_factory=lambda: os.getenv("SITE_URL", "https://fynda.shop"))
+    from_email: str = field(default_factory=lambda: os.getenv("DEFAULT_FROM_EMAIL", "Outfi <noreply@outfi.ai>"))
+    site_url: str = field(default_factory=lambda: os.getenv("SITE_URL", "https://outfi.ai"))
 
 
 @dataclass(frozen=True)

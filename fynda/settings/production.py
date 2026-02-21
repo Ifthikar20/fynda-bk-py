@@ -70,9 +70,9 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 # Always allow our own domains + any extras from config
 _HARDCODED_ORIGINS = [
-    "https://fynda.shop",
-    "https://www.fynda.shop",
-    "https://api.fynda.shop",
+    "https://outfi.ai",
+    "https://www.outfi.ai",
+    "https://api.outfi.ai",
 ]
 CORS_ALLOWED_ORIGINS = list(set(_HARDCODED_ORIGINS + config.security.cors_origins))
 CORS_ALLOW_CREDENTIALS = True

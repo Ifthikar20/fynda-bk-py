@@ -280,19 +280,19 @@ SITE_URL = config.email.site_url
 # =============================================================================
 JAZZMIN_SETTINGS = {
     # Title on the login screen
-    "site_title": "Fynda Editorial",
+    "site_title": "Outfi Editorial",
     
     # Title on the brand (top left)
-    "site_header": "Fynda Editorial",
+    "site_header": "Outfi Editorial",
     
     # Title on the browser tab
-    "site_brand": "Fynda Editorial",
+    "site_brand": "Outfi Editorial",
     
     # Welcome text on the login page
-    "welcome_sign": "Welcome to Fynda Editorial",
+    "welcome_sign": "Welcome to Outfi Editorial",
     
     # Copyright on the footer
-    "copyright": "Fynda",
+    "copyright": "Outfi",
     
     # Search model for the search bar
     "search_model": ["blog.Post", "users.User"],
@@ -306,7 +306,7 @@ JAZZMIN_SETTINGS = {
     "topmenu_links": [
         {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"name": "View Blog", "url": "/blog/", "new_window": True},
-        {"name": "Visit Fynda", "url": "https://fynda.shop", "new_window": True},
+        {"name": "Visit Outfi", "url": "https://outfi.ai", "new_window": True},
     ],
     
     #############
@@ -344,7 +344,7 @@ JAZZMIN_SETTINGS = {
     #############
     # UI Tweaks #
     #############
-    "custom_css": "admin/css/fynda_admin.css",
+    "custom_css": "admin/css/outfi_admin.css",
     "custom_js": None,
     "use_google_fonts_cdn": True,
     "show_ui_builder": False,
@@ -363,7 +363,7 @@ JAZZMIN_UI_TWEAKS = {
     "body_small_text": False,
     "brand_small_text": False,
     "brand_colour": False,
-    "accent": "accent-pink",  # Pink accent to match Fynda brand
+    "accent": "accent-pink",  # Pink accent to match Outfi brand
     "navbar": "navbar-dark",
     "no_navbar_border": True,
     "navbar_fixed": True,

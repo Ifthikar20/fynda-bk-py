@@ -1,4 +1,4 @@
-# Fynda Deployment Guide
+# Outfi Deployment Guide
 
 > **Last Updated**: February 5, 2026  
 > **Target**: AWS EC2 (Ubuntu) with Docker
@@ -10,8 +10,8 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    CLOUDFLARE                           │
-│  fynda.shop → EC2:80 (Proxied, SSL at Cloudflare)       │
-│  api.fynda.shop → EC2:443 (Direct SSL on EC2)           │
+│  outfi.ai → EC2:80 (Proxied, SSL at Cloudflare)       │
+│  api.outfi.ai → EC2:443 (Direct SSL on EC2)           │
 └─────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -160,7 +160,7 @@ docker exec -it fynda-api bash
 ```
 SECRET_KEY=<django-secret>
 DEBUG=False
-ALLOWED_HOSTS=fynda.shop,api.fynda.shop
+ALLOWED_HOSTS=outfi.ai,api.outfi.ai
 DB_NAME=fynda
 DB_USER=fynda
 DB_PASSWORD=<password>
@@ -171,7 +171,7 @@ RAKUTEN_API_TOKEN=<token>
 
 ### Frontend (.env.production)
 ```
-VITE_API_URL=https://api.fynda.shop
+VITE_API_URL=https://api.outfi.ai
 VITE_MIXPANEL_TOKEN=<token>
 ```
 
@@ -179,14 +179,14 @@ VITE_MIXPANEL_TOKEN=<token>
 
 ## SSL Certificates
 
-### api.fynda.shop (Let's Encrypt)
+### api.outfi.ai (Let's Encrypt)
 ```bash
 # Inside nginx container or certbot
 certbot certonly --webroot -w /var/www/certbot \
-  -d api.fynda.shop -d blog.fynda.shop
+  -d api.outfi.ai -d blog.outfi.ai
 ```
 
-### fynda.shop (Cloudflare)
+### outfi.ai (Cloudflare)
 - SSL handled by Cloudflare (Proxied mode)
 - EC2 receives HTTP on port 80
 
@@ -197,7 +197,7 @@ certbot certonly --webroot -w /var/www/certbot \
 ### Check Service Health
 ```bash
 # API
-curl https://api.fynda.shop/api/health/
+curl https://api.outfi.ai/api/health/
 
 # All containers
 docker ps

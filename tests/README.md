@@ -21,7 +21,7 @@ python manage.py runserver
 ## Targeting a Remote Server
 
 ```bash
-export TEST_BASE_URL=https://staging.fynda.shop
+export TEST_BASE_URL=https://staging.outfi.ai
 ./tests/run_tests.sh
 ```
 

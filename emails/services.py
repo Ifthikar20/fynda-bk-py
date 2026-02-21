@@ -21,12 +21,12 @@ class EmailService:
         self.from_email = getattr(
             settings, 
             'DEFAULT_FROM_EMAIL', 
-            'Fynda <noreply@fynda.shop>'
+            'Outfi <noreply@outfi.ai>'
         )
         self.base_url = getattr(
             settings,
             'SITE_URL',
-            'https://fynda.shop'
+            'https://outfi.ai'
         )
     
     def send_single(self, to_email, subject, html_content, text_content=None):
@@ -212,7 +212,7 @@ class EmailService:
     def send_welcome_email(self, subscriber: Subscriber):
         """Send welcome email to new subscriber"""
         
-        subject = "Welcome to Fynda! 🎉"
+        subject = "Welcome to Outfi! 🎉"
         
         html_content = f"""
         <!DOCTYPE html>
@@ -226,13 +226,13 @@ class EmailService:
             <div style="background: white; border-radius: 16px; padding: 40px; 
                         box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                 <h1 style="color: #1a1a1a; margin-bottom: 20px;">
-                    Welcome to Fynda!
+                    Welcome to Outfi!
                 </h1>
                 <p style="color: #666; font-size: 16px; line-height: 1.6;">
                     Hi{' ' + subscriber.name if subscriber.name else ''}! 👋
                 </p>
                 <p style="color: #666; font-size: 16px; line-height: 1.6;">
-                    Thanks for signing up for early access to Fynda - your AI-powered 
+                    Thanks for signing up for early access to Outfi - your AI-powered 
                     shopping assistant that finds the best deals for you.
                 </p>
                 <p style="color: #666; font-size: 16px; line-height: 1.6;">
@@ -248,11 +248,11 @@ class EmailService:
                     We'll email you as soon as we launch!
                 </p>
                 <div style="margin-top: 30px; text-align: center;">
-                    <a href="https://fynda.shop" 
+                    <a href="https://outfi.ai" 
                        style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a);
                               color: white; padding: 14px 32px; border-radius: 8px;
                               text-decoration: none; font-weight: 600;">
-                        Visit Fynda
+                        Visit Outfi
                     </a>
                 </div>
             </div>

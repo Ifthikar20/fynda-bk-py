@@ -1215,7 +1215,7 @@ class MobileStoryboardView(APIView):
             {
                 "token": b.token,
                 "title": b.title or "Untitled",
-                "share_url": f"https://fynda.shop/storyboard/{b.token}",
+                "share_url": f"https://outfi.ai/storyboard/{b.token}",
                 "storyboard_data": b.storyboard_data or {},
                 "view_count": b.view_count,
                 "created_at": b.created_at.isoformat(),
@@ -1252,7 +1252,7 @@ class MobileStoryboardView(APIView):
         return Response(
             {
                 "token": board.token,
-                "share_url": f"https://fynda.shop/storyboard/{board.token}",
+                "share_url": f"https://outfi.ai/storyboard/{board.token}",
                 "expires_at": board.expires_at.isoformat(),
             },
             status=status.HTTP_201_CREATED

@@ -1,23 +1,23 @@
 <!-- SEO Meta Tags -->
-<title>{{ page_title|default:"Fynda Blog" }}</title>
+<title>{{ page_title|default:"Outfi Blog" }}</title>
 <meta name="description" content="{{ page_description|default:" Your destination for fashion deals." }}">
-<link rel="canonical" href="https://fynda.shop{{ request.path }}">
+<link rel="canonical" href="https://outfi.ai{{ request.path }}">
 
 <!-- Open Graph -->
 <meta property="og:type" content="{% if post %}article{% else %}website{% endif %}">
-<meta property="og:url" content="https://fynda.shop{{ request.path }}">
-<meta property="og:title" content="{{ page_title|default:" Fynda Blog" }}">
+<meta property="og:url" content="https://outfi.ai{{ request.path }}">
+<meta property="og:title" content="{{ page_title|default:" Outfi Blog" }}">
 <meta property="og:description" content="{{ page_description|default:" Fashion deals." }}">
-<meta property="og:site_name" content="Fynda Blog">
+<meta property="og:site_name" content="Outfi Blog">
 {% if post.featured_image %}
-<meta property="og:image" content="https://fynda.shop{{ post.featured_image.url }}">{% endif %}
+<meta property="og:image" content="https://outfi.ai{{ post.featured_image.url }}">{% endif %}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ page_title|default:" Fynda Blog" }}">
+<meta name="twitter:title" content="{{ page_title|default:" Outfi Blog" }}">
 <meta name="twitter:description" content="{{ page_description|default:" Fashion deals." }}">
 {% if post.featured_image %}
-<meta name="twitter:image" content="https://fynda.shop{{ post.featured_image.url }}">{% endif %}
+<meta name="twitter:image" content="https://outfi.ai{{ post.featured_image.url }}">{% endif %}
 
 <!-- Article Meta -->
 {% if post %}
@@ -33,5 +33,5 @@
 
 <!-- JSON-LD -->
 <script type="application/ld+json">
-{% if post %}{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ post.title }}","description":"{{ post.seo_description }}","datePublished":"{{ post.published_at|date:'c' }}","dateModified":"{{ post.updated_at|date:'c' }}","author":{"@type":"Person","name":"Fynda Team"},"publisher":{"@type":"Organization","name":"Fynda"}}{% else %}{"@context":"https://schema.org","@type":"Blog","name":"Fynda Fashion Blog","url":"https://fynda.shop/blog/"}{% endif %}
+{% if post %}{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ post.title }}","description":"{{ post.seo_description }}","datePublished":"{{ post.published_at|date:'c' }}","dateModified":"{{ post.updated_at|date:'c' }}","author":{"@type":"Person","name":"Outfi Team"},"publisher":{"@type":"Organization","name":"Outfi"}}{% else %}{"@context":"https://schema.org","@type":"Blog","name":"Outfi Fashion Blog","url":"https://outfi.ai/blog/"}{% endif %}
 </script>

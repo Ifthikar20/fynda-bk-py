@@ -18,8 +18,8 @@ NC='\033[0m'
 cd "$PROJECT_DIR"
 
 # Your domains (update these)
-DOMAINS=("api.fynda.shop" "blog.fynda.shop")
-EMAIL="admin@fynda.shop"  # Update with your email
+DOMAINS=("api.outfi.ai" "blog.outfi.ai")
+EMAIL="admin@outfi.ai"  # Update with your email
 
 echo "=========================================="
 echo "SSL Certificate Setup"

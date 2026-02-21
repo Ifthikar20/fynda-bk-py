@@ -1,6 +1,6 @@
 #!/bin/bash
 # ──────────────────────────────────────────────────
-#  Fynda API Test Runner
+#  Outfi API Test Runner
 # ──────────────────────────────────────────────────
 #
 #  Usage:
@@ -10,7 +10,7 @@
 #    ./tests/run_tests.sh brands             # brands stress test only
 #
 #  Environment:
-#    TEST_BASE_URL=https://staging.fynda.shop  — target server
+#    TEST_BASE_URL=https://staging.outfi.ai  — target server
 #    TEST_USER_EMAIL=test@example.com           — for auth tests
 #    TEST_USER_PASSWORD=secret                  — for auth tests
 #
@@ -22,7 +22,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 SUITE="${1:-all}"
 
 echo "╔══════════════════════════════════════════╗"
-echo "║       Fynda API Test Suite               ║"
+echo "║       Outfi API Test Suite               ║"
 echo "╠══════════════════════════════════════════╣"
 echo "║  Target: ${TEST_BASE_URL:-http://localhost:8000}"
 echo "║  Suite:  $SUITE"

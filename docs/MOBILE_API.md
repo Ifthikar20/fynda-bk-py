@@ -1,6 +1,6 @@
-# Fynda Mobile API — Flutter Integration Guide
+# Outfi Mobile API — Flutter Integration Guide
 
-> **Base URL:** `https://api.fynda.shop/api/mobile/`
+> **Base URL:** `https://api.outfi.ai/api/mobile/`
 > **Auth:** Bearer JWT tokens via `Authorization: Bearer <access_token>` header
 > **Content-Type:** `application/json` (except image upload which uses `multipart/form-data`)
 
@@ -353,7 +353,7 @@ GET /api/mobile/storyboard/{token}/      → View shared storyboard (public)
 ```json
 {
   "token": "abc123xyz",
-  "share_url": "https://fynda.shop/storyboard/abc123xyz",
+  "share_url": "https://outfi.ai/storyboard/abc123xyz",
   "expires_at": "2026-03-10T15:00:00Z"
 }
 ```

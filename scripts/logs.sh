@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Fynda — Comprehensive Log Monitor
+# Outfi — Comprehensive Log Monitor
 # ==============================================================================
 # Usage (run from your Mac — SSHs into EC2 automatically):
 #   ./scripts/logs.sh              # All services (default)
@@ -143,17 +143,17 @@ case "${1:-all}" in
     health)
         header "HEALTH CHECKS"
         echo -ne "  API:   "
-        code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.fynda.shop/api/health/" 2>/dev/null)
+        code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.outfi.ai/api/health/" 2>/dev/null)
         [ "$code" = "200" ] && echo -e "${GREEN}$code OK${NC}" || echo -e "${RED}$code FAIL${NC}"
         echo -ne "  Site:  "
-        code=$(curl -s -o /dev/null -w "%{http_code}" "https://fynda.shop/" 2>/dev/null)
+        code=$(curl -s -o /dev/null -w "%{http_code}" "https://outfi.ai/" 2>/dev/null)
         [ "$code" = "200" ] && echo -e "${GREEN}$code OK${NC}" || echo -e "${RED}$code FAIL${NC}"
         echo ""
         ;;
 
     *)
         echo ""
-        echo -e "${WHITE}Fynda Log Monitor${NC} (runs via SSH to EC2)"
+        echo -e "${WHITE}Outfi Log Monitor${NC} (runs via SSH to EC2)"
         echo ""
         echo "  Usage: ./scripts/logs.sh [command]"
         echo ""

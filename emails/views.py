@@ -177,7 +177,7 @@ def track_click(request, tracking_id):
     
     GET /api/email/track/click/<tracking_id>/?url=<redirect_url>
     """
-    redirect_url = request.GET.get('url', 'https://fynda.shop')
+    redirect_url = request.GET.get('url', 'https://outfi.ai')
     
     try:
         send = CampaignSend.objects.get(tracking_id=tracking_id)
