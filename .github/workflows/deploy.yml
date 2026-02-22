@@ -209,7 +209,7 @@ jobs:
       - name: Health Check
         run: |
           sleep 10
-          curl --fail --max-time 30 https://api.fynda.shop/api/health/ || echo "Health check pending..."
+          curl --fail --max-time 30 https://api.outfi.ai/api/health/ || echo "Health check pending..."
 
       - name: Notify on Success
         if: success()
