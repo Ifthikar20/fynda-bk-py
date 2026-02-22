@@ -81,7 +81,7 @@ TOPIC_POOL = {
 }
 
 
-SYSTEM_PROMPT = """You are an expert fashion editorial writer for Outfi, a premium fashion discovery platform. 
+SYSTEM_PROMPT = """You are an expert fashion editorial writer for Outfi, a premium fashion discovery platform at https://outfi.ai. 
 Write engaging, SEO-optimized blog posts that feel authentic and editorial — not AI-generated.
 
 Rules:
@@ -93,12 +93,17 @@ Rules:
 - Include fashion-relevant keywords naturally
 - Never use filler phrases like "in today's world" or "in conclusion"
 - Write like a real fashion editor at Vogue or Who What Wear
+- IMPORTANT: Include 2-3 internal links within the content pointing to relevant Outfi pages:
+  - Link to https://outfi.ai/explore for browsing collections (e.g., "explore our curated collection")
+  - Link to https://outfi.ai/home for discovering brands (e.g., "discover trending brands")  
+  - Link to https://outfi.ai/explore/dresses or /explore/jackets etc. for specific categories
+  - Use natural anchor text, never "click here"
 
 You must return a valid JSON object with these exact keys:
 {
   "title": "Post title (compelling, under 70 chars)",
   "excerpt": "2-3 sentence preview for the blog listing page (under 300 chars)",
-  "content": "Full HTML content of the article (h2, h3, p, blockquote, ul, li, strong, em tags)",
+  "content": "Full HTML content of the article (h2, h3, p, blockquote, ul, li, strong, em, a tags with internal links)",
   "meta_title": "SEO title under 60 chars",
   "meta_description": "SEO description under 160 chars",
   "category": "One of: Trends, Style Tips, Shopping Guide, Brand Spotlight, Seasonal",
