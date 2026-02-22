@@ -60,59 +60,86 @@
         }
 
         /* ============================================
-           HEADER - Minimal Editorial
+           HEADER - Matches Main App
            ============================================ */
 
         .site-header {
-            background: var(--bg-white);
-            border-bottom: 1px solid var(--border-light);
-            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f0f0f0;
+            padding: 14px 0;
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
         .header-inner {
-            max-width: var(--full-width);
+            max-width: 1400px;
             margin: 0 auto;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .logo {
-            font-family: var(--font-serif);
-            font-size: 1.75rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            text-decoration: none;
-            color: var(--text-black);
-        }
-
-        .logo span {
-            color: var(--accent-pink);
-            font-style: italic;
-        }
-
-        .nav-links {
+        .nav-logo {
             display: flex;
-            gap: 2.5rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            font-family: var(--font-sans);
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
+            align-items: center;
             text-decoration: none;
-            color: var(--text-gray);
-            transition: color 0.2s;
         }
 
-        .nav-links a:hover {
-            color: var(--text-black);
+        .logo-img {
+            height: 80px;
+            width: auto;
+        }
+
+        .header-nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .header-nav-links a {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .header-nav-links a:hover,
+        .header-nav-links a.active {
+            color: #111;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #111;
+            color: #fff;
+            border-radius: 10px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            background: #333;
+            transform: translateY(-1px);
         }
 
         /* ============================================
@@ -652,7 +679,11 @@
                 grid-template-columns: 1fr;
             }
 
-            .nav-links {
+            .header-nav-links {
+                display: none;
+            }
+
+            .header-actions {
                 display: none;
             }
 
@@ -939,37 +970,42 @@
 </head>
 
 <body>
-    <!-- Header -->
+    <!-- Header - Matches Main App -->
     <header class="site-header">
         <div class="header-inner">
-            <a href="/blog/" class="logo">Outfi <span>Editorial</span></a>
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="https://outfi.ai">Shop Deals</a></li>
-                    <li><a href="/blog/">Stories</a></li>
-                    <li><a href="/blog/search/">Search</a></li>
-                </ul>
-            </nav>
+            <a href="https://outfi.ai" class="nav-logo">
+                <img src="https://outfi.ai/assets/outfi-logo-CAvIhvL2.png" alt="outfi." class="logo-img" />
+            </a>
+            <div class="header-nav-links">
+                <a href="https://outfi.ai/explore">Explore</a>
+                <a href="https://outfi.ai/home">Home</a>
+                <a href="/blog/" class="active">Blog</a>
+            </div>
+            <div class="header-actions">
+                <a href="https://outfi.ai/login" class="nav-btn">Sign In</a>
+            </div>
         </div>
     </header>
-
-    <!-- Editorial Sidebar Label -->
-    <div class="editorial-sidebar">Editorial</div>
 
     <!-- Main Content -->
     <main class="main-content">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
+    <!-- Footer - Matches Main App -->
     <footer class="site-footer">
         <div class="footer-inner">
-            <div class="footer-logo">Outfi</div>
+            <div class="footer-brand">
+                <a href="https://outfi.ai" class="nav-logo">
+                    <img src="https://outfi.ai/assets/outfi-logo-CAvIhvL2.png" alt="outfi."
+                        style="height: 50px; width: auto;" />
+                </a>
+            </div>
             <ul class="footer-links">
-                <li><a href="https://outfi.ai">Shop</a></li>
-                <li><a href="/blog/">Editorial</a></li>
+                <li><a href="https://outfi.ai/explore">Explore</a></li>
+                <li><a href="https://outfi.ai/home">Home</a></li>
+                <li><a href="/blog/">Blog</a></li>
                 <li><a href="https://outfi.ai/about">About</a></li>
-                <li><a href="https://outfi.ai/contact">Contact</a></li>
             </ul>
             <div class="copyright">&copy; {% now "Y" %} Outfi. All rights reserved.</div>
         </div>
