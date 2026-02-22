@@ -184,6 +184,15 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
+# Celery Beat Schedule — automated blog generation (Mon/Wed/Fri at 9 AM UTC)
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    "generate-blog-post": {
+        "task": "blog.generate_blog_post",
+        "schedule": crontab(hour=9, minute=0, day_of_week="1,3,5"),
+    },
+}
+
 # Cache Configuration
 CACHES = {
     "default": {
