@@ -144,18 +144,18 @@ jobs:
             set -e
             echo "Starting deployment..."
             
-            # Find the project directory
-            if [ -d "/opt/fynda" ]; then
+            # Find the project directory (must be a git repo)
+            if [ -d "/opt/fynda/.git" ]; then
               PROJECT_DIR="/opt/fynda"
-            elif [ -d "/home/ubuntu/fynda" ]; then
+            elif [ -d "/home/ubuntu/fynda/.git" ]; then
               PROJECT_DIR="/home/ubuntu/fynda"
-            elif [ -d "/home/ubuntu/FB_APP" ]; then
+            elif [ -d "/home/ubuntu/FB_APP/.git" ]; then
               PROJECT_DIR="/home/ubuntu/FB_APP"
             else
               echo "Finding project directory..."
               PROJECT_DIR=$(find /home/ubuntu -maxdepth 2 -name "docker-compose*.yml" -exec dirname {} \; 2>/dev/null | head -1)
               if [ -z "$PROJECT_DIR" ]; then
-                echo "ERROR: Could not find project directory"
+                echo "ERROR: Could not find project directory with git repo"
                 exit 1
               fi
             fi
