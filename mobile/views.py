@@ -981,7 +981,7 @@ class MobileImageUploadView(APIView):
             # Primary: Own ML service (BLIP)
             try:
                 ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
-                ml_url = f"{ml_url}/analyze"
+                ml_url = f"{ml_url}/api/extract-attributes"
                 logger.info(f"Calling ML service at {ml_url}")
                 ml_response = http_requests.post(
                     ml_url,
