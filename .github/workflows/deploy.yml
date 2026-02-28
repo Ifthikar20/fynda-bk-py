@@ -177,18 +177,16 @@ jobs:
             fi
             
             # ── Rebuild Frontend ──────────────────────────────────────────
-            # The Vite build bakes VITE_API_URL into the JS bundle from
-            # frontend/.env.production.  Since frontend/ is gitignored,
-            # we write the env file here to guarantee the correct domain.
-            if [ -d "frontend" ]; then
+            # The Vite build bakes VITE_API_URL into the JS bundle.
+            # Frontend source lives in a separate repo on the server.
+            FRONTEND_DIR="/home/ubuntu/fynda-frontend-vue"
+            if [ -d "$FRONTEND_DIR" ]; then
               echo "Building frontend..."
-              cd frontend
+              cd "$FRONTEND_DIR"
+              git pull origin main || echo "Git pull skipped"
               
               # Write production env (single source of truth for API URL)
-              cat > .env.production << 'ENVEOF'
-VITE_API_URL=https://api.outfi.ai
-VITE_MIXPANEL_TOKEN=870cb922685b80e1dc5941129b0c8cb1
-ENVEOF
+              printf 'VITE_API_URL=https://api.outfi.ai\nVITE_MIXPANEL_TOKEN=870cb922685b80e1dc5941129b0c8cb1\n' > .env.production
               echo ".env.production written ✓"
               
               npm ci --prefer-offline 2>/dev/null || npm install
