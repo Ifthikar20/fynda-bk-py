@@ -176,6 +176,38 @@ jobs:
               cd "$PROJECT_DIR"
             fi
             
+            # ── Rebuild Frontend ──────────────────────────────────────────
+            # The Vite build bakes VITE_API_URL into the JS bundle from
+            # frontend/.env.production.  Since frontend/ is gitignored,
+            # we write the env file here to guarantee the correct domain.
+            if [ -d "frontend" ]; then
+              echo "Building frontend..."
+              cd frontend
+              
+              # Write production env (single source of truth for API URL)
+              cat > .env.production << 'ENVEOF'
+VITE_API_URL=https://api.outfi.ai
+VITE_MIXPANEL_TOKEN=870cb922685b80e1dc5941129b0c8cb1
+ENVEOF
+              echo ".env.production written ✓"
+              
+              npm ci --prefer-offline 2>/dev/null || npm install
+              npm run build
+              # Copy built assets to the Nginx-served directory
+              sudo rm -rf /var/www/frontend/*
+              sudo cp -r dist/* /var/www/frontend/
+              echo "Frontend build complete ✓"
+              cd "$PROJECT_DIR"
+            fi
+            
+            # ── Verify no stale domains in built bundle ──────────────────
+            if grep -r "fynda\.shop" /var/www/frontend/ 2>/dev/null; then
+              echo "ERROR: Built frontend still contains fynda.shop references!"
+              echo "Check frontend/.env.production has VITE_API_URL=https://api.outfi.ai"
+              exit 1
+            fi
+            echo "Domain verification passed ✓"
+            
             # Check if docker-compose.prod.yml exists
             if [ -f "docker-compose.prod.yml" ]; then
               COMPOSE_FILE="docker-compose.prod.yml"

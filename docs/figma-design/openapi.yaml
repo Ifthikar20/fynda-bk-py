@@ -1,0 +1,490 @@
+openapi: 3.0.3
+info:
+  title: BetterBliss Auth API
+  description: |
+    Authentication & user management API for BetterBliss (Fynda).
+    Supports email/password login, Google OAuth, Apple Sign In, JWT token management.
+  version: 1.0.0
+  contact:
+    name: BetterBliss Dev Team
+
+servers:
+  - url: /api/v1/auth
+    description: Versioned (canonical)
+  - url: /api/auth
+    description: Legacy (deprecated)
+
+tags:
+  - name: Registration
+    description: New account creation
+  - name: Login
+    description: Authenticate existing users
+  - name: OAuth
+    description: Social login via Google or Apple
+  - name: Profile
+    description: Authenticated user profile
+  - name: Password
+    description: Password management
+  - name: Tokens
+    description: JWT token lifecycle
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ── User ────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          example: "2025-02-28T10:30:00Z"
+
+    # ── Token pair ──────────────────────────────────────────────────────────
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+          description: JWT access token (expires in 1 hour)
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        refresh:
+          type: string
+          description: JWT refresh token (expires in 7 days)
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+
+    # ── Auth response (user + tokens) ────────────────────────────────────────
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+
+    # ── Registration ─────────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [email, password, password_confirm]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "SecurePass123!"
+        password_confirm:
+          type: string
+          format: password
+          example: "SecurePass123!"
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+
+    # ── Login ────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          example: "SecurePass123!"
+
+    # ── Profile update ───────────────────────────────────────────────────────
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: "Jane"
+        last_name:
+          type: string
+          example: "Smith"
+
+    # ── Change password ──────────────────────────────────────────────────────
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password, new_password_confirm]
+      properties:
+        old_password:
+          type: string
+          format: password
+          example: "OldPass123!"
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+          example: "NewPass456!"
+        new_password_confirm:
+          type: string
+          format: password
+          example: "NewPass456!"
+
+    # ── Logout ───────────────────────────────────────────────────────────────
+    LogoutRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+
+    # ── OAuth ────────────────────────────────────────────────────────────────
+    OAuthGoogleRequest:
+      type: object
+      required: [provider, code, redirect_uri]
+      properties:
+        provider:
+          type: string
+          enum: [google]
+        code:
+          type: string
+          description: Authorization code from Google
+        redirect_uri:
+          type: string
+          format: uri
+
+    OAuthAppleRequest:
+      type: object
+      required: [provider, code, redirect_uri, id_token]
+      properties:
+        provider:
+          type: string
+          enum: [apple]
+        code:
+          type: string
+          description: Authorization code from Apple
+        redirect_uri:
+          type: string
+          format: uri
+        id_token:
+          type: string
+          description: ID token from Apple
+        user:
+          type: object
+          description: User info (only on first Apple login)
+          properties:
+            name:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+
+    OAuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/AuthResponse'
+        - type: object
+          properties:
+            created:
+              type: boolean
+              description: True if a new user was created
+
+    # ── Token refresh ─────────────────────────────────────────────────────────
+    TokenRefreshRequest:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+
+    TokenRefreshResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+          description: New refresh token (rotation enabled)
+
+    # ── Errors ───────────────────────────────────────────────────────────────
+    Error400:
+      type: object
+      example:
+        email: ["This field may not be blank."]
+        password: ["Password too short."]
+
+    Error401:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid email or password"
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operation successful"
+
+# ── Paths ────────────────────────────────────────────────────────────────────
+paths:
+
+  /register/:
+    post:
+      tags: [Registration]
+      summary: Register new user
+      description: Creates a new user account and returns JWT tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+
+  /login/:
+    post:
+      tags: [Login]
+      summary: Login with email & password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials or account disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /logout/:
+    post:
+      tags: [Login]
+      summary: Logout (blacklist refresh token)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /oauth/:
+    post:
+      tags: [OAuth]
+      summary: Social login (Google or Apple)
+      description: |
+        Exchange an OAuth authorization code for JWT tokens.
+        Supports Google and Apple Sign In.
+        Creates a new user if no matching account exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/OAuthGoogleRequest'
+                - $ref: '#/components/schemas/OAuthAppleRequest'
+              discriminator:
+                propertyName: provider
+      responses:
+        '200':
+          description: OAuth login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthResponse'
+        '400':
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '401':
+          description: Account disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+        '500':
+          description: OAuth provider error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /profile/:
+    get:
+      tags: [Profile]
+      summary: Get authenticated user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+    patch:
+      tags: [Profile]
+      summary: Update user profile (first_name, last_name)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /change-password/:
+    post:
+      tags: [Password]
+      summary: Change account password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: Wrong old password or passwords don't match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /token/refresh/:
+    post:
+      tags: [Tokens]
+      summary: Refresh access token
+      description: |
+        Exchange a valid refresh token for a new access token.
+        Refresh tokens are rotated on every use (old token blacklisted).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+      responses:
+        '200':
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponse'
+        '401':
+          description: Token invalid, expired or blacklisted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Token is blacklisted"
+                  code:
+                    type: string
+                    example: "token_not_valid"
