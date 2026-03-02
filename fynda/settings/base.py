@@ -136,6 +136,12 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/hour",
         "user": "1000/hour",
+        # Image/OCR endpoint limits (dev — more generous for testing)
+        "image_upload_anon": "20/hour",
+        "image_upload_user": "60/hour",
+        "remove_bg_anon": "10/hour",
+        "remove_bg_user": "30/hour",
+        "image_burst": "5/minute",
     },
     "EXCEPTION_HANDLER": "core.exceptions.handlers.fynda_exception_handler",
 }

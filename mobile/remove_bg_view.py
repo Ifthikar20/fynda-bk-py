@@ -43,6 +43,9 @@ class RemoveBackgroundView(APIView):
     """
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
+    
+    from fynda.throttles import RemoveBgAnonThrottle, RemoveBgUserThrottle, ImageBurstThrottle
+    throttle_classes = [RemoveBgAnonThrottle, RemoveBgUserThrottle, ImageBurstThrottle]
 
     def post(self, request):
         if 'image' not in request.FILES:
@@ -53,17 +56,29 @@ class RemoveBackgroundView(APIView):
 
         image_file = request.FILES['image']
 
-        # Validate type
-        if image_file.content_type not in ALLOWED_TYPES:
+        # Validate using centralized preprocessor for type + size + magic bytes
+        from core.image_preprocessor import ImageValidationError
+        
+        content_type = image_file.content_type
+        if content_type not in ALLOWED_TYPES:
             return Response(
                 {"error": f"Invalid file type. Allowed: {', '.join(ALLOWED_TYPES)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validate size
         if image_file.size > MAX_FILE_SIZE:
             return Response(
                 {"error": "File too large. Maximum size is 10MB."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate magic bytes (don't trust Content-Type alone)
+        raw_peek = image_file.read(12)
+        image_file.seek(0)
+        from core.image_preprocessor import _validate_magic_bytes
+        if not _validate_magic_bytes(raw_peek, content_type):
+            return Response(
+                {"error": "File content doesn't match declared type."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

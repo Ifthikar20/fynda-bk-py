@@ -52,8 +52,11 @@ class RateLimitMiddleware:
     
     # Limits per minute
     RATE_LIMITS = {
-        "search": 30,  # 30 searches per minute
-        "api": 60,     # 60 API calls per minute
+        "search": 30,        # 30 searches per minute
+        "upload": 10,        # 10 image uploads per minute per IP
+        "image-search": 10,  # 10 mobile image searches per minute per IP
+        "remove-bg": 5,      # 5 bg removals per minute per IP
+        "api": 60,           # 60 general API calls per minute
     }
     
     def __init__(self, get_response):
@@ -71,6 +74,28 @@ class RateLimitMiddleware:
             if self.is_rate_limited(ip, "search", self.RATE_LIMITS["search"]):
                 return JsonResponse(
                     {"error": "Rate limit exceeded. Please try again later."},
+                    status=429
+                )
+        
+        # Check rate limit for image upload endpoints
+        if request.path.endswith("/upload/"):
+            if self.is_rate_limited(ip, "upload", self.RATE_LIMITS["upload"]):
+                return JsonResponse(
+                    {"error": "Too many image uploads. Please try again later.", "retry_after": 60},
+                    status=429
+                )
+        
+        if "/image-search" in request.path:
+            if self.is_rate_limited(ip, "image-search", self.RATE_LIMITS["image-search"]):
+                return JsonResponse(
+                    {"error": "Too many image searches. Please try again later.", "retry_after": 60},
+                    status=429
+                )
+        
+        if "/remove-bg" in request.path:
+            if self.is_rate_limited(ip, "remove-bg", self.RATE_LIMITS["remove-bg"]):
+                return JsonResponse(
+                    {"error": "Too many requests. Please try again later.", "retry_after": 60},
                     status=429
                 )
         

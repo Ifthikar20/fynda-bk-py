@@ -167,9 +167,16 @@ class ImageUploadView(APIView):
         - Extracted product attributes (colors, textures, caption)
         - Generated search queries
         - Matching deals from Amazon and other marketplaces
+    
+    Rate limits:
+        - Anon: 5/hour, Auth: 20/hour
+        - Burst: 2/minute (anon), 5/minute (auth)
     """
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
+    
+    from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
+    throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
     
     def _get_ml_url(self):
         """Get ML service URL from Django settings (resolves to http://ml:8001 in Docker)."""
@@ -181,6 +188,7 @@ class ImageUploadView(APIView):
         import requests
         import logging
         logger = logging.getLogger(__name__)
+        from core.image_preprocessor import preprocess_image, cache_ml_result, ImageValidationError
         
         if 'image' not in request.FILES:
             return Response(
@@ -188,47 +196,23 @@ class ImageUploadView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        image_file = request.FILES['image']
+        try:
+            # Centralized image pre-processing (validate, resize, strip EXIF, hash dedup)
+            processed = preprocess_image(request.FILES['image'])
+            image_base64 = processed.image_base64
+            
+            # If identical image was recently processed, return cached ML result
+            if processed.was_cached and processed.cached_result:
+                logger.info("Returning cached ML result for duplicate image")
+                return Response(processed.cached_result)
         
-        # Validate file type
-        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-        if image_file.content_type not in allowed_types:
+        except ImageValidationError as e:
             return Response(
-                {"error": f"Invalid file type. Allowed: {', '.join(allowed_types)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Validate file size (max 10MB)
-        if image_file.size > 10 * 1024 * 1024:
-            return Response(
-                {"error": "File too large. Maximum size is 10MB."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": e.message},
+                status=e.status_code
             )
         
         try:
-            # Read and encode image (resize for speed)
-            image_data = image_file.read()
-            
-            # Resize image before sending to ML (saves network + processing time)
-            from PIL import Image as PILImage
-            pil_img = PILImage.open(io.BytesIO(image_data))
-            if max(pil_img.size) > 800:
-                pil_img.thumbnail((800, 800), PILImage.LANCZOS)
-                logger.info(f"Resized upload to {pil_img.size}")
-            # Convert RGBA/P to RGB (JPEG doesn't support transparency)
-            if pil_img.mode in ('RGBA', 'P', 'LA'):
-                background = PILImage.new('RGB', pil_img.size, (255, 255, 255))
-                if pil_img.mode == 'P':
-                    pil_img = pil_img.convert('RGBA')
-                background.paste(pil_img, mask=pil_img.split()[-1])
-                pil_img = background
-            elif pil_img.mode != 'RGB':
-                pil_img = pil_img.convert('RGB')
-            buf = io.BytesIO()
-            pil_img.save(buf, format='JPEG', quality=85)
-            image_data = buf.getvalue()
-            
-            image_base64 = base64.b64encode(image_data).decode('utf-8')
             
             # Step 1: Try to identify the product
             extracted = None
@@ -305,13 +289,18 @@ class ImageUploadView(APIView):
                 reverse=True
             )[:15]
             
-            return Response({
+            response_data = {
                 "extracted": extracted,
                 "search_queries": search_queries,
                 "deals": all_deals,
                 "videos": videos,
                 "message": "Image analyzed successfully" if search_queries else "Could not identify product"
-            })
+            }
+            
+            # Cache result against image hash for dedup
+            cache_ml_result(processed.cache_key, response_data)
+            
+            return Response(response_data)
             
         except ValueError as e:
             return Response(

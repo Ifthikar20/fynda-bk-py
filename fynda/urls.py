@@ -102,6 +102,11 @@ urlpatterns = [
     # Blog SSR (for SEO) — not versioned
     path('blog/', include('blog.urls')),
     path('blog/feed/', LatestPostsFeed(), name='blog_feed'),
+    # Social crawler OG meta for shared storyboards (Pinterest, FB, Twitter bots)
+    path('share/<str:token>/', include(([
+        path('', __import__('deals.views.social_og', fromlist=['SharedStoryboardOGView']).SharedStoryboardOGView.as_view(), name='shared-storyboard-og'),
+    ], 'social_og'))),
+
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 ]
 
