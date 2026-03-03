@@ -102,6 +102,10 @@ class APIKeysConfig:
     shareasale_api_token: str = field(default_factory=lambda: os.getenv("SHAREASALE_API_TOKEN", ""))
     shareasale_api_secret: str = field(default_factory=lambda: os.getenv("SHAREASALE_API_SECRET", ""))
     
+    # Pinterest
+    pinterest_app_id: str = field(default_factory=lambda: os.getenv("PINTEREST_APP_ID", ""))
+    pinterest_app_secret: str = field(default_factory=lambda: os.getenv("PINTEREST_APP_SECRET", ""))
+    
     def is_configured(self, service: str) -> bool:
         """Check if a service has its API keys configured."""
         checks = {
@@ -112,13 +116,14 @@ class APIKeysConfig:
             "cj": bool(self.cj_api_token and self.cj_website_id),
             "rakuten": bool(self.rakuten_api_token and self.rakuten_site_id),
             "shareasale": bool(self.shareasale_affiliate_id and self.shareasale_api_token),
+            "pinterest": bool(self.pinterest_app_id and self.pinterest_app_secret),
         }
         return checks.get(service.lower(), False)
     
     @property
     def configured_services(self) -> List[str]:
         """Return list of services with valid API keys."""
-        services = ["rapidapi", "ebay", "bestbuy", "openai", "cj", "rakuten", "shareasale"]
+        services = ["rapidapi", "ebay", "bestbuy", "openai", "cj", "rakuten", "shareasale", "pinterest"]
         return [s for s in services if self.is_configured(s)]
 
 

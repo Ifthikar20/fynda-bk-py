@@ -135,3 +135,50 @@ class BrandLike(models.Model):
 
     def __str__(self):
         return f"{self.user} ♥ {self.brand.name}"
+
+
+# ============================================================
+# Pinterest Connection (OAuth token storage)
+# ============================================================
+
+class PinterestConnection(models.Model):
+    """
+    Stores a user's Pinterest OAuth2 tokens for auto-publishing.
+    One per user — created when they connect their Pinterest account.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='pinterest_connection'
+    )
+    
+    # OAuth tokens
+    access_token = models.TextField()
+    refresh_token = models.TextField(blank=True, default='')
+    token_expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Pinterest user info
+    pinterest_user_id = models.CharField(max_length=100, blank=True, default='')
+    pinterest_username = models.CharField(max_length=150, blank=True, default='')
+    
+    # Tracking
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'pinterest_connections'
+        verbose_name = 'Pinterest Connection'
+        verbose_name_plural = 'Pinterest Connections'
+    
+    def __str__(self):
+        return f"{self.user} → Pinterest ({self.pinterest_username or 'connected'})"
+    
+    @property
+    def is_expired(self):
+        """Check if the access token has expired."""
+        from django.utils import timezone
+        if not self.token_expires_at:
+            return False
+        return timezone.now() >= self.token_expires_at
+

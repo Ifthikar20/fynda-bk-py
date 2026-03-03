@@ -14,6 +14,14 @@ from .views import (
 )
 from .views.brand_views import BrandListView, BrandLikeView
 from .views.chat_view import ChatView
+from .views.pinterest_views import (
+    PinterestStatusView,
+    PinterestAuthView,
+    PinterestCallbackView,
+    PinterestBoardsView,
+    PinterestPublishView,
+    PinterestDisconnectView,
+)
 
 urlpatterns = [
     path('csrf/', CsrfView.as_view(), name='csrf'),
@@ -38,5 +46,12 @@ urlpatterns = [
     # Brands
     path('brands/', BrandListView.as_view(), name='brand-list'),
     path('brands/<slug:slug>/like/', BrandLikeView.as_view(), name='brand-like'),
+    
+    # Pinterest Auto-Publish
+    path('pinterest/status/', PinterestStatusView.as_view(), name='pinterest-status'),
+    path('pinterest/auth/', PinterestAuthView.as_view(), name='pinterest-auth'),
+    path('pinterest/callback/', PinterestCallbackView.as_view(), name='pinterest-callback'),
+    path('pinterest/boards/', PinterestBoardsView.as_view(), name='pinterest-boards'),
+    path('pinterest/publish/', PinterestPublishView.as_view(), name='pinterest-publish'),
+    path('pinterest/disconnect/', PinterestDisconnectView.as_view(), name='pinterest-disconnect'),
 ]
-
