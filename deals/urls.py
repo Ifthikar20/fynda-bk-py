@@ -23,6 +23,7 @@ from .views.pinterest_views import (
     PinterestDisconnectView,
 )
 from mobile.remove_bg_view import RemoveBackgroundView
+from .views.price_views import PriceAnalysisView
 
 urlpatterns = [
     path('csrf/', CsrfView.as_view(), name='csrf'),
@@ -58,4 +59,7 @@ urlpatterns = [
     
     # Tools (web-accessible — not behind mobile prefix)
     path('tools/remove-bg/', RemoveBackgroundView.as_view(), name='remove-bg'),
+    
+    # Price Analysis
+    path('price-analysis/', PriceAnalysisView.as_view(), name='price-analysis'),
 ]
