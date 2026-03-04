@@ -22,6 +22,7 @@ from .views.pinterest_views import (
     PinterestPublishView,
     PinterestDisconnectView,
 )
+from mobile.remove_bg_view import RemoveBackgroundView
 
 urlpatterns = [
     path('csrf/', CsrfView.as_view(), name='csrf'),
@@ -54,4 +55,7 @@ urlpatterns = [
     path('pinterest/boards/', PinterestBoardsView.as_view(), name='pinterest-boards'),
     path('pinterest/publish/', PinterestPublishView.as_view(), name='pinterest-publish'),
     path('pinterest/disconnect/', PinterestDisconnectView.as_view(), name='pinterest-disconnect'),
+    
+    # Tools (web-accessible — not behind mobile prefix)
+    path('tools/remove-bg/', RemoveBackgroundView.as_view(), name='remove-bg'),
 ]

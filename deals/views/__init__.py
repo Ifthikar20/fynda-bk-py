@@ -179,9 +179,9 @@ class ImageUploadView(APIView):
     throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
     
     def _get_ml_url(self):
-        """Get ML service URL from Django settings (resolves to http://ml:8001 in Docker)."""
-        from django.conf import settings as django_settings
-        base = getattr(django_settings, 'ML_SERVICE_URL', 'http://localhost:8001')
+        """Get ML service URL from config (resolves to http://ml:8001 in Docker)."""
+        from fynda.config import config
+        base = config.ml_service.url
         return f"{base}/api/extract-attributes"
     
     def post(self, request):

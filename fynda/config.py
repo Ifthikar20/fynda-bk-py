@@ -184,6 +184,7 @@ class EmailConfig:
     password: str = field(default_factory=lambda: os.getenv("AWS_SES_SECRET_KEY", ""))
     from_email: str = field(default_factory=lambda: os.getenv("DEFAULT_FROM_EMAIL", "Outfi <noreply@outfi.ai>"))
     site_url: str = field(default_factory=lambda: os.getenv("SITE_URL", "https://outfi.ai"))
+    api_url: str = field(default_factory=lambda: os.getenv("API_URL", "https://api.outfi.ai"))
 
 
 @dataclass(frozen=True)

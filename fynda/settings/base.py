@@ -321,7 +321,7 @@ JAZZMIN_SETTINGS = {
     "topmenu_links": [
         {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"name": "View Blog", "url": "/blog/", "new_window": True},
-        {"name": "Visit Outfi", "url": "https://outfi.ai", "new_window": True},
+        {"name": "Visit Outfi", "url": config.email.site_url, "new_window": True},
     ],
     
     #############

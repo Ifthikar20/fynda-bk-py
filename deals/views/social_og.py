@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.views import View
 from deals.repositories import SharedStoryboardRepository
 from django.utils import timezone
+from fynda.config import config
 
 
 # Match user-agents from social media crawlers
@@ -63,7 +64,7 @@ class SharedStoryboardOGView(View):
         # Extract hero image from the storyboard's first canvas item
         items = (shared.storyboard_data or {}).get("items", [])
         hero_image = items[0].get("image_url", "") if items else ""
-        fallback_image = "https://outfi.ai/assets/outfi-og-banner.png"
+        fallback_image = f"{config.email.site_url}/assets/outfi-og-banner.png"
         og_image = hero_image or fallback_image
 
         title = shared.title or "Fashion Board"
@@ -72,7 +73,7 @@ class SharedStoryboardOGView(View):
             f"Fashion board by {owner_name} on outfi.ai "
             f"— discover and share outfit inspiration."
         )
-        share_url = f"https://outfi.ai/share/{token}"
+        share_url = f"{config.email.site_url}/share/{token}"
 
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -107,7 +108,7 @@ class SharedStoryboardOGView(View):
     <h1>{title}</h1>
     <p>{description}</p>
     <img src="{og_image}" alt="{title}" />
-    <p><a href="https://outfi.ai">Explore more on outfi.ai</a></p>
+    <p><a href="{config.email.site_url}">Explore more on outfi.ai</a></p>
 </body>
 </html>"""
 

@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from deals.models import PinterestConnection, SharedStoryboard
 from deals.services.pinterest_publisher import PinterestPublisher, PinterestPublisherError
+from fynda.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ class PinterestAuthView(APIView):
             )
 
         # Build the callback URL
-        callback_url = f"https://api.outfi.ai/api/pinterest/callback/"
+        callback_url = f"{config.email.api_url}/api/pinterest/callback/"
         
         # Generate a state parameter for CSRF protection
         state = uuid.uuid4().hex[:16]
@@ -119,7 +120,7 @@ class PinterestCallbackView(APIView):
         if not request.user.is_authenticated:
             return HttpResponse(self._close_popup_html("error", "Not authenticated. Please log in first."), content_type="text/html")
 
-        callback_url = f"https://api.outfi.ai/api/pinterest/callback/"
+        callback_url = f"{config.email.api_url}/api/pinterest/callback/"
 
         try:
             # Exchange code for tokens
@@ -291,7 +292,7 @@ class PinterestPublishView(APIView):
             description = f"Fashion board curated on outfi.ai — discover and share outfit inspiration."
 
         # Link back to the shared board on outfi.ai
-        share_link = f"https://outfi.ai/share/{storyboard_token}"
+        share_link = f"{config.email.site_url}/share/{storyboard_token}"
 
         try:
             access_token = PinterestPublisher.ensure_valid_token(conn)

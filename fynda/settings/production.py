@@ -64,17 +64,17 @@ CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # =============================================================================
-# CORS - Strict Production Settings (from config + hardcoded essentials)
+# CORS - Strict Production Settings (config-driven — no hardcoded domains)
 # =============================================================================
 CORS_ALLOW_ALL_ORIGINS = False
 
-# Always allow our own domains + any extras from config
-_HARDCODED_ORIGINS = [
-    "https://outfi.ai",
-    "https://www.outfi.ai",
-    "https://api.outfi.ai",
+# Derive required origins from config (SITE_URL + API_URL)
+_SITE_ORIGINS = [
+    config.email.site_url,                                # https://outfi.ai
+    config.email.site_url.replace("://", "://www."),      # https://www.outfi.ai
+    config.email.api_url,                                 # https://api.outfi.ai
 ]
-CORS_ALLOWED_ORIGINS = list(set(_HARDCODED_ORIGINS + config.security.cors_origins))
+CORS_ALLOWED_ORIGINS = list(set(_SITE_ORIGINS + config.security.cors_origins))
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = [
