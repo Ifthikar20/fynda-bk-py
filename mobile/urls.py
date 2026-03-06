@@ -24,6 +24,8 @@ from .views import (
     MobileDealListView,
     MobileDealSearchView,
     MobileImageUploadView,
+    # Price Compare
+    MobilePriceCompareView,
     # Alerts
     PriceAlertListView,
     PriceAlertDetailView,
@@ -75,6 +77,7 @@ urlpatterns = [
     # ============================================
     path("deals/", MobileDealListView.as_view(), name="deal-list"),
     path("deals/search/", MobileDealSearchView.as_view(), name="deal-search"),
+    path("deals/compare/", MobilePriceCompareView.as_view(), name="deal-compare"),
     path("deals/image-search/", MobileImageUploadView.as_view(), name="image-search"),
     
     # ============================================

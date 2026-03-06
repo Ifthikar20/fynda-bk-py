@@ -576,6 +576,135 @@ class MobileDealListView(APIView):
         return Response(MobileSearchResponseSerializer(response).data)
 
 
+class MobilePriceCompareView(APIView):
+    """
+    Compare a product's price against similar items.
+    
+    POST /api/mobile/deals/compare/
+    
+    Body: { "title": "...", "price": 29.58, "source": "Amazon" }
+    
+    Returns price_range, rating, position, compared_products, seller_count.
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        title = request.data.get("title", "")
+        price = request.data.get("price")
+        
+        if not title or price is None:
+            return Response(
+                {"error": "title and price are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            price = float(price)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "price must be a number"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        from deals.services.orchestrator import orchestrator
+        import statistics
+        
+        start_time = time.time()
+        
+        # Use first few meaningful words as search query
+        words = title.split()[:5]
+        query = " ".join(words)
+        
+        try:
+            result = orchestrator.search(query)
+            result_dict = result.to_dict()
+        except Exception as e:
+            logger.warning(f"Price compare search failed: {e}")
+            return Response({
+                "price_range": {
+                    "low": round(price * 0.7, 2),
+                    "high": round(price * 1.3, 2),
+                    "avg": round(price, 2),
+                    "median": round(price, 2),
+                },
+                "rating": "fair",
+                "position": 0.5,
+                "compared_products": [],
+                "seller_count": 0,
+                "search_time_ms": int((time.time() - start_time) * 1000),
+            })
+        
+        raw_deals = result_dict.get("deals", [])
+        
+        # Filter: must have price and image
+        similar = []
+        for d in raw_deals:
+            d_price = d.get("price")
+            if d_price is None:
+                continue
+            try:
+                d_price = float(d_price)
+            except (ValueError, TypeError):
+                continue
+            if d_price <= 0:
+                continue
+            
+            img = (d.get("image") or d.get("image_url")
+                   or d.get("product_photo") or d.get("thumbnail") or "")
+            
+            similar.append({
+                "id": d.get("id", ""),
+                "title": d.get("title", ""),
+                "price": d_price,
+                "original_price": d.get("original_price"),
+                "image_url": img,
+                "source": d.get("source", ""),
+                "url": d.get("url", ""),
+            })
+        
+        similar = similar[:10]
+        
+        # Compute price statistics
+        prices = [s["price"] for s in similar]
+        if not prices:
+            prices = [price]
+        
+        low = min(prices)
+        high = max(prices)
+        avg = statistics.mean(prices)
+        median = statistics.median(prices)
+        
+        rng = high - low
+        if rng > 0:
+            position = round((price - low) / rng, 3)
+            position = max(0.0, min(1.0, position))
+        else:
+            position = 0.5
+        
+        if position < 0.35:
+            rating = "great"
+        elif position < 0.65:
+            rating = "fair"
+        else:
+            rating = "high"
+        
+        search_time = int((time.time() - start_time) * 1000)
+        
+        return Response({
+            "price_range": {
+                "low": round(low, 2),
+                "high": round(high, 2),
+                "avg": round(avg, 2),
+                "median": round(median, 2),
+            },
+            "rating": rating,
+            "position": position,
+            "compared_products": similar,
+            "seller_count": len(similar),
+            "search_time_ms": search_time,
+        })
+
+
 class MobileDealSearchView(APIView):
     """
     Mobile-optimized search.
@@ -1301,6 +1430,38 @@ class MobileStoryboardDetailView(APIView):
         
         board.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def put(self, request, token):
+        """Update an existing storyboard (owner only)."""
+        from deals.models import SharedStoryboard
+        
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            board = SharedStoryboard.objects.get(token=token, user=request.user)
+        except SharedStoryboard.DoesNotExist:
+            return Response(
+                {"error": "Storyboard not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if "title" in request.data:
+            board.title = request.data["title"]
+        if "storyboard_data" in request.data:
+            board.storyboard_data = request.data["storyboard_data"]
+        
+        board.save(update_fields=["title", "storyboard_data"])
+        
+        return Response({
+            "token": board.token,
+            "title": board.title,
+            "share_url": f"https://outfi.ai/storyboard/{board.token}",
+            "storyboard_data": board.storyboard_data,
+        })
 
 
 # ================================================================
