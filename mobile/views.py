@@ -1312,17 +1312,32 @@ class MobileStoryboardView(APIView):
     """
     Fashion storyboard management for mobile.
     
-    GET /api/mobile/storyboard/ - List my shared storyboards
-    POST /api/mobile/storyboard/ - Create a shared storyboard
+    GET /api/mobile/storyboard/ - List my storyboards
+    POST /api/mobile/storyboard/ - Create a storyboard
+    PUT /api/mobile/storyboard/<token>/ - Update a storyboard
+    
+    Supports both authenticated and anonymous users.
+    Anonymous users are tracked via X-Device-Id header.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    
+    def _get_device_id(self, request):
+        return request.headers.get('X-Device-Id', '')
     
     def get(self, request):
         from deals.models import SharedStoryboard
+        from django.db.models import Q
         
-        boards = SharedStoryboard.objects.filter(
-            user=request.user
-        ).order_by("-created_at")[:50]
+        # Filter by user (if auth'd) or device_id
+        if request.user and request.user.is_authenticated:
+            boards = SharedStoryboard.objects.filter(user=request.user)
+        else:
+            device_id = self._get_device_id(request)
+            if not device_id:
+                return Response({"storyboards": [], "count": 0})
+            boards = SharedStoryboard.objects.filter(device_id=device_id)
+        
+        boards = boards.order_by("-created_at")[:50]
         
         items = [
             {
@@ -1353,9 +1368,11 @@ class MobileStoryboardView(APIView):
         
         title = request.data.get("title", "")
         expires_in_days = int(request.data.get("expires_in_days", 30))
+        device_id = self._get_device_id(request)
         
         board = SharedStoryboard.objects.create(
-            user=request.user,
+            user=request.user if request.user.is_authenticated else None,
+            device_id=device_id,
             token=secrets.token_urlsafe(16),
             title=title,
             storyboard_data=storyboard_data,
@@ -1365,7 +1382,10 @@ class MobileStoryboardView(APIView):
         return Response(
             {
                 "token": board.token,
+                "title": board.title,
                 "share_url": f"https://outfi.ai/storyboard/{board.token}",
+                "storyboard_data": board.storyboard_data,
+                "created_at": board.created_at.isoformat(),
                 "expires_at": board.expires_at.isoformat(),
             },
             status=status.HTTP_201_CREATED

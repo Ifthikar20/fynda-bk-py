@@ -11,12 +11,15 @@ class SharedStoryboard(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.CharField(max_length=64, unique=True, db_index=True)
     
-    # Owner of the storyboard
+    # Owner (nullable for anonymous saves from mobile)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='shared_storyboards'
+        related_name='shared_storyboards',
+        null=True,
+        blank=True,
     )
+    device_id = models.CharField(max_length=128, blank=True, default='', db_index=True)
     
     # Storyboard data stored as JSON
     title = models.CharField(max_length=255, default='Fashion Storyboard')
