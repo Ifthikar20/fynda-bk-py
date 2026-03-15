@@ -296,75 +296,94 @@ SITE_URL = config.email.site_url
 JAZZMIN_SETTINGS = {
     # Title on the login screen
     "site_title": "Outfi Editorial",
-    
+
     # Title on the brand (top left)
-    "site_header": "Outfi Editorial",
-    
+    "site_header": "Outfi",
+
     # Title on the browser tab
-    "site_brand": "Outfi Editorial",
-    
+    "site_brand": "Outfi",
+
     # Welcome text on the login page
     "welcome_sign": "Welcome to Outfi Editorial",
-    
+
     # Copyright on the footer
     "copyright": "Outfi",
-    
-    # Search model for the search bar
+
+    # Search models
     "search_model": ["blog.Post", "users.User"],
-    
+
     # Field name on user model for avatar
     "user_avatar": None,
-    
+
     ############
     # Top Menu #
     ############
     "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         {"name": "View Blog", "url": "/blog/", "new_window": True},
         {"name": "Visit Outfi", "url": config.email.site_url, "new_window": True},
     ],
-    
+
     #############
     # Side Menu #
     #############
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [
-        "auth",              # Groups — not needed
-        "deals",             # Backend-only, no editorial use
-        "feed",              # Fashion feed managed by API
-        "token_blacklist",   # JWT internals — hide from editors
-        "mobile",            # Mobile API — not editorial
+        "auth",              # Groups — not needed for editorial
+        "deals",             # Backend-only
+        "feed",              # Managed via API
+        "token_blacklist",   # JWT internals
+        "mobile",            # Mobile API
     ],
     "hide_models": [
         "blog.ContentSection",  # Managed inline on Post
         "blog.ProductCard",     # Managed inline on Post
     ],
-    
-    # Custom icons for apps/models
+
+    # Ordered side menu
+    "order_with_respect_to": [
+        "blog",
+        "blog.Post",
+        "blog.Category",
+        "blog.Tag",
+        "emails",
+        "emails.Campaign",
+        "emails.CampaignSend",
+        "emails.Subscriber",
+        "users",
+        "users.User",
+    ],
+
+    # Custom icons
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
+        "blog": "fas fa-feather-alt",
         "blog.Post": "fas fa-newspaper",
-        "blog.Category": "fas fa-folder",
-        "blog.Tag": "fas fa-tags",
+        "blog.Category": "fas fa-folder-open",
+        "blog.Tag": "fas fa-tag",
         "blog.ContentSection": "fas fa-layer-group",
         "blog.ProductCard": "fas fa-shopping-bag",
-        "users.User": "fas fa-user",
+        "users": "fas fa-users",
+        "users.User": "fas fa-user-circle",
+        "emails": "fas fa-envelope-open-text",
+        "emails.Subscriber": "fas fa-at",
+        "emails.Campaign": "fas fa-paper-plane",
+        "emails.CampaignSend": "fas fa-chart-bar",
         "deals": "fas fa-percent",
-        "emails.EmailSubscriber": "fas fa-envelope",
     },
-    
+
     # Default icon for apps not specified above
-    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_parents": "fas fa-folder",
     "default_icon_children": "fas fa-circle",
-    
+
     #################
     # Related Modal #
     #################
     "related_modal_active": True,
-    
+
     #############
     # UI Tweaks #
     #############
@@ -372,41 +391,42 @@ JAZZMIN_SETTINGS = {
     "custom_js": None,
     "use_google_fonts_cdn": True,
     "show_ui_builder": False,
-    
-    # Change view settings
-    "changeform_format": "horizontal_tabs",
+
+    # Change view — collapsible is best for long blog post forms
+    "changeform_format": "collapsible",
     "changeform_format_overrides": {
         "blog.post": "collapsible",
+        "emails.campaign": "horizontal_tabs",
     },
 }
 
-# Jazzmin UI tweaks for dark theme with pink accent
+# Jazzmin UI tweaks — dark Outfi theme with pink accent
 JAZZMIN_UI_TWEAKS = {
     "navbar_small_text": False,
-    "footer_small_text": False,
+    "footer_small_text": True,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": False,
-    "accent": "accent-pink",  # Pink accent to match Outfi brand
+    "brand_colour": "navbar-dark",
+    "accent": "accent-pink",
     "navbar": "navbar-dark",
     "no_navbar_border": True,
     "navbar_fixed": True,
     "layout_boxed": False,
     "footer_fixed": False,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-pink",  # Dark sidebar with pink highlights
+    "sidebar": "sidebar-dark-pink",
     "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
     "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": False,
+    "sidebar_nav_compact_style": True,   # Tighter nav for cleaner look
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
-    "theme": "darkly",  # Dark theme for modern look
+    "theme": "darkly",
     "dark_mode_theme": "darkly",
     "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
+        "primary": "btn-outline-primary",
+        "secondary": "btn-outline-secondary",
+        "info": "btn-outline-info",
         "warning": "btn-warning",
         "danger": "btn-danger",
         "success": "btn-success",
