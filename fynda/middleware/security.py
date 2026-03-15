@@ -23,8 +23,12 @@ class SecurityHeadersMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         
+        # Skip strict CSP for admin pages — Jazzmin/AdminLTE 3 + Bootstrap 5
+        # requires unsafe-eval and inline event handlers to render properly
+        is_admin = request.path.startswith("/admin/")
+        
         # Content Security Policy
-        if not settings.DEBUG:
+        if not settings.DEBUG and not is_admin:
             response["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.fetchbot.io; "
@@ -37,7 +41,10 @@ class SecurityHeadersMiddleware:
         
         # Additional security headers
         response["X-Content-Type-Options"] = "nosniff"
-        response["X-Frame-Options"] = "DENY"
+        if not is_admin:
+            response["X-Frame-Options"] = "DENY"
+        else:
+            response["X-Frame-Options"] = "SAMEORIGIN"
         response["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         
