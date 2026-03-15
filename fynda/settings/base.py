@@ -329,8 +329,17 @@ JAZZMIN_SETTINGS = {
     #############
     "show_sidebar": True,
     "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
+    "hide_apps": [
+        "auth",              # Groups — not needed
+        "deals",             # Backend-only, no editorial use
+        "feed",              # Fashion feed managed by API
+        "token_blacklist",   # JWT internals — hide from editors
+        "mobile",            # Mobile API — not editorial
+    ],
+    "hide_models": [
+        "blog.ContentSection",  # Managed inline on Post
+        "blog.ProductCard",     # Managed inline on Post
+    ],
     
     # Custom icons for apps/models
     "icons": {
