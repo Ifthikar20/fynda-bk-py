@@ -1,53 +1,709 @@
-/* Fynda Editorial Admin - Modern UI Overrides */
+/* Outfi Editorial Admin - Modern UI */
 
 /* =============================================================================
-   CONTENT SECTIONS - Card-Based Layout with Strong Overrides
+   LAYOUT FIX - Sidebar must not cover content
+   AdminLTE 3 / Jazzmin layout structure:
+     .wrapper > .main-sidebar (fixed, 250px wide)
+     .wrapper > .content-wrapper (margin-left: 250px)
    ============================================================================= */
 
-/* Section container cards */
+body.sidebar-mini .main-sidebar,
+body .main-sidebar {
+    width: 250px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    z-index: 1038 !important;
+}
+
+body .content-wrapper,
+body .main-footer {
+    margin-left: 250px !important;
+    min-height: calc(100vh - 57px) !important;
+}
+
+body .main-header.navbar {
+    margin-left: 250px !important;
+    z-index: 1039 !important;
+}
+
+/* Collapsed sidebar state */
+body.sidebar-collapse .main-sidebar {
+    width: 4.6rem !important;
+    overflow: hidden !important;
+}
+body.sidebar-collapse .content-wrapper,
+body.sidebar-collapse .main-footer,
+body.sidebar-collapse .main-header.navbar {
+    margin-left: 4.6rem !important;
+}
+
+/* Mobile: sidebar overlays, no content shift */
+@media (max-width: 991.98px) {
+    body .content-wrapper,
+    body .main-footer,
+    body .main-header.navbar {
+        margin-left: 0 !important;
+    }
+    body .main-sidebar {
+        transform: translateX(-250px) !important;
+        transition: transform 0.3s ease-in-out !important;
+    }
+    body.sidebar-open .main-sidebar {
+        transform: translateX(0) !important;
+    }
+}
+
+/* Fix sidebar nav items - prevent label override from breaking them */
+.main-sidebar .nav-link,
+.main-sidebar .nav-item,
+.main-sidebar .brand-link {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.main-sidebar .nav-link p,
+.main-sidebar .brand-text {
+    display: inline !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    color: inherit !important;
+    margin: 0 !important;
+}
+
+/* =============================================================================
+   SIDEBAR STYLING - Dark + Pink accent
+   ============================================================================= */
+
+.main-sidebar,
+.sidebar {
+    background-color: #111827 !important;
+}
+
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link:hover {
+    background-color: rgba(236, 72, 153, 0.15) !important;
+    color: #f472b6 !important;
+    border-left: 3px solid #ec4899 !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link {
+    border-left: 3px solid transparent !important;
+    margin: 2px 8px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    color: #9ca3af !important;
+}
+
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link .nav-icon {
+    color: #6b7280 !important;
+    width: 1.5rem !important;
+}
+
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link.active .nav-icon,
+.sidebar-dark-pink .nav-sidebar > .nav-item > .nav-link:hover .nav-icon {
+    color: #ec4899 !important;
+}
+
+/* Sidebar brand/logo area */
+.main-sidebar .brand-link {
+    background-color: #0f172a !important;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
+    padding: 12px 16px !important;
+}
+
+.main-sidebar .brand-text {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #f9fafb !important;
+    letter-spacing: -0.3px !important;
+}
+
+/* Sidebar section headers */
+.nav-sidebar .nav-header {
+    color: #4b5563 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1.5px !important;
+    padding: 12px 16px 4px !important;
+}
+
+/* Sidebar treeview children */
+.nav-sidebar .nav-treeview > .nav-item > .nav-link {
+    padding-left: 2.5rem !important;
+    color: #6b7280 !important;
+    font-size: 13px !important;
+}
+
+.nav-sidebar .nav-treeview > .nav-item > .nav-link:hover,
+.nav-sidebar .nav-treeview > .nav-item > .nav-link.active {
+    color: #f472b6 !important;
+    background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+/* =============================================================================
+   NAVBAR / TOP BAR
+   ============================================================================= */
+
+.main-header.navbar {
+    background-color: #0f172a !important;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
+    min-height: 57px !important;
+    padding: 0 16px !important;
+}
+
+.navbar-nav .nav-link {
+    color: #9ca3af !important;
+    font-size: 14px !important;
+    transition: color 0.2s ease !important;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #f472b6 !important;
+}
+
+/* Search bar in navbar */
+.navbar-search-block .form-control {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #f9fafb !important;
+    border-radius: 8px !important;
+}
+
+/* =============================================================================
+   CONTENT AREA - Cards and Modules
+   ============================================================================= */
+
+.content-wrapper {
+    background-color: #0f172a !important;
+}
+
+/* Page header / breadcrumb */
+.content-header {
+    padding: 16px 24px 8px !important;
+}
+
+.content-header h1 {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #f9fafb !important;
+}
+
+.breadcrumb-item,
+.breadcrumb-item a,
+.breadcrumb-item.active {
+    color: #6b7280 !important;
+    font-size: 13px !important;
+}
+
+.breadcrumb-item a:hover {
+    color: #f472b6 !important;
+}
+
+/* Main content padding */
+.content {
+    padding: 0 24px 24px !important;
+}
+
+/* Cards / modules */
+.card,
+#content-main .module,
+.module {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+    margin-bottom: 20px !important;
+    overflow: hidden !important;
+}
+
+.card-header,
+.module caption,
+.module h2 {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-bottom: 1px solid rgba(236, 72, 153, 0.3) !important;
+    border-left: 4px solid #ec4899 !important;
+    color: #f9fafb !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    padding: 14px 20px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+.card-body {
+    padding: 20px !important;
+}
+
+/* =============================================================================
+   CHANGELIST TABLE (list view)
+   ============================================================================= */
+
+#result_list,
+.results table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+#result_list thead th,
+.results table thead th {
+    background-color: #1e293b !important;
+    color: #9ca3af !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid #334155 !important;
+    white-space: nowrap !important;
+}
+
+#result_list thead th a,
+.results table thead th a {
+    color: #9ca3af !important;
+    text-decoration: none !important;
+}
+
+#result_list thead th a:hover {
+    color: #f472b6 !important;
+}
+
+#result_list tbody tr,
+.results table tbody tr {
+    border-bottom: 1px solid #1e293b !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#result_list tbody tr:hover,
+.results table tbody tr:hover {
+    background-color: rgba(236, 72, 153, 0.05) !important;
+}
+
+#result_list tbody td,
+.results table tbody td {
+    padding: 12px 16px !important;
+    color: #d1d5db !important;
+    font-size: 14px !important;
+    vertical-align: middle !important;
+}
+
+#result_list tbody td a,
+.results table tbody td a {
+    color: #f472b6 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+#result_list tbody td a:hover {
+    color: #ec4899 !important;
+    text-decoration: underline !important;
+}
+
+/* Row striping */
+#result_list tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Status badges in list */
+.field-status span,
+.field-is_published span {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 3px 10px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Pagination */
+.paginator {
+    padding: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    color: #6b7280 !important;
+    font-size: 14px !important;
+}
+
+.paginator a,
+.paginator .this-page {
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+}
+
+.paginator a {
+    color: #f472b6 !important;
+    border: 1px solid #374151 !important;
+    transition: all 0.2s ease !important;
+}
+
+.paginator a:hover {
+    background-color: rgba(236, 72, 153, 0.15) !important;
+    border-color: #ec4899 !important;
+}
+
+.paginator .this-page {
+    background-color: #ec4899 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+/* Search / filter bar */
+#changelist-search input[type="text"],
+#changelist-filter input[type="text"] {
+    background: #1e293b !important;
+    border: 1px solid #374151 !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
+    padding: 8px 14px !important;
+    font-size: 14px !important;
+    transition: border-color 0.2s ease !important;
+}
+
+#changelist-search input[type="text"]:focus {
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15) !important;
+    outline: none !important;
+}
+
+#changelist-search input[type="submit"],
+.button,
+input[type="submit"] {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 18px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#changelist-search input[type="submit"]:hover,
+.button:hover,
+input[type="submit"]:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35) !important;
+}
+
+/* Filter sidebar */
+#changelist-filter {
+    background-color: #1e293b !important;
+    border-left: 1px solid #334155 !important;
+    padding: 16px !important;
+    min-width: 200px !important;
+}
+
+#changelist-filter h2 {
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: #6b7280 !important;
+    margin-bottom: 12px !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+#changelist-filter h3 {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #9ca3af !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    margin: 16px 0 8px !important;
+}
+
+#changelist-filter li {
+    margin: 4px 0 !important;
+}
+
+#changelist-filter li a {
+    color: #9ca3af !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    display: block !important;
+    transition: all 0.2s ease !important;
+}
+
+#changelist-filter li a:hover,
+#changelist-filter li.selected a {
+    color: #f472b6 !important;
+    background-color: rgba(236, 72, 153, 0.1) !important;
+}
+
+/* =============================================================================
+   CHANGE FORM (edit/add view)
+   ============================================================================= */
+
+/* Fieldsets */
+fieldset {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
+    margin-bottom: 20px !important;
+}
+
+fieldset h2,
+fieldset legend {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-radius: 8px !important;
+    padding: 12px 18px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #f9fafb !important;
+    margin-bottom: 20px !important;
+    border-left: 4px solid #ec4899 !important;
+    letter-spacing: 0.3px !important;
+}
+
+/* Form fields */
+.form-row {
+    margin-bottom: 18px !important;
+    padding: 0 !important;
+}
+
+/* Labels - scoped to form context only to avoid breaking nav */
+#content-main label,
+.change-form label,
+fieldset label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-weight: 600 !important;
+    color: #9ca3af !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+}
+
+/* Inputs */
+#content-main input[type="text"],
+#content-main input[type="number"],
+#content-main input[type="url"],
+#content-main input[type="email"],
+#content-main input[type="password"],
+#content-main input[type="date"],
+#content-main input[type="datetime-local"],
+#content-main select,
+#content-main textarea,
+.vTextField,
+.vURLField,
+.vDateField,
+.vDateTimeField {
+    background: #0f172a !important;
+    border: 1.5px solid #334155 !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+    max-width: 600px !important;
+}
+
+#content-main input:focus,
+#content-main select:focus,
+#content-main textarea:focus {
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15) !important;
+    outline: none !important;
+    background: #111827 !important;
+}
+
+#content-main textarea {
+    min-height: 120px !important;
+    resize: vertical !important;
+}
+
+/* Help text */
+.help,
+.helptext,
+p.help {
+    color: #6b7280 !important;
+    font-size: 12px !important;
+    margin-top: 5px !important;
+    font-style: italic !important;
+    line-height: 1.5 !important;
+}
+
+/* Error messages */
+.errorlist {
+    color: #f87171 !important;
+    font-size: 12px !important;
+    margin-top: 4px !important;
+    list-style: none !important;
+    padding: 0 !important;
+}
+
+.errorlist li::before {
+    content: "⚠ " !important;
+}
+
+/* =============================================================================
+   INLINE SECTIONS (Content Sections / Product Cards)
+   ============================================================================= */
+
 .djn-group .djn-item,
 .djn-inline-form,
 .inline-group .inline-related,
 fieldset.djn-fieldset,
-.djn-items>div {
-    background: #2a2a2a !important;
-    border: 1px solid #444 !important;
+.djn-items > div {
+    background: #243044 !important;
+    border: 1px solid #334155 !important;
     border-radius: 12px !important;
-    margin-bottom: 20px !important;
-    padding: 24px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    margin-bottom: 16px !important;
+    padding: 20px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Section headers - the title bar */
 .djn-group-header,
 .djn-inline-form h3,
 .inline-related h3,
 .djn-drag-handler {
-    background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%) !important;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
     border-radius: 8px !important;
-    padding: 14px 18px !important;
-    margin: -24px -24px 20px -24px !important;
-    font-size: 15px !important;
+    padding: 12px 16px !important;
+    margin: -20px -20px 16px -20px !important;
+    font-size: 14px !important;
     font-weight: 600 !important;
+    color: #f9fafb !important;
+    border-bottom: 2px solid #ec4899 !important;
+}
+
+/* Nested product cards */
+.djn-items .djn-items,
+.djn-inline-form .djn-inline-form {
+    margin-left: 24px !important;
+    border-left: 3px solid #ec4899 !important;
+    padding-left: 20px !important;
+    background: rgba(236, 72, 153, 0.04) !important;
+}
+
+/* Inline labels - scoped */
+.djn-inline-form label,
+.inline-related label {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-weight: 600 !important;
+    color: #9ca3af !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Inline inputs */
+.djn-inline-form input[type="text"],
+.djn-inline-form input[type="number"],
+.djn-inline-form input[type="url"],
+.djn-inline-form select,
+.djn-inline-form textarea,
+.inline-related input[type="text"],
+.inline-related input[type="number"],
+.inline-related select,
+.inline-related textarea {
+    background: #0f172a !important;
+    border: 1.5px solid #334155 !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    transition: all 0.2s ease !important;
+}
+
+.djn-inline-form input:focus,
+.djn-inline-form select:focus,
+.djn-inline-form textarea:focus,
+.inline-related input:focus,
+.inline-related select:focus,
+.inline-related textarea:focus {
+    border-color: #ec4899 !important;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15) !important;
+    outline: none !important;
+}
+
+input[name*="order"] {
+    max-width: 90px !important;
+    text-align: center !important;
+}
+
+select[name*="section_type"] {
+    max-width: 220px !important;
+}
+
+/* Inline group header */
+.inline-group h2 {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
     color: #fff !important;
-    border-bottom: 2px solid #ff69b4 !important;
+    padding: 14px 18px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25) !important;
+    border: none !important;
 }
 
 /* =============================================================================
-   DELETE BUTTON - Modern Red Pill
+   ADD / DELETE BUTTONS
    ============================================================================= */
+
+.djn-add-handler,
+.add-row a,
+.djn-add-item a,
+a.djn-add-handler {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 10px 22px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3) !important;
+    transition: all 0.2s ease !important;
+    margin: 16px 0 !important;
+}
+
+.djn-add-handler:hover,
+.add-row a:hover,
+a.djn-add-handler:hover {
+    background: linear-gradient(135deg, #db2777 0%, #be185d 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4) !important;
+}
 
 .djn-remove-handler,
 .inline-deletelink,
 a.djn-remove-handler,
 .delete a,
 a[href*="delete"] {
-    background: #dc3545 !important;
+    background: #ef4444 !important;
     color: #fff !important;
     border: none !important;
-    border-radius: 20px !important;
-    padding: 8px 18px !important;
-    font-size: 12px !important;
+    border-radius: 16px !important;
+    padding: 6px 14px !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
     text-decoration: none !important;
     text-transform: uppercase !important;
@@ -59,162 +715,37 @@ a[href*="delete"] {
 .djn-remove-handler:hover,
 .inline-deletelink:hover,
 a.djn-remove-handler:hover {
-    background: #c82333 !important;
-    transform: scale(1.05) !important;
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4) !important;
+    background: #dc2626 !important;
+    transform: scale(1.03) !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.35) !important;
 }
 
 /* =============================================================================
-   ADD BUTTON - Pink Gradient Pill
-   ============================================================================= */
-
-.djn-add-handler,
-.add-row a,
-.djn-add-item a,
-a.djn-add-handler {
-    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 25px !important;
-    padding: 14px 28px !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    text-decoration: none !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4) !important;
-    transition: all 0.3s ease !important;
-    margin: 20px 0 !important;
-}
-
-.djn-add-handler:hover,
-.add-row a:hover,
-a.djn-add-handler:hover {
-    background: linear-gradient(135deg, #ff1493 0%, #c71585 100%) !important;
-    transform: translateY(-3px) !important;
-    box-shadow: 0 6px 25px rgba(255, 105, 180, 0.5) !important;
-}
-
-/* =============================================================================
-   FORM FIELDS - Modern Dark Inputs
-   ============================================================================= */
-
-.djn-inline-form input[type="text"],
-.djn-inline-form input[type="number"],
-.djn-inline-form input[type="url"],
-.djn-inline-form select,
-.djn-inline-form textarea,
-.inline-related input[type="text"],
-.inline-related input[type="number"],
-.inline-related select,
-.inline-related textarea,
-.vTextField,
-.vURLField {
-    background: #1a1a1a !important;
-    border: 2px solid #444 !important;
-    border-radius: 8px !important;
-    color: #fff !important;
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-    width: 100% !important;
-    max-width: 600px !important;
-    transition: all 0.2s ease !important;
-}
-
-.djn-inline-form input:focus,
-.djn-inline-form select:focus,
-.djn-inline-form textarea:focus,
-.inline-related input:focus,
-.inline-related select:focus,
-.inline-related textarea:focus {
-    border-color: #ff69b4 !important;
-    box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.2) !important;
-    outline: none !important;
-}
-
-/* Small fields */
-input[name*="order"] {
-    max-width: 100px !important;
-    text-align: center !important;
-}
-
-select[name*="section_type"] {
-    max-width: 220px !important;
-}
-
-/* =============================================================================
-   FORM ROWS - Better Spacing
-   ============================================================================= */
-
-.form-row,
-.djn-inline-form .form-row {
-    margin-bottom: 16px !important;
-    padding: 0 !important;
-}
-
-/* Labels */
-.djn-inline-form label,
-.inline-related label,
-label {
-    display: block !important;
-    margin-bottom: 8px !important;
-    font-weight: 600 !important;
-    color: #ccc !important;
-    font-size: 13px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-}
-
-/* Help text */
-.help,
-.helptext,
-p.help {
-    color: #888 !important;
-    font-size: 11px !important;
-    margin-top: 6px !important;
-    font-style: italic !important;
-}
-
-/* =============================================================================
-   NESTED PRODUCTS - Visual Hierarchy
-   ============================================================================= */
-
-.djn-items .djn-items,
-.djn-inline-form .djn-inline-form {
-    margin-left: 30px !important;
-    border-left: 4px solid #ff69b4 !important;
-    padding-left: 24px !important;
-    background: rgba(255, 105, 180, 0.05) !important;
-}
-
-/* =============================================================================
-   SAVE BUTTONS - Sticky Bar
+   SAVE / SUBMIT BUTTONS
    ============================================================================= */
 
 .submit-row {
-    background: #1a1a1a !important;
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
     border-radius: 12px !important;
-    padding: 20px !important;
-    margin-top: 30px !important;
+    padding: 18px 24px !important;
+    margin-top: 24px !important;
     display: flex !important;
-    gap: 15px !important;
+    gap: 12px !important;
     flex-wrap: wrap !important;
     align-items: center !important;
     position: sticky !important;
-    bottom: 20px !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
-    z-index: 1000 !important;
+    bottom: 16px !important;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.4) !important;
+    z-index: 100 !important;
 }
 
 .submit-row input[type="submit"],
 .submit-row button {
     border-radius: 8px !important;
-    padding: 14px 28px !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
+    padding: 11px 24px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
     border: none !important;
     cursor: pointer !important;
     text-transform: uppercase !important;
@@ -223,84 +754,246 @@ p.help {
 }
 
 .submit-row input[name="_save"] {
-    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%) !important;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
     color: #fff !important;
-    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25) !important;
 }
 
 .submit-row input[name="_save"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(236, 72, 153, 0.35) !important;
 }
 
 .submit-row input[name="_addanother"],
 .submit-row input[name="_continue"] {
-    background: #333 !important;
-    color: #fff !important;
-    border: 1px solid #555 !important;
+    background: #374151 !important;
+    color: #d1d5db !important;
+    border: 1px solid #4b5563 !important;
 }
 
 .submit-row input[name="_addanother"]:hover,
 .submit-row input[name="_continue"]:hover {
-    background: #444 !important;
+    background: #4b5563 !important;
+    color: #f9fafb !important;
+}
+
+.submit-row .deletelink-box a,
+.submit-row a.deletelink {
+    color: #f87171 !important;
+    font-size: 13px !important;
+    margin-left: auto !important;
+    text-decoration: none !important;
+    padding: 11px 16px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(248, 113, 113, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+.submit-row .deletelink-box a:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444 !important;
 }
 
 /* =============================================================================
-   FILE UPLOAD - Clean Style
+   FILE UPLOAD
    ============================================================================= */
 
 input[type="file"] {
-    background: #1a1a1a !important;
-    border: 2px dashed #555 !important;
+    background: #0f172a !important;
+    border: 2px dashed #374151 !important;
     border-radius: 8px !important;
-    padding: 16px !important;
+    padding: 14px !important;
     width: 100% !important;
     max-width: 400px !important;
-    color: #ccc !important;
+    color: #9ca3af !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
 }
 
 input[type="file"]:hover {
-    border-color: #ff69b4 !important;
-    background: #222 !important;
+    border-color: #ec4899 !important;
+    background: #111827 !important;
 }
 
-/* Image preview */
 .file-upload img,
 .thumbnail img,
 img.thumbnail {
-    max-width: 150px !important;
-    max-height: 150px !important;
+    max-width: 140px !important;
+    max-height: 140px !important;
     border-radius: 8px !important;
-    margin-top: 10px !important;
-    border: 2px solid #444 !important;
+    margin-top: 8px !important;
+    border: 2px solid #334155 !important;
+    object-fit: cover !important;
 }
 
 /* =============================================================================
-   FIELDSET HEADERS
+   DASHBOARD / INDEX PAGE
    ============================================================================= */
 
-fieldset h2,
-.module h2 {
-    background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%) !important;
-    border-radius: 8px !important;
-    padding: 14px 18px !important;
-    font-size: 16px !important;
-    margin-bottom: 20px !important;
-    border-left: 4px solid #ff69b4 !important;
+/* App list on dashboard */
+#content-main .app-blog .model-post a,
+#content-main .app-emails .model-emailsubscriber a,
+#content-main .model-post a,
+#content-main .model-user a {
+    color: #f472b6 !important;
+    font-weight: 500 !important;
+}
+
+/* Recent actions panel */
+#recent-actions-module {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+}
+
+#recent-actions-module h2 {
+    background: none !important;
+    border-bottom: 1px solid #334155 !important;
+    padding: 14px 20px !important;
+    font-size: 14px !important;
+    color: #9ca3af !important;
+}
+
+#recent-actions-module .actionlist li {
+    border-bottom: 1px solid #1e293b !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+}
+
+#recent-actions-module .actionlist li a {
+    color: #f472b6 !important;
 }
 
 /* =============================================================================
-   OVERALL INLINE GROUP HEADER
+   LOGIN PAGE
    ============================================================================= */
 
-.inline-group h2 {
-    background: linear-gradient(135deg, #ff69b4 0%, #c71585 100%) !important;
-    color: #fff !important;
-    padding: 16px 20px !important;
+body.login {
+    background: linear-gradient(135deg, #0f172a 0%, #1a1035 100%) !important;
+}
+
+#login-form {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 16px !important;
+    padding: 40px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+#login-form input[type="text"],
+#login-form input[type="password"] {
+    background: #0f172a !important;
+    border: 1.5px solid #334155 !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
+    padding: 12px 16px !important;
+}
+
+#login-form input[type="submit"] {
+    width: 100% !important;
+    padding: 14px !important;
+    font-size: 15px !important;
     border-radius: 10px !important;
-    font-size: 18px !important;
-    margin-bottom: 24px !important;
-    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3) !important;
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+    margin-top: 8px !important;
+}
+
+/* =============================================================================
+   FOOTER
+   ============================================================================= */
+
+.main-footer {
+    background-color: #0f172a !important;
+    border-top: 1px solid #1e293b !important;
+    color: #4b5563 !important;
+    font-size: 12px !important;
+    padding: 12px 24px !important;
+}
+
+/* =============================================================================
+   MISC UTILITIES
+   ============================================================================= */
+
+/* Select2 dropdowns */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    border-radius: 8px !important;
+    color: #f9fafb !important;
+}
+
+.select2-dropdown {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+.select2-results__option {
+    color: #d1d5db !important;
+}
+
+.select2-results__option--highlighted {
+    background-color: rgba(236, 72, 153, 0.2) !important;
+    color: #f9fafb !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #374151 !important;
+    border-radius: 3px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ec4899 !important;
+}
+
+/* Alerts / messages */
+.alert-success,
+li.success {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    border-color: #10b981 !important;
+    color: #6ee7b7 !important;
+}
+
+.alert-warning,
+li.warning {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    border-color: #f59e0b !important;
+    color: #fcd34d !important;
+}
+
+.alert-error,
+li.error {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+}
+
+/* Object tools (top right of change form) */
+.object-tools a {
+    background: #374151 !important;
+    color: #d1d5db !important;
+    border-radius: 20px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid #4b5563 !important;
+}
+
+.object-tools a:hover,
+.object-tools a.viewsitelink {
+    background: rgba(236, 72, 153, 0.15) !important;
+    color: #f472b6 !important;
+    border-color: #ec4899 !important;
 }
