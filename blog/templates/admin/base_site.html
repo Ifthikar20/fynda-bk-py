@@ -3,207 +3,219 @@
 {% block extrahead %}
 {{ block.super }}
 <style>
-/* =============================================================
-   OUTFI ADMIN — CRITICAL LAYOUT FIX
-   Injected via template override (no collectstatic needed).
-   AdminLTE 3 / Jazzmin layout:
-     .main-sidebar  = fixed left column, 260px
-     .content-wrapper = everything to the right
-     .main-header   = top navbar, same right offset
+    /* =============================================================
+   OUTFI ADMIN — CRITICAL LAYOUT FIX for Jazzmin 3.0.3
+   AdminLTE 4 / Bootstrap 5 class names:
+     .app-sidebar   = left sidebar
+     .app-wrapper    = outer wrapper
+     .app-header     = top navbar
+     .app-main       = main content area
    ============================================================= */
 
-/* ── Sidebar: fixed 260px, never wider ── */
-.main-sidebar {
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    height: 100vh !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    z-index: 1038 !important;
-}
-
-/* ── Content: always starts after the sidebar ── */
-.content-wrapper {
-    margin-left: 260px !important;
-}
-
-/* ── Top navbar: same offset so it doesn't sit behind sidebar ── */
-.main-header.navbar,
-.main-header {
-    margin-left: 260px !important;
-    left: 0 !important;
-}
-
-/* ── Footer: same offset ── */
-.main-footer {
-    margin-left: 260px !important;
-}
-
-/* ── Sidebar collapse (toggle button shrinks it to icon rail) ── */
-body.sidebar-collapse .main-sidebar {
-    width: 4.6rem !important;
-    min-width: 4.6rem !important;
-    max-width: 4.6rem !important;
-}
-body.sidebar-collapse .content-wrapper,
-body.sidebar-collapse .main-footer,
-body.sidebar-collapse .main-header.navbar {
-    margin-left: 4.6rem !important;
-}
-
-/* ── Mobile: sidebar overlays, content starts at 0 ── */
-@media (max-width: 991.98px) {
-    .main-sidebar {
-        transform: translateX(-260px);
-        transition: transform 0.3s ease;
-        z-index: 1050 !important;
+    /* ── Sidebar: fixed 260px left column ── */
+    .app-sidebar {
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        z-index: 1038 !important;
+        background-color: #111827 !important;
+        border-right: 1px solid rgba(236, 72, 153, 0.15) !important;
     }
-    body.sidebar-open .main-sidebar {
-        transform: translateX(0);
+
+    /* ── Main content: offset by sidebar width ── */
+    .app-wrapper .app-main,
+    .app-wrapper .content-wrapper,
+    .app-wrapper>main {
+        margin-left: 260px !important;
     }
-    .content-wrapper,
-    .main-footer,
-    .main-header.navbar {
-        margin-left: 0 !important;
+
+    /* ── Top navbar: offset by sidebar width ── */
+    .app-header,
+    .app-header.navbar {
+        margin-left: 260px !important;
+        width: calc(100% - 260px) !important;
+        position: fixed !important;
+        top: 0 !important;
+        z-index: 1039 !important;
     }
-}
 
-/* ── Fix sidebar nav section headers being clipped ──
-   AdminLTE .nav-header gets extra left indent; reset it. ── */
-.main-sidebar .nav-sidebar .nav-header {
-    padding: 8px 16px 4px 16px !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    white-space: nowrap !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1.2px !important;
-    color: #6b7280 !important;
-}
+    /* ── Footer: offset by sidebar width ── */
+    .app-footer,
+    .main-footer {
+        margin-left: 260px !important;
+    }
 
-/* ── Nav items: proper flex, no clipping ── */
-.main-sidebar .nav-sidebar .nav-item {
-    overflow: visible !important;
-}
+    /* ── Sidebar collapse state ── */
+    body.sidebar-collapse .app-sidebar {
+        width: 4.6rem !important;
+        min-width: 4.6rem !important;
+        max-width: 4.6rem !important;
+    }
 
-.main-sidebar .nav-sidebar .nav-link {
-    display: flex !important;
-    align-items: center !important;
-    padding: 8px 12px !important;
-    margin: 1px 6px !important;
-    border-radius: 8px !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
-}
+    body.sidebar-collapse .app-wrapper .app-main,
+    body.sidebar-collapse .app-wrapper .content-wrapper,
+    body.sidebar-collapse .app-header,
+    body.sidebar-collapse .app-footer,
+    body.sidebar-collapse .main-footer {
+        margin-left: 4.6rem !important;
+    }
 
-.main-sidebar .nav-sidebar .nav-link p {
-    display: inline !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    color: inherit !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
-}
+    body.sidebar-collapse .app-header {
+        width: calc(100% - 4.6rem) !important;
+    }
 
-.main-sidebar .nav-sidebar .nav-link .nav-icon {
-    margin-right: 8px !important;
-    font-size: 14px !important;
-    width: 20px !important;
-    text-align: center !important;
-    flex-shrink: 0 !important;
-}
+    /* ── Mobile: sidebar overlays ── */
+    @media (max-width: 991.98px) {
+        .app-sidebar {
+            transform: translateX(-260px) !important;
+            transition: transform 0.3s ease !important;
+            z-index: 1050 !important;
+        }
 
-/* ── Treeview arrow ── */
-.main-sidebar .nav-sidebar .nav-treeview {
-    padding-left: 8px !important;
-}
+        body.sidebar-open .app-sidebar {
+            transform: translateX(0) !important;
+        }
 
-/* ── Remove the broken label override that was clipping nav text.
-   Keep labels styled only inside forms, not inside nav. ── */
-.main-sidebar label,
-.navbar label,
-.sidebar label {
-    display: inline !important;
-    font-weight: inherit !important;
-    color: inherit !important;
-    font-size: inherit !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    margin-bottom: 0 !important;
-}
+        .app-wrapper .app-main,
+        .app-wrapper .content-wrapper,
+        .app-wrapper>main,
+        .app-header,
+        .app-footer,
+        .main-footer {
+            margin-left: 0 !important;
+        }
 
-/* =============================================================
-   BRAND / LOGO AREA
-   ============================================================= */
-.main-sidebar .brand-link {
-    padding: 14px 16px !important;
-    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-}
+        .app-header {
+            width: 100% !important;
+        }
+    }
 
-.main-sidebar .brand-text {
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
-    display: inline !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    color: inherit !important;
-}
+    /* ── Sidebar wrapper scrollable ── */
+    .sidebar-wrapper {
+        overflow-y: auto !important;
+        height: 100% !important;
+    }
 
-/* =============================================================
-   CONTENT AREA — remove accidental top whitespace
-   ============================================================= */
-.content-wrapper > .content-header {
-    padding: 16px 24px 8px 24px !important;
-}
+    /* ── Sidebar nav items ── */
+    .app-sidebar .nav-sidebar .nav-link {
+        display: flex !important;
+        align-items: center !important;
+        padding: 8px 12px !important;
+        margin: 2px 8px !important;
+        border-radius: 8px !important;
+        color: #9ca3af !important;
+        border-left: 3px solid transparent !important;
+        transition: all 0.2s ease !important;
+        white-space: nowrap !important;
+    }
 
-.content-wrapper > .content {
-    padding: 0 24px 32px 24px !important;
-}
+    .app-sidebar .nav-sidebar .nav-link:hover,
+    .app-sidebar .nav-sidebar .nav-link.active {
+        background-color: rgba(236, 72, 153, 0.15) !important;
+        color: #f472b6 !important;
+        border-left: 3px solid #ec4899 !important;
+        border-radius: 0 8px 8px 0 !important;
+    }
 
-/* ── Prevent admin form labels from overflowing table cells ── */
-#content-main label,
-.change-form label,
-fieldset label,
-.form-row label {
-    display: block !important;
-    font-weight: 600 !important;
-    font-size: 12px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    margin-bottom: 5px !important;
-    color: #9ca3af !important;
-}
+    .app-sidebar .nav-sidebar .nav-link .nav-icon {
+        margin-right: 8px !important;
+        font-size: 14px !important;
+        width: 20px !important;
+        text-align: center !important;
+        flex-shrink: 0 !important;
+        color: #6b7280 !important;
+    }
 
-/* =============================================================
-   CHANGELIST TABLE — readable, no overlap
-   ============================================================= */
-#result_list th,
-#result_list td {
-    padding: 10px 14px !important;
-    vertical-align: middle !important;
-}
+    .app-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+    .app-sidebar .nav-sidebar .nav-link.active .nav-icon {
+        color: #ec4899 !important;
+    }
 
-/* =============================================================
-   WRAPPER z-index guard — nothing should sit above the sidebar toggle
-   ============================================================= */
-.wrapper {
-    position: relative !important;
-    overflow-x: hidden !important;
-}
+    .app-sidebar .nav-sidebar .nav-link p {
+        display: inline !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: inherit !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }
+
+    /* ── Section headers in sidebar ── */
+    .app-sidebar .nav-sidebar .nav-header {
+        padding: 12px 16px 4px !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.5px !important;
+        color: #4b5563 !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+    }
+
+    /* ── Brand / logo area ── */
+    .app-sidebar .brand-link {
+        padding: 14px 16px !important;
+        border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        background-color: #0f172a !important;
+    }
+
+    .app-sidebar .brand-text {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        color: #f9fafb !important;
+        display: inline !important;
+        white-space: nowrap !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+    }
+
+    /* ── Fix sidebar labels not breaking nav ── */
+    .app-sidebar label,
+    .navbar label,
+    .sidebar label {
+        display: inline !important;
+        font-weight: inherit !important;
+        color: inherit !important;
+        font-size: inherit !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* ── Treeview children ── */
+    .app-sidebar .nav-sidebar .nav-treeview>.nav-item>.nav-link {
+        padding-left: 2.5rem !important;
+        color: #6b7280 !important;
+        font-size: 13px !important;
+    }
+
+    .app-sidebar .nav-sidebar .nav-treeview>.nav-item>.nav-link:hover,
+    .app-sidebar .nav-sidebar .nav-treeview>.nav-item>.nav-link.active {
+        color: #f472b6 !important;
+        background-color: rgba(236, 72, 153, 0.1) !important;
+    }
+
+    /* ── User panel in sidebar ── */
+    .app-sidebar .user-panel {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 10px 16px !important;
+    }
+
+    /* ── Wrapper overflow guard ── */
+    .app-wrapper {
+        position: relative !important;
+        overflow-x: hidden !important;
+    }
 </style>
 {% endblock %}

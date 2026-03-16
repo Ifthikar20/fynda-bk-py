@@ -3,12 +3,12 @@
 /* =============================================================================
    LAYOUT FIX - Sidebar must not cover content
    AdminLTE 3 / Jazzmin layout structure:
-     .wrapper > .main-sidebar (fixed, 250px wide)
-     .wrapper > .content-wrapper (margin-left: 250px)
+     .wrapper > .app-sidebar (fixed, 250px wide)
+     .wrapper > .app-main (margin-left: 250px)
    ============================================================================= */
 
-body.sidebar-mini .main-sidebar,
-body .main-sidebar {
+.app-sidebar,
+body .app-sidebar {
     width: 250px !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -19,54 +19,54 @@ body .main-sidebar {
     z-index: 1038 !important;
 }
 
-body .content-wrapper,
-body .main-footer {
+body .app-main,
+body .app-footer {
     margin-left: 250px !important;
     min-height: calc(100vh - 57px) !important;
 }
 
-body .main-header.navbar {
+body .app-header.navbar {
     margin-left: 250px !important;
     z-index: 1039 !important;
 }
 
 /* Collapsed sidebar state */
-body.sidebar-collapse .main-sidebar {
+body.sidebar-collapse .app-sidebar {
     width: 4.6rem !important;
     overflow: hidden !important;
 }
-body.sidebar-collapse .content-wrapper,
-body.sidebar-collapse .main-footer,
-body.sidebar-collapse .main-header.navbar {
+body.sidebar-collapse .app-main,
+body.sidebar-collapse .app-footer,
+body.sidebar-collapse .app-header.navbar {
     margin-left: 4.6rem !important;
 }
 
 /* Mobile: sidebar overlays, no content shift */
 @media (max-width: 991.98px) {
-    body .content-wrapper,
-    body .main-footer,
-    body .main-header.navbar {
+    body .app-main,
+    body .app-footer,
+    body .app-header.navbar {
         margin-left: 0 !important;
     }
-    body .main-sidebar {
+    body .app-sidebar {
         transform: translateX(-250px) !important;
         transition: transform 0.3s ease-in-out !important;
     }
-    body.sidebar-open .main-sidebar {
+    body.sidebar-open .app-sidebar {
         transform: translateX(0) !important;
     }
 }
 
 /* Fix sidebar nav items - prevent label override from breaking them */
-.main-sidebar .nav-link,
-.main-sidebar .nav-item,
-.main-sidebar .brand-link {
+.app-sidebar .nav-link,
+.app-sidebar .nav-item,
+.app-sidebar .brand-link {
     display: flex !important;
     align-items: center !important;
 }
 
-.main-sidebar .nav-link p,
-.main-sidebar .brand-text {
+.app-sidebar .nav-link p,
+.app-sidebar .brand-text {
     display: inline !important;
     font-weight: 500 !important;
     font-size: 14px !important;
@@ -80,7 +80,7 @@ body.sidebar-collapse .main-header.navbar {
    SIDEBAR STYLING - Dark + Pink accent
    ============================================================================= */
 
-.main-sidebar,
+.app-sidebar,
 .sidebar {
     background-color: #111827 !important;
 }
@@ -112,13 +112,13 @@ body.sidebar-collapse .main-header.navbar {
 }
 
 /* Sidebar brand/logo area */
-.main-sidebar .brand-link {
+.app-sidebar .brand-link {
     background-color: #0f172a !important;
     border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
     padding: 12px 16px !important;
 }
 
-.main-sidebar .brand-text {
+.app-sidebar .brand-text {
     font-size: 16px !important;
     font-weight: 700 !important;
     color: #f9fafb !important;
@@ -152,7 +152,7 @@ body.sidebar-collapse .main-header.navbar {
    NAVBAR / TOP BAR
    ============================================================================= */
 
-.main-header.navbar {
+.app-header.navbar {
     background-color: #0f172a !important;
     border-bottom: 1px solid rgba(236, 72, 153, 0.2) !important;
     min-height: 57px !important;
@@ -181,7 +181,7 @@ body.sidebar-collapse .main-header.navbar {
    CONTENT AREA - Cards and Modules
    ============================================================================= */
 
-.content-wrapper {
+.app-main {
     background-color: #0f172a !important;
 }
 
@@ -902,7 +902,7 @@ body.login {
    FOOTER
    ============================================================================= */
 
-.main-footer {
+.app-footer {
     background-color: #0f172a !important;
     border-top: 1px solid #1e293b !important;
     color: #4b5563 !important;
