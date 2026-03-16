@@ -43,10 +43,12 @@ SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
 SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection
 SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_COOKIE_DOMAIN = ".outfi.ai"  # Share session across outfi.ai & api.outfi.ai
 
 CSRF_COOKIE_SECURE = True  # Only send CSRF over HTTPS
 CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_DOMAIN = ".outfi.ai"  # Share CSRF across outfi.ai & api.outfi.ai
 
 # XSS and Content Security
 SECURE_BROWSER_XSS_FILTER = True

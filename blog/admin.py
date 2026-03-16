@@ -125,9 +125,9 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     def post_actions(self, obj):
         """Action links: Preview, View on Site, Publish/Unpublish"""
         buttons = []
-        preview_url = reverse('blog:post_preview', args=[obj.slug])
         
-        # Preview button (always available)
+        # Preview button — on outfi.ai (public blog domain)
+        preview_url = f'https://outfi.ai/blog/preview/{obj.slug}/'
         buttons.append(
             f'<a href="{preview_url}" target="_blank" '
             f'style="background:#6366f1;color:#fff;padding:3px 8px;'
@@ -136,8 +136,8 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         )
         
         if obj.status == 'published':
-            # View on site
-            view_url = reverse('blog:post_detail', args=[obj.slug])
+            # View on site — public blog URL
+            view_url = f'https://outfi.ai/blog/post/{obj.slug}/'
             buttons.append(
                 f'<a href="{view_url}" target="_blank" '
                 f'style="background:#10b981;color:#fff;padding:3px 8px;'
