@@ -68,7 +68,7 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     list_editable = ['status']  # Allows quick publish/unpublish from list
     search_fields = ['title', 'content']
     prepopulated_fields = {'slug': ('title',)}
-    date_hierarchy = 'published_at'
+    date_hierarchy = 'created_at'
     ordering = ['-created_at']
     filter_horizontal = ['tags']
     inlines = [ContentSectionInline]
