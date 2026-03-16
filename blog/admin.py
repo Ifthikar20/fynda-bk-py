@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.html import mark_safe
 from django.contrib import messages
 from django.urls import reverse
+from django.core import signing
 import nested_admin
 from .models import Post, Category, Tag, ContentSection, ProductCard
 
@@ -126,8 +127,9 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         """Action links: Preview, View on Site, Publish/Unpublish"""
         buttons = []
         
-        # Preview button — on outfi.ai (public blog domain)
-        preview_url = f'https://outfi.ai/blog/preview/{obj.slug}/'
+        # Preview button — signed token URL on outfi.ai (public blog domain)
+        token = signing.dumps({'slug': obj.slug})
+        preview_url = f'https://outfi.ai/blog/preview/{obj.slug}/?token={token}'
         buttons.append(
             f'<a href="{preview_url}" target="_blank" '
             f'style="background:#6366f1;color:#fff;padding:3px 8px;'

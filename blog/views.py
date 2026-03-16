@@ -63,22 +63,29 @@ class PostDetailView(DetailView):
 
 
 class PostPreviewView(DetailView):
-    """Preview any post (including drafts) - admin only."""
+    """Preview any post (including drafts) - uses signed token auth."""
     model = Post
     template_name = 'blog/post_detail.html'
     context_object_name = 'post'
     
     def get_queryset(self):
-        # Allow any status for preview
         return Post.objects.select_related(
             'author', 'category'
         ).prefetch_related('tags')
     
     def dispatch(self, request, *args, **kwargs):
-        # Only allow staff/admin users
-        if not request.user.is_staff:
+        from django.core import signing
+        token = request.GET.get('token', '')
+        slug = kwargs.get('slug', '')
+        try:
+            # Token is valid for 24 hours
+            data = signing.loads(token, max_age=86400)
+            if data.get('slug') != slug:
+                from django.http import HttpResponseForbidden
+                return HttpResponseForbidden('Invalid preview token.')
+        except (signing.BadSignature, signing.SignatureExpired):
             from django.http import HttpResponseForbidden
-            return HttpResponseForbidden('Admin access required.')
+            return HttpResponseForbidden('Preview link expired or invalid. Generate a new one from the admin.')
         return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
