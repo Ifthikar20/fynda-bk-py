@@ -94,10 +94,13 @@ CONTENT REQUIREMENTS:
 - Target 1800-2500 words minimum. Posts MUST be long-form and deeply detailed.
 - Break content into 5-8 clear sections using H2 headings, with H3 sub-sections where appropriate.
 - Each section should be 200-400 words with specific tips, comparisons, and actionable advice.
+- The MAJORITY of the content must be regular editorial writing: normal paragraphs, H2/H3 headings, blockquotes, bullet lists, and numbered lists.
 - Include a "Frequently Asked Questions" section at the end with 3-4 Q&A pairs using H3 for each question.
 
-MODULAR CARD SECTIONS (CRITICAL — include 3-4 per article, each a DIFFERENT type):
-Include 3-4 visually distinct card sections throughout the article. Pick DIFFERENT card types for each one.
+MODULAR CARD SECTIONS (use 2-3 per article as ACCENTS only):
+Cards are visual highlights — NOT a replacement for regular content. Most of the article should be standard editorial text.
+Only use cards to punctuate key moments: a summary after a long section, a quick stat, or a pro tip.
+Pick DIFFERENT card types for each one. Each card should be placed BETWEEN regular content sections.
 Use DIFFERENT color variants. Colors: sage, sky, peach, lavender, rose, mint, sand, ice, coral, lemon.
 Space cards naturally between sections (not all at the end).
 
