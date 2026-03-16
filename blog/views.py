@@ -34,65 +34,29 @@ class PostListView(ListView):
 
 
 class PostDetailView(DetailView):
-    """Individual blog post page."""
+    """Individual blog post page — serves both published and draft posts.
+    
+    Medium-style: every post has one clean URL. Drafts are accessible
+    by direct link but not listed publicly or indexed by search engines.
+    """
     model = Post
     template_name = 'blog/post_detail.html'
     context_object_name = 'post'
     
     def get_queryset(self):
-        return Post.objects.filter(status='published').select_related(
-            'author', 'category'
-        ).prefetch_related('tags')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        post = self.object
-        
-        # Related posts (same category, excluding current)
-        if post.category:
-            context['related_posts'] = Post.objects.filter(
-                status='published',
-                category=post.category
-            ).exclude(pk=post.pk)[:3]
-        else:
-            context['related_posts'] = Post.objects.filter(
-                status='published'
-            ).exclude(pk=post.pk)[:3]
-        
-        return context
-
-
-class PostPreviewView(DetailView):
-    """Preview any post (including drafts) - uses signed token auth."""
-    model = Post
-    template_name = 'blog/post_detail.html'
-    context_object_name = 'post'
-    
-    def get_queryset(self):
+        # Serve ALL posts — drafts are accessible by direct link
         return Post.objects.select_related(
             'author', 'category'
         ).prefetch_related('tags')
     
-    def dispatch(self, request, *args, **kwargs):
-        from django.core import signing
-        token = request.GET.get('token', '')
-        slug = kwargs.get('slug', '')
-        try:
-            # Token is valid for 24 hours
-            data = signing.loads(token, max_age=86400)
-            if data.get('slug') != slug:
-                from django.http import HttpResponseForbidden
-                return HttpResponseForbidden('Invalid preview token.')
-        except (signing.BadSignature, signing.SignatureExpired):
-            from django.http import HttpResponseForbidden
-            return HttpResponseForbidden('Preview link expired or invalid. Generate a new one from the admin.')
-        return super().dispatch(request, *args, **kwargs)
-    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         post = self.object
-        context['is_preview'] = True
         
+        # Flag for template to add noindex meta tag on drafts
+        context['is_draft'] = (post.status != 'published')
+        
+        # Related posts (only published ones)
         if post.category:
             context['related_posts'] = Post.objects.filter(
                 status='published',

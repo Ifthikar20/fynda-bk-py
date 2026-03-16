@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.utils.html import mark_safe
 from django.contrib import messages
 from django.urls import reverse
-from django.core import signing
 import nested_admin
 from .models import Post, Category, Tag, ContentSection, ProductCard
 
@@ -124,28 +123,19 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     section_count.short_description = 'Sections'
     
     def post_actions(self, obj):
-        """Action links: Preview, View on Site, Publish/Unpublish"""
+        """Action links: View, Publish/Unpublish"""
         buttons = []
         
-        # Preview button — signed token URL on outfi.ai (public blog domain)
-        token = signing.dumps({'slug': obj.slug})
-        preview_url = f'https://outfi.ai/blog/preview/{obj.slug}/?token={token}'
+        # View button — clean URL on public domain
+        view_url = f'https://outfi.ai/blog/post/{obj.slug}/'
         buttons.append(
-            f'<a href="{preview_url}" target="_blank" '
+            f'<a href="{view_url}" target="_blank" '
             f'style="background:#6366f1;color:#fff;padding:3px 8px;'
             f'border-radius:6px;font-size:11px;text-decoration:none;'
-            f'margin-right:4px;" title="Preview post">👁 Preview</a>'
+            f'margin-right:4px;" title="View post">👁 View</a>'
         )
         
         if obj.status == 'published':
-            # View on site — public blog URL
-            view_url = f'https://outfi.ai/blog/post/{obj.slug}/'
-            buttons.append(
-                f'<a href="{view_url}" target="_blank" '
-                f'style="background:#10b981;color:#fff;padding:3px 8px;'
-                f'border-radius:6px;font-size:11px;text-decoration:none;'
-                f'margin-right:4px;" title="View on site">🌐 View</a>'
-            )
             # Unpublish
             unpublish_url = reverse('admin:blog_post_unpublish', args=[obj.pk])
             buttons.append(
