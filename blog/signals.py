@@ -26,7 +26,7 @@ def auto_index_on_publish(sender, instance, created, **kwargs):
         from blog.services.indexing import notify_search_engines
         post_url = instance.get_absolute_url()
         logger.info(f"[Signal] Post published: {instance.title} -> {post_url}")
-        notify_search_engines(post_url)
+        notify_search_engines(post_url, post=instance)
     except Exception as e:
         # Never let indexing errors break the save
         logger.warning(f"[Signal] Auto-indexing failed for {instance.title}: {e}")

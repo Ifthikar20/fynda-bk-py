@@ -110,22 +110,42 @@ def submit_url_to_google_indexing_api(url):
         return False
 
 
-def notify_search_engines(post_url):
+def notify_search_engines(post_url, post=None):
     """
     Main function — notify all search engines about a new/updated URL.
     Called automatically when a post is published.
+    If a Post object is passed, creates an IndexingLog entry.
     """
     logger.info(f"[Indexing] Submitting URL for indexing: {post_url}")
 
     results = {
-        "google_sitemap": ping_google_sitemap(),
-        "bing_sitemap": ping_bing_sitemap(),
+        "google_ping": ping_google_sitemap(),
+        "bing_ping": ping_bing_sitemap(),
         "indexnow": submit_indexnow(post_url),
         "google_api": submit_url_to_google_indexing_api(post_url),
     }
 
     success_count = sum(1 for v in results.values() if v)
+    status = "submitted" if success_count > 0 else "failed"
     logger.info(f"[Indexing] Results: {results} ({success_count}/4 succeeded)")
+
+    # Save log entry if we have the post object
+    if post:
+        try:
+            from blog.models import IndexingLog
+            IndexingLog.objects.create(
+                post=post,
+                google_ping=results["google_ping"],
+                bing_ping=results["bing_ping"],
+                indexnow=results["indexnow"],
+                google_api=results["google_api"],
+                status=status,
+                details=str(results),
+            )
+            logger.info(f"[Indexing] Log saved for post: {post.title}")
+        except Exception as e:
+            logger.warning(f"[Indexing] Failed to save log: {e}")
+
     return results
 
 

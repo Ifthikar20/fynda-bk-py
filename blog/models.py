@@ -262,3 +262,42 @@ class ProductCard(models.Model):
         return self.product_url if self.product_url else self.fynda_url
 
 
+class IndexingLog(models.Model):
+    """Tracks search engine indexing submissions for blog posts."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('submitted', 'Submitted'),
+        ('indexed', 'Indexed'),
+        ('failed', 'Failed'),
+    ]
+
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='indexing_logs'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    # Per-service results
+    google_ping = models.BooleanField(default=False, help_text="Google sitemap ping succeeded")
+    bing_ping = models.BooleanField(default=False, help_text="Bing sitemap ping succeeded")
+    indexnow = models.BooleanField(default=False, help_text="IndexNow submission succeeded")
+    google_api = models.BooleanField(default=False, help_text="Google Indexing API succeeded")
+
+    # Overall status
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    details = models.TextField(blank=True, help_text="Raw result details")
+
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = "Indexing Log"
+        verbose_name_plural = "Indexing Logs"
+
+    def __str__(self):
+        return f"{self.post.title} — {self.status} ({self.submitted_at:%Y-%m-%d %H:%M})"
+
+    @property
+    def services_succeeded(self):
+        """Count how many services succeeded."""
+        return sum([self.google_ping, self.bing_ping, self.indexnow, self.google_api])

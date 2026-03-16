@@ -8,7 +8,7 @@ from django.utils.html import mark_safe
 from django.contrib import messages
 from django.urls import reverse
 import nested_admin
-from .models import Post, Category, Tag, ContentSection, ProductCard
+from .models import Post, Category, Tag, ContentSection, ProductCard, IndexingLog
 
 
 class ProductCardInline(nested_admin.NestedStackedInline):
@@ -39,6 +39,63 @@ class ContentSectionInline(nested_admin.NestedStackedInline):
     verbose_name_plural = "Content Sections (with Products)"
 
 
+class IndexingLogInline(admin.TabularInline):
+    """Show indexing history inline on the post detail page."""
+    model = IndexingLog
+    extra = 0
+    readonly_fields = [
+        'submitted_at', 'status_display',
+        'google_badge', 'bing_badge', 'indexnow_badge', 'google_api_badge',
+    ]
+    fields = [
+        'submitted_at', 'status_display',
+        'google_badge', 'bing_badge', 'indexnow_badge', 'google_api_badge',
+    ]
+    ordering = ['-submitted_at']
+    max_num = 5
+    can_delete = False
+    verbose_name = "Indexing Submission"
+    verbose_name_plural = "🔍 Indexing History"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def status_display(self, obj):
+        colors = {
+            'submitted': '#10b981',
+            'indexed': '#3b82f6',
+            'failed': '#ef4444',
+            'pending': '#f59e0b',
+        }
+        color = colors.get(obj.status, '#6b7280')
+        return mark_safe(
+            f'<span style="background:{color};color:#fff;padding:2px 8px;'
+            f'border-radius:10px;font-size:11px;font-weight:600;">'
+            f'{obj.get_status_display()}</span>'
+        )
+    status_display.short_description = 'Status'
+
+    def _badge(self, val, label):
+        icon = '✅' if val else '❌'
+        return mark_safe(f'{icon}')
+
+    def google_badge(self, obj):
+        return self._badge(obj.google_ping, 'Google')
+    google_badge.short_description = 'Google'
+
+    def bing_badge(self, obj):
+        return self._badge(obj.bing_ping, 'Bing')
+    bing_badge.short_description = 'Bing'
+
+    def indexnow_badge(self, obj):
+        return self._badge(obj.indexnow, 'IndexNow')
+    indexnow_badge.short_description = 'IndexNow'
+
+    def google_api_badge(self, obj):
+        return self._badge(obj.google_api, 'API')
+    google_api_badge.short_description = 'Google API'
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'post_count']
@@ -66,7 +123,7 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     # List view
     list_display = [
         'title', 'status_badge', 'category', 'published_at',
-        'has_image', 'section_count', 'post_actions'
+        'has_image', 'section_count', 'indexing_status', 'post_actions'
     ]
     list_filter = ['status', 'category', 'created_at']
     search_fields = ['title', 'content']
@@ -74,10 +131,10 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     date_hierarchy = 'created_at'
     ordering = ['-created_at']
     filter_horizontal = ['tags']
-    inlines = [ContentSectionInline]
+    inlines = [ContentSectionInline, IndexingLogInline]
     
     # Bulk actions
-    actions = ['publish_posts', 'unpublish_posts']
+    actions = ['publish_posts', 'unpublish_posts', 'resubmit_indexing']
     
     # Form layout
     fieldsets = (
@@ -121,6 +178,43 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         count = obj.sections.count()
         return f'{count} section(s)' if count else '—'
     section_count.short_description = 'Sections'
+
+    def indexing_status(self, obj):
+        """Show Google/Bing indexing status with colored badges."""
+        latest = obj.indexing_logs.first()  # ordered by -submitted_at
+        if not latest:
+            if obj.status == 'published':
+                return mark_safe(
+                    '<span style="background:#6b7280;color:#fff;padding:2px 8px;'
+                    'border-radius:10px;font-size:10px;">Not submitted</span>'
+                )
+            return '—'
+
+        # Build service icons
+        g = '✅' if latest.google_ping else '❌'
+        b = '✅' if latest.bing_ping else '❌'
+        i = '✅' if latest.indexnow else '❌'
+
+        # Status badge color
+        colors = {
+            'submitted': '#10b981',
+            'indexed': '#3b82f6',
+            'failed': '#ef4444',
+            'pending': '#f59e0b',
+        }
+        color = colors.get(latest.status, '#6b7280')
+        status_label = latest.get_status_display()
+
+        time_str = latest.submitted_at.strftime('%b %d, %H:%M')
+
+        return mark_safe(
+            f'<div style="line-height:1.4;">'
+            f'<span style="background:{color};color:#fff;padding:2px 8px;'
+            f'border-radius:10px;font-size:10px;font-weight:600;">{status_label}</span>'
+            f'<br><span style="font-size:10px;color:#888;">'
+            f'G{g} B{b} IN{i} · {time_str}</span></div>'
+        )
+    indexing_status.short_description = 'SEO Index'
     
     def post_actions(self, obj):
         """Action links: View, Publish/Unpublish"""
@@ -230,6 +324,20 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         queryset.update(status='draft')
         self.message_user(request, f'{queryset.count()} post(s) set to draft.', messages.WARNING)
 
+    @admin.action(description='🔍 Re-submit for indexing')
+    def resubmit_indexing(self, request, queryset):
+        from blog.services.indexing import notify_search_engines
+        count = 0
+        for post in queryset.filter(status='published'):
+            post_url = post.get_absolute_url()
+            notify_search_engines(post_url, post=post)
+            count += 1
+        self.message_user(
+            request,
+            f'🔍 Submitted {count} post(s) for indexing.',
+            messages.SUCCESS,
+        )
+
 
 @admin.register(ContentSection)
 class ContentSectionAdmin(nested_admin.NestedModelAdmin):
@@ -249,3 +357,61 @@ class ContentSectionAdmin(nested_admin.NestedModelAdmin):
         count = obj.products.count()
         return f'{count} product(s)' if count else '—'
     product_count.short_description = 'Products'
+
+
+@admin.register(IndexingLog)
+class IndexingLogAdmin(admin.ModelAdmin):
+    """Admin for viewing indexing submission logs."""
+    list_display = [
+        'post_title', 'status_display', 'google_badge', 'bing_badge',
+        'indexnow_badge', 'google_api_badge', 'submitted_at',
+    ]
+    list_filter = ['status', 'google_ping', 'bing_ping', 'indexnow']
+    ordering = ['-submitted_at']
+    readonly_fields = [
+        'post', 'submitted_at', 'google_ping', 'bing_ping',
+        'indexnow', 'google_api', 'status', 'details',
+    ]
+    search_fields = ['post__title']
+
+    def post_title(self, obj):
+        return obj.post.title[:60]
+    post_title.short_description = 'Post'
+    post_title.admin_order_field = 'post__title'
+
+    def status_display(self, obj):
+        colors = {
+            'submitted': '#10b981',
+            'indexed': '#3b82f6',
+            'failed': '#ef4444',
+            'pending': '#f59e0b',
+        }
+        color = colors.get(obj.status, '#6b7280')
+        return mark_safe(
+            f'<span style="background:{color};color:#fff;padding:2px 10px;'
+            f'border-radius:10px;font-size:11px;font-weight:600;">'
+            f'{obj.get_status_display()}</span>'
+        )
+    status_display.short_description = 'Status'
+
+    def _badge(self, val):
+        return '✅' if val else '❌'
+
+    def google_badge(self, obj):
+        return self._badge(obj.google_ping)
+    google_badge.short_description = 'Google'
+
+    def bing_badge(self, obj):
+        return self._badge(obj.bing_ping)
+    bing_badge.short_description = 'Bing'
+
+    def indexnow_badge(self, obj):
+        return self._badge(obj.indexnow)
+    indexnow_badge.short_description = 'IndexNow'
+
+    def google_api_badge(self, obj):
+        return self._badge(obj.google_api)
+    google_api_badge.short_description = 'Google API'
+
+    def has_add_permission(self, request):
+        return False
