@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import mark_safe
 from django.contrib import messages
+from django.urls import reverse
 import nested_admin
 from .models import Post, Category, Tag, ContentSection, ProductCard
 
@@ -33,7 +34,7 @@ class ContentSectionInline(nested_admin.NestedStackedInline):
     extra = 1
     fields = ['order', 'section_type', 'title', 'subtitle', 'content']
     ordering = ['order']
-    inlines = [ProductCardInline]  # Nested products within sections
+    inlines = [ProductCardInline]
     verbose_name = "Content Section"
     verbose_name_plural = "Content Sections (with Products)"
 
@@ -62,10 +63,12 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(nested_admin.NestedModelAdmin):
-    # List view - simple and clear
-    list_display = ['title', 'status', 'category', 'published_at', 'has_image', 'section_count']
+    # List view
+    list_display = [
+        'title', 'status_badge', 'category', 'published_at',
+        'has_image', 'section_count', 'post_actions'
+    ]
     list_filter = ['status', 'category', 'created_at']
-    list_editable = ['status']  # Allows quick publish/unpublish from list
     search_fields = ['title', 'content']
     prepopulated_fields = {'slug': ('title',)}
     date_hierarchy = 'created_at'
@@ -76,7 +79,7 @@ class PostAdmin(nested_admin.NestedModelAdmin):
     # Bulk actions
     actions = ['publish_posts', 'unpublish_posts']
     
-    # Form layout - organized for ease of use
+    # Form layout
     fieldsets = (
         ('📝 Content', {
             'fields': ('title', 'slug', 'content', 'featured_image'),
@@ -95,6 +98,21 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         }),
     )
     
+    # ── Custom columns ──
+    
+    def status_badge(self, obj):
+        if obj.status == 'published':
+            return mark_safe(
+                '<span style="background:#10b981;color:#fff;padding:3px 10px;'
+                'border-radius:12px;font-size:11px;font-weight:600;">Published</span>'
+            )
+        return mark_safe(
+            '<span style="background:#f59e0b;color:#fff;padding:3px 10px;'
+            'border-radius:12px;font-size:11px;font-weight:600;">Draft</span>'
+        )
+    status_badge.short_description = 'Status'
+    status_badge.admin_order_field = 'status'
+    
     def has_image(self, obj):
         return '✅' if obj.featured_image else '—'
     has_image.short_description = 'Image'
@@ -104,6 +122,97 @@ class PostAdmin(nested_admin.NestedModelAdmin):
         return f'{count} section(s)' if count else '—'
     section_count.short_description = 'Sections'
     
+    def post_actions(self, obj):
+        """Action links: Preview, View on Site, Publish/Unpublish"""
+        buttons = []
+        preview_url = reverse('blog:post_preview', args=[obj.slug])
+        
+        # Preview button (always available)
+        buttons.append(
+            f'<a href="{preview_url}" target="_blank" '
+            f'style="background:#6366f1;color:#fff;padding:3px 8px;'
+            f'border-radius:6px;font-size:11px;text-decoration:none;'
+            f'margin-right:4px;" title="Preview post">👁 Preview</a>'
+        )
+        
+        if obj.status == 'published':
+            # View on site
+            view_url = reverse('blog:post_detail', args=[obj.slug])
+            buttons.append(
+                f'<a href="{view_url}" target="_blank" '
+                f'style="background:#10b981;color:#fff;padding:3px 8px;'
+                f'border-radius:6px;font-size:11px;text-decoration:none;'
+                f'margin-right:4px;" title="View on site">🌐 View</a>'
+            )
+            # Unpublish
+            unpublish_url = reverse('admin:blog_post_unpublish', args=[obj.pk])
+            buttons.append(
+                f'<a href="{unpublish_url}" '
+                f'style="background:#ef4444;color:#fff;padding:3px 8px;'
+                f'border-radius:6px;font-size:11px;text-decoration:none;" '
+                f'title="Unpublish">⏸ Unpublish</a>'
+            )
+        else:
+            # Publish
+            publish_url = reverse('admin:blog_post_publish', args=[obj.pk])
+            buttons.append(
+                f'<a href="{publish_url}" '
+                f'style="background:#10b981;color:#fff;padding:3px 8px;'
+                f'border-radius:6px;font-size:11px;text-decoration:none;" '
+                f'title="Publish now">✅ Publish</a>'
+            )
+        
+        return mark_safe(' '.join(buttons))
+    post_actions.short_description = 'Actions'
+    
+    # ── Custom admin URLs for publish/unpublish ──
+    
+    def get_urls(self):
+        from django.urls import path
+        custom_urls = [
+            path(
+                '<int:post_id>/publish/',
+                self.admin_site.admin_view(self.publish_single_post),
+                name='blog_post_publish',
+            ),
+            path(
+                '<int:post_id>/unpublish/',
+                self.admin_site.admin_view(self.unpublish_single_post),
+                name='blog_post_unpublish',
+            ),
+        ]
+        return custom_urls + super().get_urls()
+    
+    def publish_single_post(self, request, post_id):
+        from django.http import HttpResponseRedirect
+        post = Post.objects.get(pk=post_id)
+        post.status = 'published'
+        if not post.published_at:
+            post.published_at = timezone.now()
+        if not post.author:
+            post.author = request.user
+        post.save()
+        self.message_user(
+            request,
+            f'✅ "{post.title}" has been published!',
+            messages.SUCCESS,
+        )
+        return HttpResponseRedirect(reverse('admin:blog_post_changelist'))
+    
+    def unpublish_single_post(self, request, post_id):
+        from django.http import HttpResponseRedirect
+        post = Post.objects.get(pk=post_id)
+        post.status = 'draft'
+        post.save()
+        self.message_user(
+            request,
+            f'📝 "{post.title}" has been set to draft.',
+            messages.WARNING,
+        )
+        return HttpResponseRedirect(reverse('admin:blog_post_changelist'))
+    
+    # ── Save model ──
+    
     def save_model(self, request, obj, form, change):
         """Auto-assign author and set published_at when publishing"""
         if not obj.author:
@@ -112,7 +221,8 @@ class PostAdmin(nested_admin.NestedModelAdmin):
             obj.published_at = timezone.now()
         super().save_model(request, obj, form, change)
     
-    # Bulk actions
+    # ── Bulk actions ──
+    
     @admin.action(description='✅ Publish selected posts')
     def publish_posts(self, request, queryset):
         now = timezone.now()

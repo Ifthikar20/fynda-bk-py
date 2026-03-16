@@ -62,6 +62,43 @@ class PostDetailView(DetailView):
         return context
 
 
+class PostPreviewView(DetailView):
+    """Preview any post (including drafts) - admin only."""
+    model = Post
+    template_name = 'blog/post_detail.html'
+    context_object_name = 'post'
+    
+    def get_queryset(self):
+        # Allow any status for preview
+        return Post.objects.select_related(
+            'author', 'category'
+        ).prefetch_related('tags')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Only allow staff/admin users
+        if not request.user.is_staff:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden('Admin access required.')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = self.object
+        context['is_preview'] = True
+        
+        if post.category:
+            context['related_posts'] = Post.objects.filter(
+                status='published',
+                category=post.category
+            ).exclude(pk=post.pk)[:3]
+        else:
+            context['related_posts'] = Post.objects.filter(
+                status='published'
+            ).exclude(pk=post.pk)[:3]
+        
+        return context
+
+
 class CategoryPostsView(ListView):
     """Posts filtered by category."""
     model = Post
