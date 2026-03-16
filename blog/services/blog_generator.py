@@ -11,6 +11,7 @@ import os
 import random
 
 from openai import OpenAI
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -320,13 +321,14 @@ def save_blog_post(data, author=None):
             defaults={"description": f"Posts about {category_name.lower()}"},
         )
 
-        # Create the post
+        # Create the post — auto-publish for SEO pipeline
         post = Post(
             title=data["title"],
             excerpt=data["excerpt"][:300],
             content=data["content"],
             category=category,
-            status="draft",
+            status="published",
+            published_at=timezone.now(),
             author=author,
             meta_title=data.get("meta_title", "")[:60],
             meta_description=data.get("meta_description", "")[:160],
@@ -339,7 +341,7 @@ def save_blog_post(data, author=None):
             tag, _ = Tag.objects.get_or_create(name=tag_name.lower().strip())
             post.tags.add(tag)
 
-        logger.info(f"Saved draft post: '{post.title}' (id={post.id})")
+        logger.info(f"Published post: '{post.title}' (id={post.id})")
         return post
 
     except Exception as e:
