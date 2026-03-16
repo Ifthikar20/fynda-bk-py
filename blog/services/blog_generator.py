@@ -98,6 +98,14 @@ CONTENT REQUIREMENTS:
 - The MAJORITY of the content must be regular editorial writing: normal paragraphs, H2/H3 headings, blockquotes, bullet lists, and numbered lists.
 - Include a "Frequently Asked Questions" section at the end with 3-4 Q&A pairs using H3 for each question.
 
+APA REFERENCES (CRITICAL):
+- Any statistic, fact, claim, or "Did You Know" statement MUST include an APA-style reference.
+- Format: add a small citation after the fact, e.g. "(Smith et al., 2024)" and include a References section at the end of the article.
+- The References section should use proper APA 7th edition format.
+- Example: McKinsey & Company. (2023). The state of fashion 2023. https://www.mckinsey.com/industries/retail/our-insights/state-of-fashion
+- Use real, verifiable sources (McKinsey, Vogue Business, Business of Fashion, Statista, etc.).
+- For stats in cards, add the citation directly below the stat in smaller text using <small> tags.
+
 MODULAR CARD SECTIONS (use 2-3 per article as ACCENTS only):
 Cards are visual highlights — NOT a replacement for regular content. Most of the article should be standard editorial text.
 Only use cards to punctuate key moments: a summary after a long section, a quick stat, or a pro tip.

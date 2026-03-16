@@ -195,7 +195,7 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     "generate-blog-post": {
         "task": "blog.generate_blog_post",
-        "schedule": crontab(minute=0, hour="*/2"),  # Every 2 hours — ~12 posts/day
+        "schedule": crontab(minute=0),  # Every hour — ~24 posts/day
     },
 }
 
