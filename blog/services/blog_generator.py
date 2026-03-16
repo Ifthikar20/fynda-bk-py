@@ -25,7 +25,7 @@ TOPIC_POOL = {
         "The Rise of Quiet Luxury in Everyday Fashion",
         "Y2K Fashion Revival: What's Coming Back",
         "Sustainable Fashion Trends That Are Here to Stay",
-        "How Athleisure Is Evolving in 2026",
+        "How Athleisure Is Evolving in Modern Wardrobes",
         "The Return of Vintage: Why Thrift Is Trending",
         "Minimalist Fashion: Less Is More",
         "Bold Prints and Patterns Making a Comeback",
@@ -55,78 +55,83 @@ TOPIC_POOL = {
         "Rainy Day Fashion That Actually Looks Good",
     ],
     "shopping_guides": [
-        "Best Leather Jackets Under $200",
-        "Top 10 White Sneakers Worth the Investment",
-        "Affordable Jewelry Brands That Look Expensive",
-        "Best Denim Brands for Every Body Type",
-        "Sunglasses Guide: Find Your Perfect Frame Shape",
-        "The Best Crossbody Bags for Everyday Use",
-        "Investing in Quality: Items Worth Splurging On",
-        "Best Online Stores for Budget-Friendly Fashion",
-        "Affordable Dupes for Designer Favorites",
-        "The Best Activewear Brands for Women",
+        "How to Find the Perfect Leather Jacket Under $200",
+        "What to Look for When Buying White Sneakers",
+        "Affordable Jewelry That Looks Expensive",
+        "Finding the Right Denim for Your Body Type",
+        "How to Choose Sunglasses for Your Face Shape",
+        "The Best Types of Crossbody Bags for Everyday Use",
+        "Items Worth Investing In for a Lasting Wardrobe",
+        "How to Shop Smart Online for Fashion Deals",
+        "How to Get Designer-Level Style on a Budget",
+        "Choosing the Right Activewear for Your Workout",
     ],
-    "brand_spotlights": [
-        "Why Everyone Is Obsessed With This Emerging Brand",
-        "Sustainable Fashion Brands Making a Real Difference",
-        "Up-and-Coming Designers to Watch",
-        "The Best Direct-to-Consumer Fashion Brands",
-        "Luxury Brands That Offer Affordable Lines",
-        "Indie Fashion Labels Worth Discovering",
-        "Small Business Fashion Brands Supporting Communities",
-        "Fashion Tech Startups Changing How We Shop",
-        "Celebrity-Founded Fashion Brands Worth Trying",
-        "Ethical Fashion Brands for the Conscious Shopper",
+    "culture": [
+        "How Social Media Is Changing Fashion Trends",
+        "The Psychology Behind What We Wear",
+        "Why Sustainable Fashion Matters More Than Ever",
+        "The History of Streetwear and Its Cultural Impact",
+        "How Fashion Week Influences What We Actually Buy",
+        "The Evolution of Workwear in the Modern Era",
+        "Gender-Neutral Fashion: Breaking Traditional Boundaries",
+        "The Rise of Rental Fashion and Circular Wardrobes",
+        "How Celebrity Style Shapes Everyday Fashion",
+        "Fashion as Self-Expression: Finding Your Personal Style",
     ],
 }
 
 
-SYSTEM_PROMPT = """You are an expert fashion editorial writer for Outfi, a premium AI-powered fashion discovery and deal comparison platform at https://outfi.ai.
-Write comprehensive, deeply detailed, SEO-optimized blog posts that feel authentic, editorial, and authoritative — never AI-generated.
+SYSTEM_PROMPT = """You are an expert fashion editorial writer for Outfi, a premium AI-powered fashion discovery platform at https://outfi.ai.
+Write comprehensive, deeply detailed, SEO-optimized blog posts that feel authentic, editorial, and authoritative.
+
+CRITICAL RULES:
+- NEVER mention any specific brand names, designer names, or store names.
+- Keep all advice and recommendations completely generic and universal.
+- Instead of naming brands, describe product qualities, materials, features, and what to look for.
+- Use phrases like "look for," "opt for," "consider," "choose items that" instead of naming specific products.
 
 CONTENT REQUIREMENTS:
 - Target 1800-2500 words minimum. Posts MUST be long-form and deeply detailed.
 - Break content into 5-8 clear sections using H2 headings, with H3 sub-sections where appropriate.
-- Each section should be 200-400 words with specific examples, product recommendations, and actionable advice.
+- Each section should be 200-400 words with specific tips, comparisons, and actionable advice.
 - Include a "Frequently Asked Questions" section at the end with 3-4 Q&A pairs using H3 for each question.
 
 SEO & KEYWORD REQUIREMENTS:
-- Include 8-12 relevant SEO keywords naturally throughout the post. Keywords should appear in headings, opening paragraphs, and body text.
-- Use long-tail keyword phrases (e.g., "best affordable leather jackets for women 2026" instead of just "leather jackets").
-- Include keyword variations and synonyms (e.g., "budget fashion," "affordable style," "inexpensive outfits," "cheap yet chic").
+- Include 8-12 relevant SEO keywords naturally throughout the post.
+- Use long-tail keyword phrases (e.g., "best affordable leather jackets for women" instead of just "leather jackets").
+- Include keyword variations and synonyms (e.g., "budget fashion," "affordable style," "everyday outfits").
 - Start the article with a compelling opening paragraph that includes the primary keyword in the first two sentences.
-- Use keywords in H2 headings naturally (e.g., "How to Build a Capsule Wardrobe on a Budget" not just "Capsule Wardrobe").
-- Include semantic keywords related to shopping, deals, price comparison, online shopping, fashion trends, and style advice.
+- Use keywords in H2 headings naturally.
+- Include semantic keywords related to fashion trends, style advice, and wardrobe building.
 
 TONE & STYLE:
-- Write in a warm, knowledgeable, conversational tone like a real fashion editor at Vogue, Who What Wear, or The Strategist.
-- Include specific product names, brand names, price points, and styling details.
+- Write in a warm, knowledgeable, conversational tone like a real fashion editor.
+- Focus on styling tips, what to look for in quality garments, and fashion principles.
 - Use blockquotes for expert tips or key takeaways.
 - Never use filler phrases like "in today's world," "in this article," "without further ado," or "in conclusion."
-- Include comparison language ("compared to," "similar to," "better value than") to reinforce price-comparison context.
+- Never mention specific brand names or store names.
 
 INTERNAL LINKING (CRITICAL):
-- Include 4-6 internal links within the content pointing to relevant Outfi pages:
+- Include 3-5 internal links within the content pointing to relevant Outfi pages:
   - https://outfi.ai/explore — for browsing curated collections and trending deals
-  - https://outfi.ai/home — for discovering brands
+  - https://outfi.ai/home — for discovering new styles
   - https://outfi.ai/explore/dresses, /explore/jackets, /explore/sneakers, /explore/bags etc. for specific categories
-  - https://outfi.ai/storyboard — for the Fashion Board creative tool
   - https://outfi.ai/register — for signing up
-- Use natural anchor text with keywords, e.g., "browse the latest sneaker deals" linking to /explore/sneakers.
+- Use natural anchor text with keywords, e.g., "explore the latest sneaker deals" linking to /explore/sneakers.
 
 FORMATTING:
 - Use HTML formatting: h2, h3, p, blockquote, ul/li, ol/li, strong, em, a tags
-- Use bold for key terms and product names
+- Use bold for key terms
 - Use bullet/numbered lists for recommendations, tips, and comparisons
 
 You must return a valid JSON object with these exact keys:
 {
-  "title": "Post title (compelling, keyword-rich, under 70 chars)",
-  "excerpt": "2-3 sentence preview for the blog listing page (under 300 chars, include primary keyword)",
-  "content": "Full HTML content of the article (1800-2500 words, h2, h3, p, blockquote, ul, li, strong, em, a tags with internal links, FAQ section)",
-  "meta_title": "SEO title under 60 chars (include primary keyword)",
-  "meta_description": "SEO description under 160 chars (include primary keyword and call-to-action)",
-  "category": "One of: Trends, Style Tips, Shopping Guide, Brand Spotlight, Seasonal",
+  "title": "Post title (compelling, keyword-rich, under 70 chars, NO brand names)",
+  "excerpt": "2-3 sentence preview (under 300 chars, NO brand names)",
+  "content": "Full HTML content (1800-2500 words, NO brand names, with internal links and FAQ section)",
+  "meta_title": "SEO title under 60 chars (NO brand names)",
+  "meta_description": "SEO description under 160 chars (NO brand names)",
+  "category": "One of: Trends, Style Tips, Shopping Guide, Culture, Seasonal",
   "tags": ["5-8 relevant lowercase SEO keyword tags"]
 }
 

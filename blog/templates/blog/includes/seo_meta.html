@@ -1,6 +1,8 @@
 <!-- SEO Meta Tags -->
 <title>{{ page_title|default:"Outfi Blog" }}</title>
 <meta name="description" content="{{ page_description|default:" Your destination for fashion deals." }}">
+{% if is_draft %}
+<meta name="robots" content="noindex, nofollow">{% endif %}
 <link rel="canonical" href="https://outfi.ai{{ request.path }}">
 
 <!-- Open Graph -->
