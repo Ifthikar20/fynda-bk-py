@@ -96,37 +96,105 @@ CONTENT REQUIREMENTS:
 - Each section should be 200-400 words with specific tips, comparisons, and actionable advice.
 - Include a "Frequently Asked Questions" section at the end with 3-4 Q&A pairs using H3 for each question.
 
-MODULAR CARD SECTIONS (CRITICAL — include 2-3 per article):
-Include 2-3 visually distinct card sections throughout the article using this exact HTML structure.
-Cards should contain key takeaways, quick tips, checklists, or curated recommendations.
-Use DIFFERENT color variants for each card. Available colors: sage, sky, peach, lavender, rose.
+MODULAR CARD SECTIONS (CRITICAL — include 3-4 per article, each a DIFFERENT type):
+Include 3-4 visually distinct card sections throughout the article. Pick DIFFERENT card types for each one.
+Use DIFFERENT color variants. Colors: sage, sky, peach, lavender, rose, mint, sand, ice, coral, lemon.
+Space cards naturally between sections (not all at the end).
 
-Card HTML template:
+CARD TYPE 1 — LIST CARD (key takeaways, tips):
 <div class="blog-card blog-card--sage">
   <div class="blog-card-inner">
     <div class="blog-card-header">
-      <span class="blog-card-title">Card Title Here</span>
-      <span class="blog-card-badge">Quick Tips</span>
+      <span class="blog-card-title">Title</span>
+      <span class="blog-card-badge">Tips</span>
     </div>
     <ul class="blog-card-list">
-      <li><strong>Key Point</strong> — explanation of the tip or takeaway</li>
-      <li><strong>Another Point</strong> — more detail here</li>
-      <li><strong>Third Point</strong> — keep it concise and actionable</li>
+      <li><strong>Point</strong> — explanation</li>
     </ul>
   </div>
-  <div class="blog-card-caption">
-    <h3>Caption Title</h3>
-    <p>Brief description of what this card covers.</p>
+  <div class="blog-card-caption"><h3>Caption</h3><p>Description</p></div>
+</div>
+
+CARD TYPE 2 — STAT CARD (numbers, data):
+<div class="stat-card blog-card--sky">
+  <div class="stat-card-inner">
+    <div class="stat-item"><div class="stat-number">73%</div><div class="stat-label">of shoppers prefer sustainable options</div></div>
+    <div class="stat-item"><div class="stat-number">5x</div><div class="stat-label">more durable than fast fashion</div></div>
+    <div class="stat-item"><div class="stat-number">$200</div><div class="stat-label">average savings per year</div></div>
+  </div>
+  <div class="stat-card-caption"><h3>By The Numbers</h3><p>Key statistics</p></div>
+</div>
+
+CARD TYPE 3 — COMPARISON CARD (do vs don't):
+<div class="compare-card blog-card--peach">
+  <div class="compare-card-inner">
+    <div class="compare-card-header">Style Do's and Don'ts</div>
+    <div class="compare-grid">
+      <div class="compare-col"><div class="compare-col-title do">✓ Do</div><ul><li>Tip here</li></ul></div>
+      <div class="compare-col"><div class="compare-col-title dont">✗ Don't</div><ul><li>Avoid this</li></ul></div>
+    </div>
   </div>
 </div>
 
-Card types to use:
-- "Key Takeaways" or "Quick Tips" — summarize section advice
-- "What to Look For" — buying criteria or quality indicators
-- "Style Checklist" — actionable outfit or wardrobe steps
-- "Trend Watch" — emerging trends or seasonal highlights
-Rotate through color variants: blog-card--sage, blog-card--sky, blog-card--peach, blog-card--lavender, blog-card--rose.
-Space cards naturally between article sections (not all at the end).
+CARD TYPE 4 — QUOTE CARD (editorial insight):
+<div class="quote-card blog-card--lavender">
+  <div class="quote-card-inner">
+    <div class="quote-card-mark">"</div>
+    <div class="quote-card-text">An inspiring fashion insight or editorial thought.</div>
+    <div class="quote-card-attr">— Style Wisdom</div>
+  </div>
+</div>
+
+CARD TYPE 5 — STEPS CARD (process, how-to):
+<div class="steps-card blog-card--mint">
+  <div class="steps-card-inner">
+    <div class="steps-card-header">How to Get Started</div>
+    <div class="step-item"><div class="step-num">1</div><div class="step-content"><h4>Step Title</h4><p>Description</p></div></div>
+    <div class="step-item"><div class="step-num">2</div><div class="step-content"><h4>Step Title</h4><p>Description</p></div></div>
+  </div>
+</div>
+
+CARD TYPE 6 — GRID CARD (quick guide with emoji icons, 2x2):
+<div class="grid-card blog-card--sand">
+  <div class="grid-card-inner">
+    <div class="grid-card-header">Quick Guide</div>
+    <div class="grid-items">
+      <div class="grid-item"><div class="grid-item-icon">👗</div><h4>Category</h4><p>Brief tip</p></div>
+      <div class="grid-item"><div class="grid-item-icon">👟</div><h4>Category</h4><p>Brief tip</p></div>
+      <div class="grid-item"><div class="grid-item-icon">👜</div><h4>Category</h4><p>Brief tip</p></div>
+      <div class="grid-item"><div class="grid-item-icon">🧥</div><h4>Category</h4><p>Brief tip</p></div>
+    </div>
+  </div>
+</div>
+
+CARD TYPE 7 — TIP CALLOUT (small, inline):
+<div class="tip-card blog-card--rose">
+  <div class="tip-card-icon">💡</div>
+  <div class="tip-card-content"><h4>Editor's Tip</h4><p>A concise, actionable style tip.</p></div>
+</div>
+
+CARD TYPE 8 — CHECKLIST CARD (checkmarks):
+<div class="check-card blog-card--ice">
+  <div class="check-card-inner">
+    <div class="check-card-header">Wardrobe Checklist</div>
+    <div class="check-item"><div class="check-icon">✓</div><div class="check-text"><strong>Item</strong> — description</div></div>
+    <div class="check-item"><div class="check-icon">✓</div><div class="check-text"><strong>Item</strong> — description</div></div>
+  </div>
+</div>
+
+CARD TYPE 9 — DID-YOU-KNOW (no pastel bg needed, accent bar):
+<div class="dyk-card">
+  <div class="dyk-label">Did You Know?</div>
+  <div class="dyk-text">An interesting fashion fact with <strong>key detail highlighted</strong>.</div>
+</div>
+
+CARD TYPE 10 — INFO CARD (two-column: text + list):
+<div class="info-card blog-card--coral">
+  <div class="info-card-inner">
+    <div class="info-card-text"><h3>Section Title</h3><p>Descriptive paragraph about this topic.</p></div>
+    <ul class="info-card-items"><li>Key point one</li><li>Key point two</li><li>Key point three</li></ul>
+  </div>
+</div>
 
 SEO & KEYWORD REQUIREMENTS:
 - Include 8-12 relevant SEO keywords naturally throughout the post.
