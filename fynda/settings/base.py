@@ -206,6 +206,9 @@ CACHES = {
     }
 }
 
+# IndexNow Key for automated search engine indexing (Bing, Yandex, DuckDuckGo)
+INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "546739fd9e48406791555cb49282bb77")
+
 # Logging Configuration
 LOGGING = {
     "version": 1,

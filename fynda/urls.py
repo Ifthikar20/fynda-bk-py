@@ -4,7 +4,7 @@ Fetchbot URL Configuration
 
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
@@ -108,6 +108,9 @@ urlpatterns = [
     ], 'social_og'))),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+
+    # IndexNow key verification — search engines request this to verify ownership
+    path(f'{settings.INDEXNOW_KEY}.txt', lambda r: HttpResponse(settings.INDEXNOW_KEY, content_type='text/plain')),
 ]
 
 # Serve media files in development
