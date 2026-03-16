@@ -11,56 +11,73 @@
 </section>
 
 {% if posts %}
-<!-- Featured Article (First Post) -->
+<!-- Featured Article (First Post) — Full-width hero card -->
 {% with featured=posts.0 %}
-<article class="featured-article">
-    <a href="{% url 'blog:post_detail' featured.slug %}">
+<article class="featured-hero blog-card--sage">
+    <a href="{% url 'blog:post_detail' featured.slug %}" class="featured-hero-link">
         {% if featured.featured_image %}
-        <img src="{{ featured.featured_image.url }}" alt="{{ featured.title }}">
-        {% endif %}
-
-        {% if featured.category %}
-        <span class="category">{{ featured.category.name }}</span>
-        {% endif %}
-
-        <h2>{{ featured.title }}</h2>
-
-        {% if featured.meta_description %}
-        <p class="excerpt">{{ featured.meta_description }}</p>
+        <div class="featured-hero-image">
+            <img src="{{ featured.featured_image.url }}" alt="{{ featured.title }}">
+        </div>
         {% else %}
-        <p class="excerpt">{{ featured.content|striptags|truncatewords:40 }}</p>
+        <div class="featured-hero-pattern">
+            <div class="pattern-icon">✦</div>
+        </div>
         {% endif %}
-
-        <div class="meta">
-            Published on {{ featured.published_date|date:"F j, Y" }}{% if featured.author %} · By {{
-            featured.author.get_full_name|default:featured.author.email }}{% endif %}
+        <div class="featured-hero-content">
+            {% if featured.category %}
+            <span class="hero-category">{{ featured.category.name }}</span>
+            {% endif %}
+            <h2 class="hero-title">{{ featured.title }}</h2>
+            {% if featured.meta_description %}
+            <p class="hero-excerpt">{{ featured.meta_description }}</p>
+            {% else %}
+            <p class="hero-excerpt">{{ featured.content|striptags|truncatewords:40 }}</p>
+            {% endif %}
+            <div class="hero-meta">
+                {{ featured.published_date|date:"F j, Y" }}{% if featured.author %} · By {{
+                featured.author.get_full_name|default:featured.author.email }}{% endif %}
+            </div>
+            <span class="hero-cta">Read Article →</span>
         </div>
     </a>
 </article>
 {% endwith %}
 
-<!-- Article Grid -->
-<section class="articles-grid">
+<!-- Article Grid — Rotating Colored Cards -->
+<section class="colored-articles-grid">
     {% for post in posts|slice:"1:" %}
-    <article class="article-card">
-        <a href="{% url 'blog:post_detail' post.slug %}">
-            {% if post.featured_image %}
-            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
-            {% endif %}
+    <article
+        class="colored-card {% cycle 'blog-card--sky' 'blog-card--peach' 'blog-card--lavender' 'blog-card--rose' 'blog-card--mint' 'blog-card--sand' 'blog-card--ice' 'blog-card--coral' 'blog-card--lemon' 'blog-card--sage' %}">
+        <a href="{% url 'blog:post_detail' post.slug %}" class="colored-card-link">
+            <div class="colored-card-inner">
+                {% if post.featured_image %}
+                <div class="colored-card-image">
+                    <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+                </div>
+                {% else %}
+                <div class="colored-card-icon">
+                    {% cycle '✦' '◆' '○' '▲' '◇' '★' '●' '■' '♦' '✧' %}
+                </div>
+                {% endif %}
 
-            {% if post.category %}
-            <span class="category">{{ post.category.name }}</span>
-            {% endif %}
+                {% if post.category %}
+                <span class="colored-card-category">{{ post.category.name }}</span>
+                {% endif %}
 
-            <h3>{{ post.title }}</h3>
+                <h3 class="colored-card-title">{{ post.title }}</h3>
 
-            {% if post.meta_description %}
-            <p class="excerpt">{{ post.meta_description|truncatewords:20 }}</p>
-            {% else %}
-            <p class="excerpt">{{ post.content|striptags|truncatewords:20 }}</p>
-            {% endif %}
+                {% if post.meta_description %}
+                <p class="colored-card-excerpt">{{ post.meta_description|truncatewords:18 }}</p>
+                {% else %}
+                <p class="colored-card-excerpt">{{ post.content|striptags|truncatewords:18 }}</p>
+                {% endif %}
 
-            <div class="meta">{{ post.published_date|date:"M j, Y" }}</div>
+                <div class="colored-card-footer">
+                    <span class="colored-card-date">{{ post.published_date|date:"M j, Y" }}</span>
+                    <span class="colored-card-cta">Read →</span>
+                </div>
+            </div>
         </a>
     </article>
     {% endfor %}
@@ -76,7 +93,7 @@
 {% if is_paginated %}
 <nav class="pagination">
     {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    <a href="?page={{ page_obj.previous_page_number }}">← Previous</a>
     {% endif %}
 
     {% for num in page_obj.paginator.page_range %}
@@ -87,7 +104,7 @@
         {% endfor %}
 
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        <a href="?page={{ page_obj.next_page_number }}">Next →</a>
         {% endif %}
 </nav>
 {% endif %}
