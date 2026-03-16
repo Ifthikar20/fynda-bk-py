@@ -35,8 +35,7 @@
             <p class="hero-excerpt">{{ featured.content|striptags|truncatewords:40 }}</p>
             {% endif %}
             <div class="hero-meta">
-                {{ featured.published_date|date:"F j, Y" }}{% if featured.author %} · By {{
-                featured.author.get_full_name|default:featured.author.email }}{% endif %}
+                {{ featured.published_at|date:"F j, Y" }}
             </div>
             <span class="hero-cta">Read Article →</span>
         </div>
@@ -74,7 +73,7 @@
                 {% endif %}
 
                 <div class="colored-card-footer">
-                    <span class="colored-card-date">{{ post.published_date|date:"M j, Y" }}</span>
+                    <span class="colored-card-date">{{ post.published_at|date:"M j, Y" }}</span>
                     <span class="colored-card-cta">Read →</span>
                 </div>
             </div>
