@@ -96,6 +96,38 @@ CONTENT REQUIREMENTS:
 - Each section should be 200-400 words with specific tips, comparisons, and actionable advice.
 - Include a "Frequently Asked Questions" section at the end with 3-4 Q&A pairs using H3 for each question.
 
+MODULAR CARD SECTIONS (CRITICAL — include 2-3 per article):
+Include 2-3 visually distinct card sections throughout the article using this exact HTML structure.
+Cards should contain key takeaways, quick tips, checklists, or curated recommendations.
+Use DIFFERENT color variants for each card. Available colors: sage, sky, peach, lavender, rose.
+
+Card HTML template:
+<div class="blog-card blog-card--sage">
+  <div class="blog-card-inner">
+    <div class="blog-card-header">
+      <span class="blog-card-title">Card Title Here</span>
+      <span class="blog-card-badge">Quick Tips</span>
+    </div>
+    <ul class="blog-card-list">
+      <li><strong>Key Point</strong> — explanation of the tip or takeaway</li>
+      <li><strong>Another Point</strong> — more detail here</li>
+      <li><strong>Third Point</strong> — keep it concise and actionable</li>
+    </ul>
+  </div>
+  <div class="blog-card-caption">
+    <h3>Caption Title</h3>
+    <p>Brief description of what this card covers.</p>
+  </div>
+</div>
+
+Card types to use:
+- "Key Takeaways" or "Quick Tips" — summarize section advice
+- "What to Look For" — buying criteria or quality indicators
+- "Style Checklist" — actionable outfit or wardrobe steps
+- "Trend Watch" — emerging trends or seasonal highlights
+Rotate through color variants: blog-card--sage, blog-card--sky, blog-card--peach, blog-card--lavender, blog-card--rose.
+Space cards naturally between article sections (not all at the end).
+
 SEO & KEYWORD REQUIREMENTS:
 - Include 8-12 relevant SEO keywords naturally throughout the post.
 - Use long-tail keyword phrases (e.g., "best affordable leather jackets for women" instead of just "leather jackets").
@@ -123,12 +155,13 @@ FORMATTING:
 - Use HTML formatting: h2, h3, p, blockquote, ul/li, ol/li, strong, em, a tags
 - Use bold for key terms
 - Use bullet/numbered lists for recommendations, tips, and comparisons
+- Use the modular card HTML structure described above for 2-3 visual card sections
 
 You must return a valid JSON object with these exact keys:
 {
   "title": "Post title (compelling, keyword-rich, under 70 chars, NO brand names)",
   "excerpt": "2-3 sentence preview (under 300 chars, NO brand names)",
-  "content": "Full HTML content (1800-2500 words, NO brand names, with internal links and FAQ section)",
+  "content": "Full HTML content (1800-2500 words, NO brand names, with 2-3 card sections, internal links, and FAQ section)",
   "meta_title": "SEO title under 60 chars (NO brand names)",
   "meta_description": "SEO description under 160 chars (NO brand names)",
   "category": "One of: Trends, Style Tips, Shopping Guide, Culture, Seasonal",
@@ -170,7 +203,7 @@ def generate_blog_post(topic=None):
                 {"role": "user", "content": f"Write a blog post about: {topic}"},
             ],
             temperature=0.8,
-            max_tokens=4500,
+            max_tokens=6000,
             response_format={"type": "json_object"},
         )
 
