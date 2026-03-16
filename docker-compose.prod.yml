@@ -119,7 +119,7 @@ services:
       dockerfile: Dockerfile
     container_name: fynda-celery
     restart: unless-stopped
-    command: celery -A fynda worker -B -l info --concurrency=2
+    command: celery -A fynda worker -B -l info --concurrency=2 --schedule=/tmp/celerybeat-schedule
     environment:
       - DJANGO_ENV=production
       - DEBUG=False
