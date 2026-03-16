@@ -193,10 +193,10 @@ CELERY_TIMEZONE = "UTC"
 # Celery Beat Schedule — automated blog generation every 2 hours
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
-    "generate-blog-post": {
-        "task": "blog.generate_blog_post",
-        "schedule": crontab(minute=0),  # Every hour — ~24 posts/day
-    },
+    # "generate-blog-post": {
+    #     "task": "blog.generate_blog_post",
+    #     "schedule": crontab(minute=0),  # Disabled — re-enable when ready
+    # },
 }
 
 # Cache Configuration
