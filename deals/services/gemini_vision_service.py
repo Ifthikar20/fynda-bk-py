@@ -6,13 +6,13 @@ Analyzes clothing/fashion images using Google Gemini to:
 2. Generate precise search queries for marketplace APIs
 
 Primary image analysis service — replaces BLIP for accuracy.
-Cost: ~$0.0025 per image (Gemini 2.0 Flash) vs $0.015 for GPT-4o.
+Cost: ~$0.0025 per image (Gemini 2.5 Flash).
 """
 
 import json
 import base64
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 
 from django.conf import settings
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class GeminiVisionService:
     """Analyze fashion images using Google Gemini."""
 
-    MODEL = "gemini-2.0-flash"
+    MODEL = "gemini-2.5-flash"
 
     PROMPT = """You are a fashion product identification expert. Analyze this image and extract detailed information about the clothing/fashion item(s) shown.
 
@@ -61,12 +61,11 @@ Rules:
 
     def _get_client(self):
         if self._client is None:
-            import google.generativeai as genai
+            from google import genai
             api_key = getattr(settings, "GEMINI_API_KEY", "")
             if not api_key:
                 raise ValueError("GEMINI_API_KEY not configured")
-            genai.configure(api_key=api_key)
-            self._client = genai.GenerativeModel(self.MODEL)
+            self._client = genai.Client(api_key=api_key)
         return self._client
 
     def analyze_image(self, image_base64: str) -> Optional[Dict[str, Any]]:
@@ -81,21 +80,28 @@ Rules:
             or None on failure
         """
         try:
-            model = self._get_client()
+            client = self._get_client()
+            from google.genai import types
 
-            # Decode base64 to bytes for Gemini
+            # Decode base64 to bytes
             image_bytes = base64.b64decode(image_base64)
 
-            response = model.generate_content(
-                [
-                    self.PROMPT,
-                    {"mime_type": "image/jpeg", "data": image_bytes},
+            response = client.models.generate_content(
+                model=self.MODEL,
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_text(text=self.PROMPT),
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                        ],
+                    ),
                 ],
-                generation_config={
-                    "temperature": 0.1,
-                    "max_output_tokens": 1024,
-                    "response_mime_type": "application/json",
-                },
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                    max_output_tokens=1024,
+                    response_mime_type="application/json",
+                ),
             )
 
             # Parse JSON response
