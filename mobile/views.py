@@ -612,8 +612,17 @@ class MobilePriceCompareView(APIView):
         
         start_time = time.time()
         
-        # Use first few meaningful words as search query
-        words = title.split()[:5]
+        # Build a clean search query from the product title
+        # Strip brand noise, years, size info, HTML entities, and filler words
+        import re
+        clean = re.sub(r'&#x27;|&amp;|&quot;', ' ', title)
+        clean = re.sub(r'\b20\d{2}\b', '', clean)  # remove years like 2026
+        clean = re.sub(r'\b[XSML]{1,3}L?\b', '', clean)  # remove sizes like XL, XXL
+        clean = re.sub(r'\b(with|for|and|the|from|style|new|pack|set)\b', '', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'[-—|,].*', '', clean)  # take only text before dash/pipe/comma
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        # Take meaningful words (skip very short ones)
+        words = [w for w in clean.split() if len(w) > 2][:6]
         query = " ".join(words)
         
         try:
@@ -657,10 +666,19 @@ class MobilePriceCompareView(APIView):
                 "id": d.get("id", ""),
                 "title": d.get("title", ""),
                 "price": d_price,
-                "original_price": d.get("original_price"),
+                "image": img,
                 "image_url": img,
+                "original_price": d.get("original_price"),
+                "discount": d.get("discount", 0),
+                "currency": d.get("currency", "USD"),
                 "source": d.get("source", ""),
+                "seller": d.get("seller", ""),
                 "url": d.get("url", ""),
+                "rating": d.get("rating"),
+                "reviews_count": d.get("reviews_count"),
+                "in_stock": d.get("in_stock", True),
+                "shipping": d.get("shipping", ""),
+                "condition": d.get("condition", ""),
             })
         
         similar = similar[:10]
