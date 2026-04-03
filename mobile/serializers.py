@@ -188,7 +188,9 @@ class MobileDealSerializer(serializers.Serializer):
     shipping = serializers.CharField(required=False, default="", allow_blank=True)
     condition = serializers.CharField(required=False, default="", allow_blank=True)
     features = serializers.ListField(child=serializers.CharField(), default=list, required=False)
-    
+    distance_miles = serializers.FloatField(allow_null=True, required=False)
+    location_name = serializers.CharField(allow_blank=True, required=False, default="")
+
     def to_representation(self, instance):
         """Optimize the output."""
         # Ensure required keys exist with defaults
@@ -202,7 +204,7 @@ class MobileDealSerializer(serializers.Serializer):
                 or ""
             )
             instance["image_url"] = img
-            
+
             instance.setdefault("discount_percent", 0)
             instance.setdefault("source", "")
             instance.setdefault("url", "")
@@ -212,13 +214,26 @@ class MobileDealSerializer(serializers.Serializer):
             instance.setdefault("shipping", "")
             instance.setdefault("condition", "")
             instance.setdefault("features", [])
-        
+
+            # Extract distance and location from features for Facebook Marketplace
+            features = instance.get("features", [])
+            for feat in features:
+                if isinstance(feat, str) and feat.startswith("distance:"):
+                    try:
+                        instance["distance_miles"] = float(feat.split(":", 1)[1])
+                    except (ValueError, IndexError):
+                        pass
+                elif isinstance(feat, str) and feat.startswith("location:"):
+                    instance["location_name"] = feat.split(":", 1)[1]
+            instance.setdefault("distance_miles", None)
+            instance.setdefault("location_name", "")
+
         data = super().to_representation(instance)
-        
+
         # Truncate title for mobile
         if data.get("title") and len(data["title"]) > 80:
             data["title"] = data["title"][:77] + "..."
-        
+
         # Remove null values to reduce payload
         return {k: v for k, v in data.items() if v is not None}
 

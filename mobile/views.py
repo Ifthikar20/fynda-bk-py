@@ -1202,6 +1202,16 @@ class MobileImageUploadView(APIView):
                     "message": "Could not identify product. Try a clearer image."
                 })
             
+            # Pass user location to orchestrator for distance calculation
+            user_lat = request.data.get('latitude') or request.POST.get('latitude')
+            user_lng = request.data.get('longitude') or request.POST.get('longitude')
+            if user_lat and user_lng:
+                try:
+                    orchestrator.set_user_location(float(user_lat), float(user_lng))
+                    img_log.info(f"  User location: lat={user_lat}, lng={user_lng}")
+                except (ValueError, TypeError):
+                    img_log.warning(f"  Invalid user location: lat={user_lat}, lng={user_lng}")
+
             # Step 2: Search for deals using generated queries (parallel)
             img_log.info(f"[STEP 2] VENDOR SEARCH — querying marketplaces with {len(search_queries[:3])} queries")
             for i, q in enumerate(search_queries[:3]):

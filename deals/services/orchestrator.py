@@ -119,6 +119,15 @@ class DealOrchestrator:
         query_hash = hashlib.md5(normalized.encode()).hexdigest()
         return f"search:{query_hash}"
     
+    def set_user_location(self, lat: float, lng: float):
+        """Pass user location to vendors that support it (e.g. Facebook Marketplace)."""
+        self._user_lat = lat
+        self._user_lng = lng
+        # Forward to Facebook vendor if loaded
+        fb = vendor_manager.get_vendor_instance("facebook")
+        if fb and hasattr(fb, "set_user_location"):
+            fb.set_user_location(lat, lng)
+
     def search(self, query: str) -> SearchResult:
         """
         Search for deals matching the natural language query.
