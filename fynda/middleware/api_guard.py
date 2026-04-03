@@ -140,15 +140,15 @@ class APIGuardMiddleware:
         Check if request is from a valid mobile app.
         
         Mobile apps must include:
-        - X-Fynda-Mobile-Key: Secret key configured in app
-        - X-Fynda-Platform: ios or android
-        - X-Fynda-App-Version: App version string
+        - X-Outfi-Mobile-Key: Secret key configured in app
+        - X-Outfi-Platform: ios or android
+        - X-Outfi-App-Version: App version string
         
         Or they must be accessing /api/mobile/ endpoints with valid JWT.
         """
-        # Check for mobile API key
-        mobile_key = request.META.get("HTTP_X_FYNDA_MOBILE_KEY", "")
-        platform = request.META.get("HTTP_X_FYNDA_PLATFORM", "")
+        # Check for mobile API key (accept both old Fynda and new Outfi headers)
+        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "") or request.META.get("HTTP_X_FYNDA_MOBILE_KEY", "")
+        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "") or request.META.get("HTTP_X_FYNDA_PLATFORM", "")
         
         # Get configured mobile key from settings/env
         from fynda.config import config

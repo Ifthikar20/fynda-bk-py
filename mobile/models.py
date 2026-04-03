@@ -296,3 +296,77 @@ class MobileSession(models.Model):
     
     def __str__(self):
         return f"Session {self.session_token[:8]}... ({self.user.email if self.user else 'anonymous'})"
+
+
+class APIUsageLog(models.Model):
+    """
+    Tracks API usage per user/IP for cost control and rate limiting.
+
+    Records each expensive API call (image search, OpenAI vision, bg removal)
+    to enforce daily quotas and monitor costs.
+    """
+    ENDPOINT_CHOICES = [
+        ("image_search", "Image Search"),
+        ("openai_vision", "OpenAI Vision"),
+        ("remove_bg", "Background Removal"),
+        ("storyboard_upload", "Storyboard Image Upload"),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="api_usage_logs",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    device_id = models.CharField(max_length=255, blank=True, default="")
+    endpoint = models.CharField(max_length=50, choices=ENDPOINT_CHOICES)
+    estimated_cost = models.DecimalField(
+        max_digits=8, decimal_places=4, default=0,
+        help_text="Estimated cost in USD",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "api_usage_logs"
+        indexes = [
+            models.Index(fields=["user", "endpoint", "created_at"]),
+            models.Index(fields=["ip_address", "endpoint", "created_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        who = self.user.email if self.user else self.ip_address
+        return f"{self.endpoint} by {who} at {self.created_at}"
+
+    @classmethod
+    def get_daily_count(cls, user=None, ip_address=None, endpoint=None):
+        """Get usage count for today, always per user account."""
+        from django.utils import timezone
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        qs = cls.objects.filter(created_at__gte=today_start)
+        if user and user.is_authenticated:
+            # Always track by user account — IP doesn't matter
+            qs = qs.filter(user=user)
+        elif ip_address:
+            # Fallback for anonymous (shouldn't reach here for image search)
+            qs = qs.filter(ip_address=ip_address)
+        if endpoint:
+            qs = qs.filter(endpoint=endpoint)
+        return qs.count()
+
+    @classmethod
+    def log_usage(cls, request, endpoint, estimated_cost=0):
+        """Log an API usage event."""
+        user = request.user if request.user and request.user.is_authenticated else None
+        ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() or request.META.get("REMOTE_ADDR")
+        device_id = request.headers.get("X-Device-Id", "")
+        cls.objects.create(
+            user=user,
+            ip_address=ip,
+            device_id=device_id,
+            endpoint=endpoint,
+            estimated_cost=estimated_cost,
+        )

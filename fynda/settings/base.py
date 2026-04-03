@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "nested_admin",  # For nested inlines in admin
+    "storages",  # django-storages for S3
     # Local apps
     "core.apps.CoreConfig",
     "deals",
@@ -112,6 +113,38 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Media files (for image uploads)
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ─── AWS S3 Storage ───────────────────────────────
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "outfi-media")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None  # Use bucket policy
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",
+}
+AWS_QUERYSTRING_EXPIRE = 3600  # Signed URL expiry: 1 hour
+
+# Use S3 for media uploads when credentials are configured
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "region_name": AWS_S3_REGION_NAME,
+                "default_acl": None,
+                "querystring_auth": True,  # Signed URLs for security
+                "file_overwrite": False,
+                "object_parameters": AWS_S3_OBJECT_PARAMETERS,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -244,6 +277,16 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "mobile": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "image_search": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
         "fynda.config": {
             "handlers": ["console"],
             "level": "INFO",
@@ -259,6 +302,7 @@ LOGGING = {
 #        api_key = config.apis.rapidapi_key
 
 OPENAI_API_KEY = config.apis.openai_api_key
+GEMINI_API_KEY = config.apis.gemini_api_key
 EBAY_APP_ID = config.apis.ebay_app_id
 EBAY_CERT_ID = config.apis.ebay_cert_id
 BESTBUY_API_KEY = config.apis.bestbuy_api_key

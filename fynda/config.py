@@ -88,6 +88,9 @@ class APIKeysConfig:
     
     # OpenAI
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
+
+    # Google Gemini
+    gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
     
     # CJ Affiliate
     cj_api_token: str = field(default_factory=lambda: os.getenv("CJ_AFFILIATE_API_TOKEN", ""))
@@ -142,7 +145,7 @@ class SecurityConfig:
     ).split(","))
     
     # Mobile API key for Flutter app authentication
-    mobile_api_key: str = field(default_factory=lambda: os.getenv("FYNDA_MOBILE_API_KEY", ""))
+    mobile_api_key: str = field(default_factory=lambda: os.getenv("OUTFI_MOBILE_API_KEY", "") or os.getenv("FYNDA_MOBILE_API_KEY", ""))
     
     # Dynamic admin URL path (without leading/trailing slashes)
     # Set to a secret value in production for security through obscurity

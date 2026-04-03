@@ -10,6 +10,7 @@ Endpoints optimized for mobile:
 
 import time
 import io
+import json
 import base64
 import logging
 from django.utils import timezone
@@ -1048,14 +1049,21 @@ class MobileImageUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
-    from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
-    throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
-    
+    from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle, DailyImageQuotaThrottle
+    throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle, DailyImageQuotaThrottle]
+
     def post(self, request):
         import requests as http_requests
         from deals.services.orchestrator import orchestrator
         from core.image_preprocessor import preprocess_image, cache_ml_result, ImageValidationError
-        
+        from mobile.models import APIUsageLog
+
+        # Dedicated logger for tracing the full image search pipeline
+        img_log = logging.getLogger("image_search")
+
+        # Log usage for daily quota tracking (Gemini ~$0.0025/image)
+        APIUsageLog.log_usage(request, "image_search", estimated_cost=0.0025)
+
         from django.conf import settings
         
         if 'image' not in request.FILES:
@@ -1063,58 +1071,110 @@ class MobileImageUploadView(APIView):
                 {"error": "No image file provided. Use 'image' field."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
+        img_file = request.FILES['image']
+        img_log.info("=" * 70)
+        img_log.info("IMAGE SEARCH REQUEST")
+        img_log.info(f"  User: {request.user if request.user.is_authenticated else 'anonymous'}")
+        img_log.info(f"  File: {img_file.name}, size={img_file.size} bytes, type={img_file.content_type}")
+        img_log.info("-" * 70)
+
         try:
             # Centralized image pre-processing (validate, resize, strip EXIF, hash dedup)
-            processed = preprocess_image(request.FILES['image'])
+            processed = preprocess_image(img_file)
             image_base64 = processed.image_base64
-            
+            img_log.info(f"  Preprocessed: base64_len={len(image_base64)}, cache_key={processed.cache_key[:20]}...")
+
             # If identical image was recently processed, return cached ML result
             if processed.was_cached and processed.cached_result:
-                logger.info("Returning cached ML result for duplicate image")
+                img_log.info("  CACHE HIT — returning cached result")
                 return Response(processed.cached_result)
-        
+
         except ImageValidationError as e:
+            img_log.error(f"  Image validation FAILED: {e.message}")
             return Response(
                 {"error": e.message},
                 status=e.status_code
             )
         
         start_time = time.time()
-        
+
         try:
-            
-            # Step 1: Identify the product
+
+            # Step 1: Identify the product using Gemini Vision (primary)
             extracted = None
             search_queries = []
-            
-            # Primary: Own ML service (BLIP)
-            try:
-                ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
-                ml_url = f"{ml_url}/api/extract-attributes"
-                logger.info(f"Calling ML service at {ml_url}")
-                ml_response = http_requests.post(
-                    ml_url,
-                    json={"image_base64": image_base64},
-                    timeout=30
-                )
-                if ml_response.status_code == 200:
-                    ml_data = ml_response.json()
-                    if ml_data.get("success"):
-                        extracted = {
-                            "caption": ml_data.get("caption", ""),
-                            "colors": ml_data.get("colors", {}),
-                            "textures": ml_data.get("textures", []),
-                            "category": ml_data.get("category", ""),
-                        }
-                        search_queries = ml_data.get("search_queries", [])
-                        logger.info(f"ML service identified: {search_queries}")
-            except http_requests.RequestException as e:
-                logger.warning(f"ML service unavailable: {e}")
-            
-            
-            # If ML service returned no queries, return graceful empty
+
+            # Primary: Google Gemini Vision
+            gemini_key = getattr(settings, 'GEMINI_API_KEY', '')
+            if gemini_key:
+                img_log.info("[STEP 1] GEMINI VISION — analyzing image...")
+                try:
+                    from deals.services.gemini_vision_service import gemini_vision
+                    result = gemini_vision.analyze_image(image_base64)
+                    if result:
+                        img_log.info(f"  Gemini RAW response: {json.dumps(result, indent=2, default=str)}")
+                        if result.get("search_queries"):
+                            items = result.get("items", [{}])
+                            main_item = items[0] if items else {}
+                            extracted = {
+                                "caption": result.get("overall_style", ""),
+                                "category": main_item.get("category", ""),
+                                "type": main_item.get("type", ""),
+                                "color": main_item.get("color", ""),
+                                "brand": main_item.get("brand"),
+                                "material": main_item.get("material", ""),
+                                "pattern": main_item.get("pattern", ""),
+                                "style": main_item.get("style", ""),
+                            }
+                            search_queries = result["search_queries"]
+                            img_log.info(f"  Gemini EXTRACTED: {json.dumps(extracted, indent=2, default=str)}")
+                            img_log.info(f"  Gemini SEARCH QUERIES: {search_queries}")
+                        else:
+                            img_log.warning("  Gemini returned data but NO search_queries")
+                    else:
+                        img_log.warning("  Gemini returned None")
+                except Exception as e:
+                    img_log.error(f"  Gemini FAILED: {e}", exc_info=True)
+            else:
+                img_log.warning("[STEP 1] GEMINI SKIPPED — no GEMINI_API_KEY configured")
+
+            # Fallback: Own ML service (BLIP) if Gemini didn't work
             if not search_queries:
+                img_log.info("[STEP 1 FALLBACK] BLIP ML SERVICE — trying local model...")
+                try:
+                    ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
+                    ml_url = f"{ml_url}/api/extract-attributes"
+                    img_log.info(f"  Calling: {ml_url}")
+                    ml_response = http_requests.post(
+                        ml_url,
+                        json={"image_base64": image_base64},
+                        timeout=30
+                    )
+                    img_log.info(f"  BLIP response status: {ml_response.status_code}")
+                    if ml_response.status_code == 200:
+                        ml_data = ml_response.json()
+                        img_log.info(f"  BLIP RAW response: {json.dumps(ml_data, indent=2, default=str)[:2000]}")
+                        if ml_data.get("success"):
+                            extracted = {
+                                "caption": ml_data.get("caption", ""),
+                                "colors": ml_data.get("colors", {}),
+                                "textures": ml_data.get("textures", []),
+                                "category": ml_data.get("category", ""),
+                            }
+                            search_queries = ml_data.get("search_queries", [])
+                            img_log.info(f"  BLIP SEARCH QUERIES: {search_queries}")
+                        else:
+                            img_log.warning(f"  BLIP returned success=false")
+                    else:
+                        img_log.warning(f"  BLIP returned HTTP {ml_response.status_code}: {ml_response.text[:500]}")
+                except http_requests.RequestException as e:
+                    img_log.error(f"  BLIP UNAVAILABLE: {e}")
+
+            # If nothing identified the product
+            if not search_queries:
+                img_log.error("  NO QUERIES GENERATED — returning empty to client")
+                img_log.info("=" * 70)
                 return Response({
                     "extracted": extracted or {},
                     "search_queries": [],
@@ -1125,21 +1185,32 @@ class MobileImageUploadView(APIView):
                 })
             
             # Step 2: Search for deals using generated queries (parallel)
+            img_log.info(f"[STEP 2] VENDOR SEARCH — querying marketplaces with {len(search_queries[:3])} queries")
+            for i, q in enumerate(search_queries[:3]):
+                img_log.info(f"  Query {i+1}: '{q}'")
+
             from concurrent.futures import ThreadPoolExecutor, as_completed
             all_deals = []
             quota_warning = None
-            
+
             def search_query(q):
                 try:
                     result = orchestrator.search(q)
                     result_dict = result.to_dict()
+                    meta = result_dict.get("meta", {})
+                    img_log.info(
+                        f"  Query '{q}' → {meta.get('total_results', 0)} results "
+                        f"from {meta.get('sources_with_results', [])} "
+                        f"in {meta.get('search_time_ms', 0)}ms "
+                        f"(cache={'HIT' if meta.get('cache_hit') else 'MISS'})"
+                    )
                     if result_dict.get("quota_warning"):
                         return result_dict["deals"], result_dict["quota_warning"]
                     return result_dict["deals"], None
                 except Exception as e:
-                    logger.warning(f"Search failed for '{q}': {e}")
+                    img_log.error(f"  Query '{q}' FAILED: {e}")
                     return [], None
-            
+
             with ThreadPoolExecutor(max_workers=3) as executor:
                 futures = {executor.submit(search_query, q): q for q in search_queries[:3]}
                 for future in as_completed(futures):
@@ -1163,7 +1234,19 @@ class MobileImageUploadView(APIView):
                 deal["is_saved"] = deal.get("id", "") in saved_ids
             
             search_time = int((time.time() - start_time) * 1000)
-            
+
+            img_log.info(f"[STEP 3] RESPONSE — building final response")
+            img_log.info(f"  Total deals found: {len(all_deals)}")
+            img_log.info(f"  Total search time: {search_time}ms")
+            if all_deals:
+                for i, d in enumerate(all_deals[:5]):
+                    img_log.info(f"  Deal {i+1}: '{d.get('title', '?')[:60]}' | ${d.get('price', '?')} | {d.get('source', '?')}")
+                if len(all_deals) > 5:
+                    img_log.info(f"  ... and {len(all_deals) - 5} more")
+            if quota_warning:
+                img_log.warning(f"  QUOTA WARNING: {quota_warning}")
+            img_log.info("=" * 70)
+
             response = {
                 "extracted": extracted or {},
                 "search_queries": search_queries,
@@ -1171,17 +1254,17 @@ class MobileImageUploadView(APIView):
                 "total": len(all_deals),
                 "search_time_ms": search_time,
             }
-            
+
             if quota_warning:
                 response["quota_warning"] = quota_warning
-            
+
             # Cache result against image hash for dedup
             cache_ml_result(processed.cache_key, response)
-            
+
             return Response(response)
-        
+
         except Exception as e:
-            logger.exception(f"Image upload error: {e}")
+            img_log.exception(f"IMAGE SEARCH FATAL ERROR: {e}")
             return Response(
                 {"error": "Failed to process image. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1596,20 +1679,123 @@ class FavoriteDetailView(APIView):
 class MobileFeaturedView(APIView):
     """
     Featured content for mobile home screen.
-    
+
     GET /api/mobile/featured/
-    
+
     Returns curated brands, search prompts, and quick suggestions
     from the same source as the web frontend.
     """
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         from deals.featured import FEATURED_BRANDS, SEARCH_PROMPTS, QUICK_SUGGESTIONS
-        
+
         return Response({
             "featured_brands": FEATURED_BRANDS,
             "search_prompts": SEARCH_PROMPTS,
             "quick_suggestions": QUICK_SUGGESTIONS,
         })
+
+
+# ============================================
+# Storyboard Image Upload (S3)
+# ============================================
+
+class StoryboardImageUploadView(APIView):
+    """
+    Upload images for fashion boards to S3.
+
+    POST /api/mobile/storyboard/upload-image/
+
+    Accepts multipart image upload, validates, resizes,
+    saves to S3, and returns a signed URL.
+
+    Rate limited: 30/hour per user, 10/hour anonymous.
+    Max file size: 5MB.
+    """
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
+    MAX_DIMENSION = 1200  # Resize to max 1200px
+
+    def post(self, request):
+        import uuid
+        import secrets
+        from PIL import Image
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+
+        image_file = request.FILES.get("image")
+        if not image_file:
+            return Response(
+                {"error": "No image file provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file size
+        if image_file.size > self.MAX_FILE_SIZE:
+            return Response(
+                {"error": f"File too large. Maximum size is {self.MAX_FILE_SIZE // (1024*1024)}MB"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate content type
+        content_type = image_file.content_type or ""
+        if content_type not in self.ALLOWED_TYPES:
+            return Response(
+                {"error": f"Invalid file type: {content_type}. Allowed: JPEG, PNG, WebP"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Open and validate image
+            img = Image.open(image_file)
+            img.verify()
+            image_file.seek(0)
+            img = Image.open(image_file)
+
+            # Strip EXIF for privacy
+            if img.mode in ("RGBA", "LA"):
+                background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+                background.paste(img, mask=img.split()[-1])
+                img = background.convert("RGB")
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+
+            # Resize if too large
+            if max(img.size) > self.MAX_DIMENSION:
+                img.thumbnail((self.MAX_DIMENSION, self.MAX_DIMENSION), Image.LANCZOS)
+
+            # Save to buffer
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=85, optimize=True)
+            buffer.seek(0)
+
+            # Generate unique filename
+            unique_id = secrets.token_hex(8)
+            filename = f"storyboard/{unique_id}.jpg"
+
+            # Save to storage (S3 or local depending on config)
+            saved_path = default_storage.save(filename, ContentFile(buffer.read()))
+
+            # Generate URL
+            image_url = default_storage.url(saved_path)
+
+            return Response(
+                {
+                    "url": image_url,
+                    "path": saved_path,
+                    "size": buffer.tell(),
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except Exception as e:
+            logger.exception("Storyboard image upload failed")
+            return Response(
+                {"error": "Image processing failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 

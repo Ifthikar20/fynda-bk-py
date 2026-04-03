@@ -35,6 +35,7 @@ from .views import (
     # Storyboard
     MobileStoryboardView,
     MobileStoryboardDetailView,
+    StoryboardImageUploadView,
     # Featured
     MobileFeaturedView,
 )
@@ -96,6 +97,7 @@ urlpatterns = [
     # Storyboard
     # ============================================
     path("storyboard/", MobileStoryboardView.as_view(), name="storyboard-list"),
+    path("storyboard/upload-image/", StoryboardImageUploadView.as_view(), name="storyboard-image-upload"),
     path("storyboard/<str:token>/", MobileStoryboardDetailView.as_view(), name="storyboard-detail"),
     
     # ============================================
