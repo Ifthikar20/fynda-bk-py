@@ -119,16 +119,16 @@ class DealOrchestrator:
         query_hash = hashlib.md5(normalized.encode()).hexdigest()
         return f"search:{query_hash}"
     
-    def set_user_location(self, lat: float, lng: float):
+    def set_user_location(self, lat: float, lng: float, max_distance: float = None):
         """Pass user location to vendors that support it (e.g. Facebook Marketplace)."""
         self._user_lat = lat
         self._user_lng = lng
         # Forward to Facebook vendor if loaded
         fb = vendor_manager.get_vendor_instance("facebook")
         if fb and hasattr(fb, "set_user_location"):
-            fb.set_user_location(lat, lng)
+            fb.set_user_location(lat, lng, max_distance=max_distance)
 
-    def search(self, query: str) -> SearchResult:
+    def search(self, query: str, skip_clip: bool = False) -> SearchResult:
         """
         Search for deals matching the natural language query.
         
@@ -194,7 +194,9 @@ class DealOrchestrator:
         deals = self._rank_deals(deals, parsed)
         
         # Step 6: CLIP visual re-ranking (send top 30 to ML model)
-        deals = self._clip_rerank(deals[:30], query)
+        # Skip for image search — Gemini already provides visual matching
+        if not skip_clip:
+            deals = self._clip_rerank(deals[:30], query)
         
         # Limit to top 20
         deals = deals[:20]
@@ -258,7 +260,7 @@ class DealOrchestrator:
                 )] = instance.VENDOR_NAME
             
             # Collect results as they complete
-            for future in concurrent.futures.as_completed(futures, timeout=20):
+            for future in concurrent.futures.as_completed(futures, timeout=10):
                 source = futures[future]
                 try:
                     result = future.result()

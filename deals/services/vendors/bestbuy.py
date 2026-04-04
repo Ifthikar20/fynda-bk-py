@@ -22,7 +22,7 @@ class BestBuyVendor(BaseVendorService):
     VENDOR_ID = "bestbuy"
     VENDOR_NAME = "Best Buy"
     PRIORITY = 70
-    TIMEOUT = 15
+    TIMEOUT = 8
     
     BASE_URL = "https://api.bestbuy.com/v1"
     

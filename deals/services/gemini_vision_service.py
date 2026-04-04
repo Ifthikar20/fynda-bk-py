@@ -24,37 +24,12 @@ class GeminiVisionService:
 
     MODEL = "gemini-2.5-flash"
 
-    PROMPT = """You are a fashion product identification expert. Analyze this image and extract detailed information about the clothing/fashion item(s) shown.
+    PROMPT = """Identify the main clothing item. Return JSON:
+{"items":[{"category":"","type":"","color":"","brand":null,"material":"","pattern":"","style":""}],
+"search_queries":["brand+type+color query","type+color query"],
+"overall_style":"brief description"}
 
-Return a JSON object with these fields:
-{
-  "items": [
-    {
-      "category": "dress/jacket/sneakers/bag/etc",
-      "type": "midi dress/bomber jacket/running shoes/etc (be specific)",
-      "color": "primary color(s)",
-      "brand": "brand name if visible, otherwise null",
-      "material": "denim/leather/cotton/silk/etc if identifiable",
-      "pattern": "solid/striped/floral/plaid/etc",
-      "style": "casual/formal/streetwear/modest/athletic/etc",
-      "details": "notable details like buttons, zippers, embroidery, etc"
-    }
-  ],
-  "search_queries": [
-    "most specific search query using brand + type + color",
-    "slightly broader query using type + color + material",
-    "broadest useful query using category + style"
-  ],
-  "overall_style": "brief description of the overall look"
-}
-
-Rules:
-- Generate 2-3 search queries ranked from most specific to broadest
-- Search queries should be what someone would type into a shopping site
-- If multiple items are visible, focus on the main/most prominent item
-- If you can identify the brand, always include it in the first search query
-- Keep search queries concise (3-6 words each)
-- Return ONLY valid JSON, no markdown or explanation"""
+Rules: 2 search queries, concise (3-5 words), shopping-site style. Brand in first query if visible. JSON only."""
 
     def __init__(self):
         self._client = None
@@ -98,8 +73,8 @@ Rules:
                     ),
                 ],
                 config=types.GenerateContentConfig(
-                    temperature=0.1,
-                    max_output_tokens=1024,
+                    temperature=0.0,
+                    max_output_tokens=256,
                     response_mime_type="application/json",
                 ),
             )

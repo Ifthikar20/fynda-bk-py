@@ -41,7 +41,7 @@ MAGIC_BYTES = {
 }
 
 MAX_FILE_SIZE = 10 * 1024 * 1024       # 10 MB
-MAX_DIMENSION = 800                     # Resize to fit within this
+MAX_DIMENSION = 600                     # Resize to fit within this (smaller = faster Gemini)
 JPEG_QUALITY = 82                       # Balance quality vs. payload size
 CACHE_TTL = 3600                        # 1 hour dedup window
 
@@ -201,18 +201,17 @@ def _validate_magic_bytes(raw_bytes: bytes, declared_type: str) -> bool:
 
 
 def _strip_exif(pil_img):
-    """Remove EXIF metadata from image for privacy and smaller size."""
-    from PIL import Image as PILImage
+    """Remove EXIF metadata from image for privacy and smaller size.
 
+    Uses transpose + info clear instead of expensive pixel data copy.
+    """
+    from PIL import ImageOps
+
+    # Apply EXIF orientation then discard all metadata
+    pil_img = ImageOps.exif_transpose(pil_img) or pil_img
     if hasattr(pil_img, "info"):
-        pil_img.info.pop("exif", None)
-        pil_img.info.pop("icc_profile", None)
-
-    # Re-create the image without metadata
-    data = list(pil_img.getdata())
-    clean_img = PILImage.new(pil_img.mode, pil_img.size)
-    clean_img.putdata(data)
-    return clean_img
+        pil_img.info.clear()
+    return pil_img
 
 
 def _ensure_rgb(pil_img):

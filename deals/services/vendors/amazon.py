@@ -22,7 +22,7 @@ class AmazonVendor(BaseVendorService):
     VENDOR_ID = "amazon"
     VENDOR_NAME = "Amazon"
     PRIORITY = 95
-    TIMEOUT = 15
+    TIMEOUT = 8
     
     BASE_URL = "https://real-time-amazon-data.p.rapidapi.com"
     

@@ -748,19 +748,39 @@ class MobileDealSearchView(APIView):
         data = serializer.validated_data
         
         from deals.services.orchestrator import orchestrator
-        
+
         start_time = time.time()
-        
+
+        # Load user preferences as fallback for location/gender
+        prefs = None
+        if request.user.is_authenticated:
+            prefs = UserPreferences.objects.filter(user=request.user).first()
+
         # Build query with budget embedded (orchestrator parses it)
         query = data["query"]  # already sanitised by serializer
         if data.get("max_price"):
             query = f"{query} under ${data['max_price']}"
-        
-        # Embed gender in query so the parser picks it up
-        gender = data.get("gender")
+
+        # Embed gender in query — use preference as fallback
+        gender = data.get("gender") or (prefs.preferred_gender if prefs else "")
         if gender and gender not in query.lower():
             query = f"{gender}'s {query}"
-        
+
+        # Set user location from request params or saved preferences
+        lat = request.data.get("latitude")
+        lng = request.data.get("longitude")
+        max_dist = None
+        if not lat and prefs and prefs.default_latitude:
+            lat = prefs.default_latitude
+            lng = prefs.default_longitude
+        if prefs:
+            max_dist = prefs.max_distance_miles
+        if lat and lng:
+            try:
+                orchestrator.set_user_location(float(lat), float(lng), max_distance=max_dist)
+            except (ValueError, TypeError):
+                pass
+
         result = orchestrator.search(query)
         result_dict = result.to_dict()
         
@@ -1203,27 +1223,40 @@ class MobileImageUploadView(APIView):
                 })
             
             # Pass user location to orchestrator for distance calculation
+            # Fall back to saved preferences if not provided in request
             user_lat = request.data.get('latitude') or request.POST.get('latitude')
             user_lng = request.data.get('longitude') or request.POST.get('longitude')
+            max_dist = None
+            if request.user.is_authenticated:
+                prefs = UserPreferences.objects.filter(user=request.user).first()
+                if prefs:
+                    max_dist = prefs.max_distance_miles
+                    if not user_lat and prefs.default_latitude:
+                        user_lat = prefs.default_latitude
+                        user_lng = prefs.default_longitude
+                        img_log.info(f"  Using saved location preference: lat={user_lat}, lng={user_lng}")
             if user_lat and user_lng:
                 try:
-                    orchestrator.set_user_location(float(user_lat), float(user_lng))
-                    img_log.info(f"  User location: lat={user_lat}, lng={user_lng}")
+                    orchestrator.set_user_location(float(user_lat), float(user_lng), max_distance=max_dist)
+                    img_log.info(f"  User location: lat={user_lat}, lng={user_lng}, max_dist={max_dist}mi")
                 except (ValueError, TypeError):
                     img_log.warning(f"  Invalid user location: lat={user_lat}, lng={user_lng}")
 
-            # Step 2: Search for deals using generated queries (parallel)
-            img_log.info(f"[STEP 2] VENDOR SEARCH — querying marketplaces with {len(search_queries[:3])} queries")
-            for i, q in enumerate(search_queries[:3]):
+            # Step 2: Search for deals using top 2 queries in parallel
+            # (skip CLIP reranking — Gemini already provides visual matching)
+            queries_to_search = search_queries[:2]
+            img_log.info(f"[STEP 2] VENDOR SEARCH — querying marketplaces with {len(queries_to_search)} queries")
+            for i, q in enumerate(queries_to_search):
                 img_log.info(f"  Query {i+1}: '{q}'")
 
             from concurrent.futures import ThreadPoolExecutor, as_completed
             all_deals = []
+            seen_ids = set()
             quota_warning = None
 
             def search_query(q):
                 try:
-                    result = orchestrator.search(q)
+                    result = orchestrator.search(q, skip_clip=True)
                     result_dict = result.to_dict()
                     meta = result_dict.get("meta", {})
                     img_log.info(
@@ -1239,14 +1272,16 @@ class MobileImageUploadView(APIView):
                     img_log.error(f"  Query '{q}' FAILED: {e}")
                     return [], None
 
-            with ThreadPoolExecutor(max_workers=3) as executor:
-                futures = {executor.submit(search_query, q): q for q in search_queries[:3]}
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = {executor.submit(search_query, q): q for q in queries_to_search}
                 for future in as_completed(futures):
                     deals, warning = future.result()
                     if warning:
                         quota_warning = warning
                     for deal in deals:
-                        if not any(d.get("id") == deal.get("id") for d in all_deals):
+                        deal_id = deal.get("id", "")
+                        if deal_id not in seen_ids:
+                            seen_ids.add(deal_id)
                             all_deals.append(deal)
             
             # Mark saved deals
@@ -1422,31 +1457,16 @@ class MobileOAuthView(APIView):
 class MobileStoryboardView(APIView):
     """
     Fashion storyboard management for mobile.
-    
-    GET /api/mobile/storyboard/ - List my storyboards
-    POST /api/mobile/storyboard/ - Create a storyboard
-    PUT /api/mobile/storyboard/<token>/ - Update a storyboard
-    
-    Supports both authenticated and anonymous users.
-    Anonymous users are tracked via X-Device-Id header.
+
+    GET /api/mobile/storyboard/ - List my storyboards (auth required)
+    POST /api/mobile/storyboard/ - Create a storyboard (auth required)
     """
-    permission_classes = [AllowAny]
-    
-    def _get_device_id(self, request):
-        return request.headers.get('X-Device-Id', '')
-    
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         from deals.models import SharedStoryboard
-        from django.db.models import Q
-        
-        # Filter by user (if auth'd) or device_id
-        if request.user and request.user.is_authenticated:
-            boards = SharedStoryboard.objects.filter(user=request.user)
-        else:
-            device_id = self._get_device_id(request)
-            if not device_id:
-                return Response({"storyboards": [], "count": 0})
-            boards = SharedStoryboard.objects.filter(device_id=device_id)
+
+        boards = SharedStoryboard.objects.filter(user=request.user)
         
         boards = boards.order_by("-created_at")[:50]
         
@@ -1455,6 +1475,7 @@ class MobileStoryboardView(APIView):
                 "token": b.token,
                 "title": b.title or "Untitled",
                 "share_url": f"https://outfi.ai/storyboard/{b.token}",
+                "is_public": b.is_public,
                 "storyboard_data": b.storyboard_data or {},
                 "view_count": b.view_count,
                 "created_at": b.created_at.isoformat(),
@@ -1469,21 +1490,20 @@ class MobileStoryboardView(APIView):
         from deals.models import SharedStoryboard
         from datetime import timedelta
         import secrets
-        
+
         storyboard_data = request.data.get("storyboard_data")
         if not storyboard_data:
             return Response(
                 {"error": "storyboard_data is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         title = request.data.get("title", "")
         expires_in_days = int(request.data.get("expires_in_days", 30))
-        device_id = self._get_device_id(request)
-        
+
         board = SharedStoryboard.objects.create(
-            user=request.user if request.user.is_authenticated else None,
-            device_id=device_id,
+            user=request.user,
+            device_id=request.headers.get("X-Device-Id", ""),
             token=secrets.token_urlsafe(16),
             title=title,
             storyboard_data=storyboard_data,
@@ -1505,16 +1525,18 @@ class MobileStoryboardView(APIView):
 
 class MobileStoryboardDetailView(APIView):
     """
-    Get or delete a shared storyboard by token.
-    
-    GET /api/mobile/storyboard/<token>/  (public)
-    DELETE /api/mobile/storyboard/<token>/  (owner only)
+    Get, update, or delete a shared storyboard by token.
+
+    GET /api/mobile/storyboard/<token>/     (public — view by share link)
+    DELETE /api/mobile/storyboard/<token>/  (owner only — auth required)
+    PUT /api/mobile/storyboard/<token>/     (owner only — auth required)
     """
     permission_classes = [AllowAny]
-    
+
     def get(self, request, token):
+        """Public view — anyone with the token can view (if is_public=True)."""
         from deals.models import SharedStoryboard
-        
+
         try:
             board = SharedStoryboard.objects.get(token=token)
         except SharedStoryboard.DoesNotExist:
@@ -1522,76 +1544,85 @@ class MobileStoryboardDetailView(APIView):
                 {"error": "Storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        # Check expiry
+
+        # Private boards only visible to the owner
+        if not board.is_public:
+            if not request.user.is_authenticated or board.user_id != request.user.id:
+                return Response(
+                    {"error": "Storyboard not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
         if board.expires_at and board.expires_at < timezone.now():
             return Response(
                 {"error": "This storyboard has expired"},
                 status=status.HTTP_410_GONE
             )
-        
-        # Increment view count
+
         board.view_count += 1
         board.save(update_fields=["view_count"])
-        
+
         return Response({
             "token": board.token,
             "title": board.title or "Untitled",
+            "share_url": f"https://outfi.ai/storyboard/{board.token}",
             "storyboard_data": board.storyboard_data,
             "view_count": board.view_count,
+            "is_public": board.is_public,
             "created_at": board.created_at.isoformat(),
         })
 
-    def delete(self, request, token):
+    def _get_owner_board(self, request, token):
+        """Get board only if the authenticated user owns it."""
         from deals.models import SharedStoryboard
-        
+
         if not request.user or not request.user.is_authenticated:
-            return Response(
+            return None, Response(
                 {"error": "Authentication required"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
         try:
             board = SharedStoryboard.objects.get(token=token, user=request.user)
+            return board, None
         except SharedStoryboard.DoesNotExist:
-            return Response(
+            return None, Response(
                 {"error": "Storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
+    def delete(self, request, token):
+        board, err = self._get_owner_board(request, token)
+        if err:
+            return err
         board.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def put(self, request, token):
         """Update an existing storyboard (owner only)."""
-        from deals.models import SharedStoryboard
-        
-        if not request.user or not request.user.is_authenticated:
-            return Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        try:
-            board = SharedStoryboard.objects.get(token=token, user=request.user)
-        except SharedStoryboard.DoesNotExist:
-            return Response(
-                {"error": "Storyboard not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
+        board, err = self._get_owner_board(request, token)
+        if err:
+            return err
+
+        update_fields = []
         if "title" in request.data:
             board.title = request.data["title"]
+            update_fields.append("title")
         if "storyboard_data" in request.data:
             board.storyboard_data = request.data["storyboard_data"]
-        
-        board.save(update_fields=["title", "storyboard_data"])
-        
+            update_fields.append("storyboard_data")
+        if "is_public" in request.data:
+            board.is_public = bool(request.data["is_public"])
+            update_fields.append("is_public")
+
+        if update_fields:
+            board.save(update_fields=update_fields)
+
         return Response({
             "token": board.token,
             "title": board.title,
             "share_url": f"https://outfi.ai/storyboard/{board.token}",
             "storyboard_data": board.storyboard_data,
+            "is_public": board.is_public,
         })
 
 

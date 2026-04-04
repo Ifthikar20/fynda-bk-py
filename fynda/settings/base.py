@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "blog",
     "mobile",
     "feed",
+    "payments",
 ]
 
 
@@ -145,6 +146,11 @@ if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
         },
     }
     MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
+
+# ─── Stripe / Apple Pay ──────────────────────────────
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # REST Framework settings
 REST_FRAMEWORK = {

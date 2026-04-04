@@ -115,7 +115,8 @@ class DailyImageQuotaThrottle(SimpleRateThrottle):
     """
     scope = "image_daily"
 
-    USER_DAILY_LIMIT = 100
+    FREE_DAILY_LIMIT = 5
+    PREMIUM_DAILY_LIMIT = 50
 
     def allow_request(self, request, view):
         from mobile.models import APIUsageLog
@@ -125,18 +126,37 @@ class DailyImageQuotaThrottle(SimpleRateThrottle):
             self.message = "Please sign in to use image search."
             return False
 
+        # Premium users get higher limits
+        limit = self._get_limit(request.user)
+
         # Count all usage for THIS USER today, regardless of IP
         count = APIUsageLog.get_daily_count(
             user=request.user, endpoint="image_search"
         )
 
-        if count >= self.USER_DAILY_LIMIT:
-            self.message = (
-                f"Daily image search limit reached ({self.USER_DAILY_LIMIT}/day). "
-                "Try again tomorrow."
-            )
+        if count >= limit:
+            if limit == self.FREE_DAILY_LIMIT:
+                self.message = (
+                    f"Free daily limit reached ({self.FREE_DAILY_LIMIT}/day). "
+                    "Upgrade to Premium for {0}/day.".format(self.PREMIUM_DAILY_LIMIT)
+                )
+            else:
+                self.message = (
+                    f"Daily image search limit reached ({limit}/day). "
+                    "Try again tomorrow."
+                )
             return False
         return True
+
+    def _get_limit(self, user):
+        from payments.models import Subscription
+        try:
+            sub = Subscription.objects.get(user=user)
+            if sub.is_premium:
+                return self.PREMIUM_DAILY_LIMIT
+        except Subscription.DoesNotExist:
+            pass
+        return self.FREE_DAILY_LIMIT
 
     def get_cache_key(self, request, view):
         return None  # Not used — we check the database directly

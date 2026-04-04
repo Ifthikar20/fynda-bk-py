@@ -27,7 +27,7 @@ class AffiliatesVendor(BaseVendorService):
     VENDOR_ID = "affiliates"
     VENDOR_NAME = "Affiliates"
     PRIORITY = 75
-    TIMEOUT = 20  # Aggregator has its own internal timeout
+    TIMEOUT = 10  # Aggregator has its own internal timeout
     
     def _load_credentials(self):
         # Import lazily to avoid circular imports

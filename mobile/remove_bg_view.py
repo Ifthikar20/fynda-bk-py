@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_DIMENSION = 1024  # Resize large images before processing
+MIN_DIMENSION = 64    # Upscale tiny images so rembg can process them
 
 
 class RemoveBackgroundView(APIView):
@@ -82,20 +83,46 @@ class RemoveBackgroundView(APIView):
         start = time.time()
 
         try:
-            # Read and optionally resize
+            # Read image
             image_data = image_file.read()
-            pil_img = PILImage.open(io.BytesIO(image_data))
+            try:
+                pil_img = PILImage.open(io.BytesIO(image_data))
+                pil_img.load()  # Force decode — catches truncated/corrupt images
+            except Exception as img_err:
+                logger.warning(f"Cannot decode image: {img_err}")
+                return Response(
+                    {"error": "Image could not be decoded. Try a different image."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            w_orig, h_orig = pil_img.size
+            logger.info(f"BG remove input: {w_orig}x{h_orig} mode={pil_img.mode}")
+
+            # Reject extremely tiny images (< 10px either dimension)
+            if w_orig < 10 or h_orig < 10:
+                return Response(
+                    {"error": "Image is too small. Please use a larger image (at least 64x64)."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             # Convert palette/grayscale to RGBA for rembg
             if pil_img.mode not in ('RGB', 'RGBA'):
                 pil_img = pil_img.convert('RGBA')
 
+            # Upscale small images so rembg has enough detail to work with
+            if max(pil_img.size) < MIN_DIMENSION:
+                scale = MIN_DIMENSION / max(pil_img.size)
+                new_w = max(int(pil_img.width * scale), MIN_DIMENSION)
+                new_h = max(int(pil_img.height * scale), MIN_DIMENSION)
+                pil_img = pil_img.resize((new_w, new_h), PILImage.LANCZOS)
+                logger.info(f"Upscaled small image {w_orig}x{h_orig} → {new_w}x{new_h}")
+
             # Resize if too large (speeds up processing significantly)
             if max(pil_img.size) > MAX_DIMENSION:
                 pil_img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), PILImage.LANCZOS)
-                logger.info(f"Resized to {pil_img.size} before bg removal")
+                logger.info(f"Downscaled to {pil_img.size} before bg removal")
 
-            # Convert to bytes for rembg
+            # Convert to PNG bytes for rembg
             input_buf = io.BytesIO()
             pil_img.save(input_buf, format='PNG')
             input_bytes = input_buf.getvalue()
@@ -130,6 +157,6 @@ class RemoveBackgroundView(APIView):
         except Exception as e:
             logger.exception(f"Background removal failed: {e}")
             return Response(
-                {"error": "Failed to process image. Please try again."},
+                {"error": "Failed to process image. Please try a larger or clearer image."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

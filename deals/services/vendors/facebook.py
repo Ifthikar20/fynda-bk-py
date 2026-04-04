@@ -74,13 +74,14 @@ class FacebookVendor(BaseVendorService):
     VENDOR_ID = "facebook"
     VENDOR_NAME = "Facebook Marketplace"
     PRIORITY = 50
-    TIMEOUT = 15
+    TIMEOUT = 8
 
     API_HOST = "facebook-marketplace.p.rapidapi.com"
 
     # User location (set by orchestrator before search)
     _user_lat: Optional[float] = None
     _user_lng: Optional[float] = None
+    _max_distance_miles: Optional[float] = None
 
     def _load_credentials(self):
         self.api_key = os.getenv("RAPIDAPI_KEY")
@@ -90,10 +91,25 @@ class FacebookVendor(BaseVendorService):
     def is_configured(self) -> bool:
         return bool(self.api_key)
 
-    def set_user_location(self, lat: float, lng: float):
-        """Set user's current location for distance calculation."""
+    def set_user_location(self, lat: float, lng: float, max_distance: Optional[float] = None):
+        """Set user's current location for distance calculation and filtering."""
         self._user_lat = lat
         self._user_lng = lng
+        self._max_distance_miles = max_distance
+
+    def _within_distance(self, features: list) -> bool:
+        """Check if item's distance (from features list) is within max_distance."""
+        if self._max_distance_miles is None:
+            return True
+        for feat in features:
+            if isinstance(feat, str) and feat.startswith("distance:"):
+                try:
+                    dist = float(feat.split(":", 1)[1])
+                    return dist <= self._max_distance_miles
+                except (ValueError, IndexError):
+                    pass
+        # No distance info — include by default
+        return True
 
     # ── BaseVendorService._do_search implementation ─────────────
 
@@ -110,6 +126,19 @@ class FacebookVendor(BaseVendorService):
             logger.info(
                 f"Facebook clothing filter: {len(raw_results)} raw → {len(filtered)} clothing items"
             )
+
+            # Filter by max distance if set
+            if self._max_distance_miles is not None:
+                before = len(filtered)
+                filtered = [
+                    r for r in filtered
+                    if self._within_distance(r.features)
+                ]
+                logger.info(
+                    f"Facebook distance filter ({self._max_distance_miles}mi): "
+                    f"{before} → {len(filtered)} items"
+                )
+
             return filtered[:limit]
         except Exception as e:
             logger.warning(f"Facebook Marketplace API error: {e}")

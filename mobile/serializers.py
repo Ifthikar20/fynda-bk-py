@@ -72,6 +72,16 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             "default_sort",
             "show_sold_items",
             "preferred_sources",
+            # Location
+            "default_latitude",
+            "default_longitude",
+            "default_location_name",
+            "max_distance_miles",
+            # Style
+            "preferred_gender",
+            "preferred_sizes",
+            "preferred_styles",
+            # Privacy
             "save_search_history",
             "anonymous_analytics",
             "updated_at",
@@ -297,6 +307,9 @@ class MobileSearchSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
     )
+    latitude = serializers.FloatField(required=False)
+    longitude = serializers.FloatField(required=False)
+    max_distance = serializers.IntegerField(required=False, min_value=1, max_value=500)
 
     def validate_query(self, value):
         """Sanitise the search query."""

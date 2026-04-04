@@ -150,7 +150,32 @@ class UserPreferences(models.Model):
     default_sort = models.CharField(max_length=20, default="relevance")
     show_sold_items = models.BooleanField(default=False)
     preferred_sources = models.JSONField(default=list, blank=True)
-    
+
+    # Location preferences
+    default_latitude = models.FloatField(null=True, blank=True, help_text="Saved home latitude")
+    default_longitude = models.FloatField(null=True, blank=True, help_text="Saved home longitude")
+    default_location_name = models.CharField(max_length=255, blank=True, default="", help_text="e.g. New York, NY")
+    max_distance_miles = models.PositiveIntegerField(
+        default=25,
+        help_text="Max distance in miles for local marketplace results"
+    )
+
+    # Style preferences
+    preferred_gender = models.CharField(
+        max_length=10,
+        blank=True,
+        default="",
+        help_text="men, women, or unisex"
+    )
+    preferred_sizes = models.JSONField(
+        default=list, blank=True,
+        help_text='e.g. ["S", "M", "L"] or ["8", "10"]'
+    )
+    preferred_styles = models.JSONField(
+        default=list, blank=True,
+        help_text='e.g. ["casual", "streetwear", "modest"]'
+    )
+
     # Privacy
     save_search_history = models.BooleanField(default=True)
     anonymous_analytics = models.BooleanField(default=True)

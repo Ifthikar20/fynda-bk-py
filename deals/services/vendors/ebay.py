@@ -23,7 +23,7 @@ class EbayVendor(BaseVendorService):
     VENDOR_ID = "ebay"
     VENDOR_NAME = "eBay"
     PRIORITY = 85
-    TIMEOUT = 15
+    TIMEOUT = 8
     
     AUTH_URL = "https://api.ebay.com/identity/v1/oauth2/token"
     SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
