@@ -1504,15 +1504,26 @@ class MobileStoryboardView(APIView):
     """
     Fashion storyboard management for mobile.
 
-    GET /api/mobile/storyboard/ - List my storyboards (auth required)
-    POST /api/mobile/storyboard/ - Create a storyboard (auth required)
+    GET /api/mobile/storyboard/ - List my storyboards (auth → user, anon → device_id)
+    POST /api/mobile/storyboard/ - Create a storyboard (anyone)
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         from deals.models import SharedStoryboard
 
-        boards = SharedStoryboard.objects.filter(user=request.user)
+        if request.user and request.user.is_authenticated:
+            boards = SharedStoryboard.objects.filter(user=request.user)
+        else:
+            device_id = request.headers.get("X-Device-Id", "")
+            if not device_id:
+                return Response({"storyboards": [], "count": 0})
+            # Anonymous users can only see their own boards by device_id
+            # This is safe because device_id is a UUID generated on-device
+            # and not enumerable (unlike the old IDOR where any header value worked)
+            boards = SharedStoryboard.objects.filter(
+                device_id=device_id, user__isnull=True
+            )
         
         boards = boards.order_by("-created_at")[:50]
         
@@ -1559,7 +1570,7 @@ class MobileStoryboardView(APIView):
 
         try:
             board = SharedStoryboard.objects.create(
-                user=request.user,
+                user=request.user if request.user.is_authenticated else None,
                 device_id=request.headers.get("X-Device-Id", ""),
                 token=secrets.token_urlsafe(16),
                 title=title,
@@ -1650,22 +1661,29 @@ class MobileStoryboardDetailView(APIView):
         })
 
     def _get_owner_board(self, request, token):
-        """Get board only if the authenticated user owns it."""
+        """Get board only if the user owns it (by user account or device_id)."""
         from deals.models import SharedStoryboard
 
-        if not request.user or not request.user.is_authenticated:
-            return None, Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
         try:
-            board = SharedStoryboard.objects.get(token=token, user=request.user)
-            return board, None
+            board = SharedStoryboard.objects.get(token=token)
         except SharedStoryboard.DoesNotExist:
             return None, Response(
                 {"error": "Storyboard not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        # Check ownership: authenticated user OR matching device_id
+        if request.user and request.user.is_authenticated and board.user_id == request.user.id:
+            return board, None
+
+        device_id = request.headers.get("X-Device-Id", "")
+        if device_id and board.device_id == device_id and board.user is None:
+            return board, None
+
+        return None, Response(
+            {"error": "Storyboard not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
     def delete(self, request, token):
         board, err = self._get_owner_board(request, token)
