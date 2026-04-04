@@ -1549,7 +1549,7 @@ class MobileStoryboardView(APIView):
         import secrets
 
         board_log = logging.getLogger("storyboard")
-        board_log.info(f"[STORYBOARD CREATE] user={request.user.email}")
+        board_log.info(f"[STORYBOARD CREATE] user={request.user.email if request.user.is_authenticated else 'anonymous'}")
         board_log.info(f"  request keys: {list(request.data.keys())}")
 
         storyboard_data = request.data.get("storyboard_data")
@@ -1695,7 +1695,7 @@ class MobileStoryboardDetailView(APIView):
     def put(self, request, token):
         """Update an existing storyboard (owner only)."""
         board_log = logging.getLogger("storyboard")
-        board_log.info(f"[STORYBOARD UPDATE] token={token} user={request.user.email}")
+        board_log.info(f"[STORYBOARD UPDATE] token={token} user={request.user.email if request.user.is_authenticated else 'anonymous'}")
         board_log.info(f"  request keys: {list(request.data.keys())}")
 
         board, err = self._get_owner_board(request, token)
