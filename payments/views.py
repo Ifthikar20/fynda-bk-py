@@ -410,14 +410,16 @@ def _get_limits(is_premium: bool) -> dict:
     """Return feature limits based on subscription tier."""
     if is_premium:
         return {
-            "daily_image_searches": 50,
+            "daily_image_searches": 25,
+            "biweekly_image_searches": 250,
             "daily_price_alerts": 100,
             "saved_deals_max": 1000,
             "storyboards_max": 50,
             "ad_free": True,
         }
     return {
-        "daily_image_searches": 5,
+        "daily_image_searches": 3,
+        "biweekly_image_searches": 20,
         "daily_price_alerts": 10,
         "saved_deals_max": 50,
         "storyboards_max": 5,

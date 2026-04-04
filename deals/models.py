@@ -24,6 +24,10 @@ class SharedStoryboard(models.Model):
     # Storyboard data stored as JSON
     title = models.CharField(max_length=255, default='Fashion Storyboard')
     storyboard_data = models.JSONField(default=dict)
+
+    # S3 snapshot image (permanent path, not signed URL)
+    snapshot_path = models.CharField(max_length=500, blank=True, default='',
+        help_text='S3 object key e.g. storyboard/abc123.jpg')
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

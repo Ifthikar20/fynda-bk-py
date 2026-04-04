@@ -52,17 +52,18 @@ RUN python manage.py collectstatic --noinput 2>/dev/null || true
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f -H "X-Forwarded-Proto: https" http://localhost:8000/api/health/ || exit 1
 
-# Optimized gunicorn settings for t3.small (2 vCPU, 2GB RAM)
-# Workers = 2 * CPU + 1, but capped for memory
-CMD ["gunicorn", "fynda.wsgi:application", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "2", \
-     "--threads", "2", \
-     "--worker-class", "gthread", \
-     "--worker-tmp-dir", "/dev/shm", \
-     "--timeout", "120", \
-     "--keep-alive", "5", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "50", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+# Optimized gunicorn for t3.micro/small (1-2 vCPU, 1-2GB RAM)
+# Lean config: 2 workers × 2 threads = 4 concurrent requests
+# Set GUNICORN_WORKERS=1 in env to further reduce for t3.micro
+CMD ["sh", "-c", "gunicorn fynda.wsgi:application \
+     --bind 0.0.0.0:8000 \
+     --workers ${GUNICORN_WORKERS:-2} \
+     --threads 2 \
+     --worker-class gthread \
+     --worker-tmp-dir /dev/shm \
+     --timeout 120 \
+     --keep-alive 5 \
+     --max-requests 1000 \
+     --max-requests-jitter 50 \
+     --access-logfile - \
+     --error-logfile -"]

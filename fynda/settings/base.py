@@ -181,6 +181,7 @@ REST_FRAMEWORK = {
         "remove_bg_anon": "10/hour",
         "remove_bg_user": "30/hour",
         "image_burst": "5/minute",
+        "image_daily": "100/day",  # Placeholder — actual limits enforced in throttle class
     },
     "EXCEPTION_HANDLER": "core.exceptions.handlers.fynda_exception_handler",
 }
@@ -289,6 +290,11 @@ LOGGING = {
             "propagate": False,
         },
         "image_search": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "storyboard": {
             "handlers": ["console"],
             "level": "DEBUG",
             "propagate": False,

@@ -146,47 +146,104 @@
 ## YOUR PART — Pending
 
 ### Migrations
-- [x] `mobile/0003_add_location_style_preferences` — already applied
-- [ ] Run `python manage.py migrate` to apply `payments/0001_initial`
+- [x] `mobile/0003_add_location_style_preferences` — applied
+- [x] `payments/0001_initial` — applied
 
 ### Stripe Setup
-- [ ] Create Stripe account at https://stripe.com
-- [ ] Get API keys and add to `.env`:
-  ```
-  STRIPE_PUBLISHABLE_KEY=pk_live_...
-  STRIPE_SECRET_KEY=sk_live_...
-  STRIPE_WEBHOOK_SECRET=whsec_...
-  ```
-- [ ] Set up Stripe webhook endpoint pointing to `https://outfi.ai/api/v1/payments/webhook/`
-- [ ] Configure webhook events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`
+- [x] Stripe sandbox account created (acct_1TILuq3I87vPzCFd)
+- [x] API keys added to `.env` (pk_test, sk_test, whsec)
+- [x] Stripe CLI installed + webhook forwarding tested
+- [ ] Set up production Stripe webhook → `https://outfi.ai/api/v1/payments/webhook/`
 - [ ] Enable Apple Pay in Stripe Dashboard → Settings → Payment Methods
+- [ ] Switch to live keys (`pk_live_...` / `sk_live_...`) when going to production
 
 ### Flutter / Mobile App
-- [ ] Add `flutter_stripe` package for Apple Pay sheet integration
-- [ ] Build subscription/upgrade screen (show plans, trigger Apple Pay)
-- [ ] Call `POST /payments/subscribe/` → use `client_secret` with Stripe SDK
-- [ ] Handle payment success → refresh subscription status
-- [ ] Add `POST /payments/restore/` call on app launch for returning users
-- [ ] Add location/style preference UI in settings screen
-- [ ] Add distance filter UI for marketplace results
-- [ ] Update storyboard flows — add share button, handle `is_public` toggle
+- [x] `flutter_stripe` package added
+- [x] Stripe initialized in `main.dart`
+- [x] Payment service + paywall screen + `/premium` route
+- [x] "Outfi Premium" card + restore purchase in profile
+- [x] **Preferences screen** (`/preferences`) — location detect, max distance slider, gender, sizes, styles
+- [x] **Distance filter** in search results — chip row with 10/25/50/100 mi options
+- [x] **Storyboard is_public toggle** in share screen — switch between public/private
+- [x] **Storyboard model** updated with `isPublic`, `viewCount` fields
+- [x] **StoryboardService.togglePublic()** method added
+- [x] **Fashion Timeline screen** (`/timeline`) — weekly + monthly views
+- [x] Timeline entry add (title + mood), delete, share as storyboard link
+- [x] Profile screen updated: Fashion Timeline + Preferences rows added
+- [x] Router: `/preferences`, `/timeline` routes added
+- [x] DealsBloc + DealService accept `maxDistance` parameter
+- [ ] **Design custom paywall UI** — waiting for design direction
 - [ ] Flutter submodule update
 
+### Fashion Timeline (just implemented)
+**Backend:**
+- [x] `FashionTimelineEntry` model — user, date, title, image_url, outfit_data, mood
+- [x] `GET /api/v1/mobile/timeline/?month=2026-04` — list entries for month
+- [x] `POST /api/v1/mobile/timeline/` — add/update day's outfit
+- [x] `DELETE /api/v1/mobile/timeline/<date>/` — remove entry
+- [x] `POST /api/v1/mobile/timeline/share/` — generate shareable storyboard from date range
+- [x] Migration: `mobile/0004_add_fashion_timeline`
+**Flutter:**
+- [x] Week view — 7-day list with outfit thumbnails, mood tags, tap to add
+- [x] Month view — calendar grid with outfit indicators
+- [x] Share button — creates storyboard link for the week/month
+- [x] Add outfit sheet — title input + mood picker (cozy/bold/minimal/casual/formal/sporty/vintage/street)
+
+### Gemini API Quota System (just implemented)
+- [x] Per-user daily + bi-weekly limits aligned with $4.99/2wk subscription
+- [x] Free: 3/day, 20/bi-week | Premium: 25/day, 250/bi-week
+- [x] Separate `gemini_vision` endpoint tracking (cost: ~$0.0025/call)
+- [x] Usage logged AFTER image validation (no wasted quota on bad uploads)
+- [x] `GET /api/v1/mobile/usage/` — returns remaining quota + cost stats
+- [x] Proactive logging: `QUOTA LOW` at ≤2 daily or ≤10 bi-weekly remaining
+- [x] `QUOTA BLOCK` logged with user email, counts, and cost on limit hit
+- [x] `APIUsageLog.get_period_stats()` — bi-weekly cost/count aggregation
+- [x] `APIUsageLog.get_user_summary()` — full per-user dashboard data
+- [x] Premium margin: 87% ($4.99 revenue, max $0.62 Gemini cost per 2wk)
+
+### Server Downsizing (just implemented)
+- [x] Gunicorn workers configurable via `GUNICORN_WORKERS` env (default: 2, set 1 for micro)
+- [x] Celery concurrency reduced: 2 → 1
+- [x] Redis: maxmemory 128MB + LRU eviction, AOF disabled (faster, less disk)
+- [x] Postgres tuned: shared_buffers=64MB, work_mem=4MB, max_connections=30
+- [x] Nginx: 1 worker, 512 connections (was auto/1024)
+- [x] All containers have memory limits:
+  - API: 512MB | Celery: 384MB | ML: 512MB | Postgres: 256MB | Redis: 192MB
+- [x] ML healthcheck interval increased to 60s (less overhead)
+
+### Migrations to Run
+- [x] `mobile/0004_add_fashion_timeline` — applied
+- [ ] `deals/0006_add_snapshot_path` — run `python manage.py migrate`
+
+### S3 Setup
+- [ ] Add bucket policy for public reads on `storyboard/` prefix (see instructions above)
+
 ### Apple App Store
-- [ ] Register app for Apple Pay merchant ID in Apple Developer portal
+- [ ] Register Apple Pay merchant ID (`merchant.ai.outfi.app`)
 - [ ] Add Apple Pay capability in Xcode
 - [ ] Configure merchant ID in Stripe Dashboard
 
+### Stripe (Production)
+- [ ] Set up production webhook → `https://outfi.ai/api/v1/payments/webhook/`
+- [ ] Enable Apple Pay in Stripe Dashboard
+- [ ] Switch to live keys
+
 ### Testing
-- [ ] Test full Apple Pay flow with Stripe test keys (`pk_test_...` / `sk_test_...`)
-- [ ] Test webhook handling with `stripe listen --forward-to localhost:8000/api/v1/payments/webhook/`
-- [ ] Test premium enforcement — verify free users hit 5/day limit, premium get 50/day
-- [ ] Test storyboard sharing — public view by token, private board returns 404
-- [ ] Test background remover with small images (< 64px)
-- [ ] Test search with saved location preferences
+- [x] PaymentIntent creation tested ($4.99 + $9.99)
+- [x] Storyboard sharing tested (7 tests passed)
+- [ ] Test full Apple Pay on real iPhone
+- [ ] Test Gemini quota: verify free user hits 3/day, premium gets 25/day
+- [ ] Test `/usage/` endpoint returns correct remaining counts
+- [ ] Test Fashion Timeline, preferences, distance filter
+- [ ] Load test with downsized config — verify stability under traffic
 
 ### Future Features
-- [ ] Onboarding flow — questionnaire for style/size/gender/location
-- [ ] Push notification delivery (FCM/APNs integration)
+- [ ] **Design custom paywall UI** — waiting for design direction
+- [ ] Onboarding flow — style/size/gender/location questionnaire
+- [ ] Push notification delivery (FCM/APNs)
 - [ ] Price alert background checker (Celery task)
-- [ ] Stripe Customer Portal for self-service billing management
+- [ ] Cancel subscription UI in profile screen
+- [ ] Fashion Timeline: image upload per day (camera/gallery)
+- [ ] Fashion Timeline: outfit-of-the-week highlights
+- [ ] Consider removing ML service entirely (Gemini replaces CLIP/BLIP)
+- [ ] CloudFront CDN for S3 images

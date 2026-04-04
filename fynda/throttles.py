@@ -103,63 +103,99 @@ class ImageBurstThrottle(SimpleRateThrottle):
 
 class DailyImageQuotaThrottle(SimpleRateThrottle):
     """
-    Daily quota for image search endpoints — per USER ACCOUNT.
-
-    We pay per usage regardless of IP, so tracking must be per login.
-    Anonymous users are blocked entirely from expensive endpoints —
-    they must sign in first.
+    Per-user daily + bi-weekly quota for Gemini image search.
 
     Limits:
-        - Anonymous: BLOCKED (must login)
-        - Authenticated: 100 image searches/day per account
+        Free users:    3/day,   20/bi-week
+        Premium users: 25/day,  250/bi-week ($4.99/2wk ≈ $0.02/search budget)
+
+    Gemini 2.5 Flash costs ~$0.0025/call.
+    Premium 2-week revenue: $4.99 → budget ~250 calls ($0.625 cost, 87% margin).
+    Free users get enough to try the feature but must upgrade for regular use.
     """
     scope = "image_daily"
+    rate = "100/day"  # Placeholder — actual limits enforced in allow_request
 
-    FREE_DAILY_LIMIT = 5
-    PREMIUM_DAILY_LIMIT = 50
+    # Daily caps
+    FREE_DAILY_LIMIT = 3
+    PREMIUM_DAILY_LIMIT = 25
+
+    # Bi-weekly caps (aligned with $4.99/2-week subscription)
+    FREE_BIWEEKLY_LIMIT = 20
+    PREMIUM_BIWEEKLY_LIMIT = 250
 
     def allow_request(self, request, view):
         from mobile.models import APIUsageLog
+        import logging
 
-        # Anonymous users cannot use image search — require login
+        logger = logging.getLogger("image_search")
+
+        # Anonymous users cannot use image search
         if not request.user or not request.user.is_authenticated:
             self.message = "Please sign in to use image search."
             return False
 
-        # Premium users get higher limits
-        limit = self._get_limit(request.user)
+        is_premium = self._is_premium(request.user)
+        daily_limit = self.PREMIUM_DAILY_LIMIT if is_premium else self.FREE_DAILY_LIMIT
+        biweekly_limit = self.PREMIUM_BIWEEKLY_LIMIT if is_premium else self.FREE_BIWEEKLY_LIMIT
 
-        # Count all usage for THIS USER today, regardless of IP
-        count = APIUsageLog.get_daily_count(
+        # Check daily count
+        daily_count = APIUsageLog.get_daily_count(
             user=request.user, endpoint="image_search"
         )
 
-        if count >= limit:
-            if limit == self.FREE_DAILY_LIMIT:
-                self.message = (
-                    f"Free daily limit reached ({self.FREE_DAILY_LIMIT}/day). "
-                    "Upgrade to Premium for {0}/day.".format(self.PREMIUM_DAILY_LIMIT)
-                )
-            else:
-                self.message = (
-                    f"Daily image search limit reached ({limit}/day). "
-                    "Try again tomorrow."
-                )
+        if daily_count >= daily_limit:
+            remaining_msg = f" Upgrade to Premium for {self.PREMIUM_DAILY_LIMIT}/day." if not is_premium else ""
+            self.message = (
+                f"Daily limit reached ({daily_limit}/day).{remaining_msg} "
+                "Try again tomorrow."
+            )
+            logger.warning(
+                f"QUOTA BLOCK (daily): user={request.user.email} "
+                f"count={daily_count}/{daily_limit} premium={is_premium}"
+            )
             return False
+
+        # Check bi-weekly count (cost control aligned with subscription)
+        period_stats = APIUsageLog.get_period_stats(
+            request.user, days=14, endpoint="image_search"
+        )
+        biweekly_count = period_stats["count"]
+
+        if biweekly_count >= biweekly_limit:
+            self.message = (
+                f"Bi-weekly limit reached ({biweekly_limit} searches per 2 weeks). "
+                "Your quota resets soon."
+            )
+            logger.warning(
+                f"QUOTA BLOCK (biweekly): user={request.user.email} "
+                f"count={biweekly_count}/{biweekly_limit} "
+                f"cost=${period_stats['total_cost']}"
+            )
+            return False
+
+        # Log remaining quota for proactive monitoring
+        daily_remaining = daily_limit - daily_count
+        biweekly_remaining = biweekly_limit - biweekly_count
+        if daily_remaining <= 2 or biweekly_remaining <= 10:
+            logger.info(
+                f"QUOTA LOW: user={request.user.email} "
+                f"daily={daily_count}/{daily_limit} "
+                f"biweekly={biweekly_count}/{biweekly_limit} "
+                f"cost=${period_stats['total_cost']}"
+            )
+
         return True
 
-    def _get_limit(self, user):
+    def _is_premium(self, user):
         from payments.models import Subscription
         try:
-            sub = Subscription.objects.get(user=user)
-            if sub.is_premium:
-                return self.PREMIUM_DAILY_LIMIT
+            return Subscription.objects.get(user=user).is_premium
         except Subscription.DoesNotExist:
-            pass
-        return self.FREE_DAILY_LIMIT
+            return False
 
     def get_cache_key(self, request, view):
-        return None  # Not used — we check the database directly
+        return None
 
     def wait(self):
         """Seconds until midnight UTC."""

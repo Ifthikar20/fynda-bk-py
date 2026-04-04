@@ -38,6 +38,12 @@ from .views import (
     StoryboardImageUploadView,
     # Featured
     MobileFeaturedView,
+    # Usage
+    UsageStatsView,
+    # Timeline
+    FashionTimelineView,
+    FashionTimelineDetailView,
+    FashionTimelineShareView,
 )
 from .remove_bg_view import RemoveBackgroundView
 
@@ -67,6 +73,7 @@ urlpatterns = [
     # User Preferences
     # ============================================
     path("preferences/", PreferencesView.as_view(), name="preferences"),
+    path("usage/", UsageStatsView.as_view(), name="usage-stats"),
     
     # ============================================
     # Offline Sync
@@ -104,6 +111,13 @@ urlpatterns = [
     # Featured Content
     # ============================================
     path("featured/", MobileFeaturedView.as_view(), name="featured"),
+
+    # ============================================
+    # Fashion Timeline
+    # ============================================
+    path("timeline/", FashionTimelineView.as_view(), name="timeline"),
+    path("timeline/share/", FashionTimelineShareView.as_view(), name="timeline-share"),
+    path("timeline/<str:date_str>/", FashionTimelineDetailView.as_view(), name="timeline-detail"),
     
     # ============================================
     # Tools

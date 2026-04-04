@@ -278,6 +278,44 @@ class PriceAlert(models.Model):
         return False
 
 
+class FashionTimelineEntry(models.Model):
+    """
+    A single day's outfit in the Fashion Timeline.
+
+    Users log what they wore each day. The timeline is shareable
+    as a weekly or monthly calendar view.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="timeline_entries",
+    )
+    date = models.DateField(help_text="The day this outfit was worn")
+    title = models.CharField(max_length=200, blank=True, default="")
+    image_url = models.URLField(max_length=1000, blank=True, default="")
+    outfit_data = models.JSONField(
+        default=dict, blank=True,
+        help_text='{"items": [{"title": "...", "image": "...", "source": "..."}], "notes": "..."}'
+    )
+    mood = models.CharField(max_length=50, blank=True, default="", help_text="e.g. cozy, bold, minimal")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "mobile_fashion_timeline"
+        unique_together = [["user", "date"]]
+        ordering = ["-date"]
+        indexes = [
+            models.Index(fields=["user", "date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} — {self.date} — {self.title or 'Outfit'}"
+
+
 class MobileSession(models.Model):
     """
     Track mobile app sessions for analytics and security.
@@ -332,6 +370,7 @@ class APIUsageLog(models.Model):
     """
     ENDPOINT_CHOICES = [
         ("image_search", "Image Search"),
+        ("gemini_vision", "Gemini Vision"),
         ("openai_vision", "OpenAI Vision"),
         ("remove_bg", "Background Removal"),
         ("storyboard_upload", "Storyboard Image Upload"),
@@ -373,14 +412,59 @@ class APIUsageLog(models.Model):
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         qs = cls.objects.filter(created_at__gte=today_start)
         if user and user.is_authenticated:
-            # Always track by user account — IP doesn't matter
             qs = qs.filter(user=user)
         elif ip_address:
-            # Fallback for anonymous (shouldn't reach here for image search)
             qs = qs.filter(ip_address=ip_address)
         if endpoint:
             qs = qs.filter(endpoint=endpoint)
         return qs.count()
+
+    @classmethod
+    def get_period_stats(cls, user, days=14, endpoint=None):
+        """
+        Get usage stats for a billing period (default: 14 days for biweekly sub).
+
+        Returns: { count, total_cost, daily_avg }
+        """
+        from django.utils import timezone
+        from django.db.models import Sum, Count
+        period_start = timezone.now() - timezone.timedelta(days=days)
+        qs = cls.objects.filter(user=user, created_at__gte=period_start)
+        if endpoint:
+            qs = qs.filter(endpoint=endpoint)
+        agg = qs.aggregate(
+            count=Count("id"),
+            total_cost=Sum("estimated_cost"),
+        )
+        count = agg["count"] or 0
+        total_cost = float(agg["total_cost"] or 0)
+        return {
+            "count": count,
+            "total_cost": round(total_cost, 4),
+            "daily_avg": round(count / max(days, 1), 1),
+        }
+
+    @classmethod
+    def get_user_summary(cls, user):
+        """Full usage summary for a user — for profile/admin display."""
+        from django.utils import timezone
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+        today_qs = cls.objects.filter(user=user, created_at__gte=today_start)
+        today_image = today_qs.filter(endpoint="image_search").count()
+        today_gemini = today_qs.filter(endpoint="gemini_vision").count()
+        today_bg = today_qs.filter(endpoint="remove_bg").count()
+
+        period_stats = cls.get_period_stats(user, days=14)
+
+        return {
+            "today": {
+                "image_search": today_image,
+                "gemini_vision": today_gemini,
+                "remove_bg": today_bg,
+            },
+            "billing_period": period_stats,
+        }
 
     @classmethod
     def log_usage(cls, request, endpoint, estimated_cost=0):

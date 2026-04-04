@@ -355,6 +355,51 @@ class PreferencesView(APIView):
         return Response(serializer.data)
 
 
+class UsageStatsView(APIView):
+    """
+    GET /api/mobile/usage/ — per-user API usage stats + remaining quota.
+
+    Returns daily counts, bi-weekly totals, costs, and limits
+    so the app can show "X searches remaining today".
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from mobile.models import APIUsageLog
+        from payments.models import Subscription
+
+        summary = APIUsageLog.get_user_summary(request.user)
+
+        # Determine limits based on subscription
+        is_premium = False
+        try:
+            is_premium = Subscription.objects.get(user=request.user).is_premium
+        except Subscription.DoesNotExist:
+            pass
+
+        from fynda.throttles import DailyImageQuotaThrottle as Q
+        daily_limit = Q.PREMIUM_DAILY_LIMIT if is_premium else Q.FREE_DAILY_LIMIT
+        biweekly_limit = Q.PREMIUM_BIWEEKLY_LIMIT if is_premium else Q.FREE_BIWEEKLY_LIMIT
+
+        today_used = summary["today"]["image_search"]
+        biweekly_used = summary["billing_period"]["count"]
+
+        return Response({
+            "is_premium": is_premium,
+            "today": {
+                **summary["today"],
+                "image_search_limit": daily_limit,
+                "image_search_remaining": max(0, daily_limit - today_used),
+            },
+            "billing_period": {
+                **summary["billing_period"],
+                "limit": biweekly_limit,
+                "remaining": max(0, biweekly_limit - biweekly_used),
+                "period_days": 14,
+            },
+        })
+
+
 # ============================================
 # Sync
 # ============================================
@@ -1099,11 +1144,8 @@ class MobileImageUploadView(APIView):
         # Dedicated logger for tracing the full image search pipeline
         img_log = logging.getLogger("image_search")
 
-        # Log usage for daily quota tracking (Gemini ~$0.0025/image)
-        APIUsageLog.log_usage(request, "image_search", estimated_cost=0.0025)
-
         from django.conf import settings
-        
+
         if 'image' not in request.FILES:
             return Response(
                 {"error": "No image file provided. Use 'image' field."},
@@ -1147,6 +1189,10 @@ class MobileImageUploadView(APIView):
             gemini_key = getattr(settings, 'GEMINI_API_KEY', '')
             if gemini_key:
                 img_log.info("[STEP 1] GEMINI VISION — analyzing image...")
+                # Log Gemini API call (billed ~$0.0025/call for gemini-2.5-flash)
+                APIUsageLog.log_usage(request, "gemini_vision", estimated_cost=0.0025)
+                # Also log as image_search for daily quota tracking
+                APIUsageLog.log_usage(request, "image_search", estimated_cost=0.0025)
                 try:
                     from deals.services.gemini_vision_service import gemini_vision
                     result = gemini_vision.analyze_image(image_base64)
@@ -1491,8 +1537,13 @@ class MobileStoryboardView(APIView):
         from datetime import timedelta
         import secrets
 
+        board_log = logging.getLogger("storyboard")
+        board_log.info(f"[STORYBOARD CREATE] user={request.user.email}")
+        board_log.info(f"  request keys: {list(request.data.keys())}")
+
         storyboard_data = request.data.get("storyboard_data")
         if not storyboard_data:
+            board_log.warning("  REJECTED: storyboard_data missing")
             return Response(
                 {"error": "storyboard_data is required"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -1500,27 +1551,53 @@ class MobileStoryboardView(APIView):
 
         title = request.data.get("title", "")
         expires_in_days = int(request.data.get("expires_in_days", 30))
+        snapshot_path = request.data.get("snapshot_path", "")
 
-        board = SharedStoryboard.objects.create(
-            user=request.user,
-            device_id=request.headers.get("X-Device-Id", ""),
-            token=secrets.token_urlsafe(16),
-            title=title,
-            storyboard_data=storyboard_data,
-            expires_at=timezone.now() + timedelta(days=expires_in_days),
-        )
-        
+        board_log.info(f"  title='{title}' snapshot_path='{snapshot_path}'")
+        board_log.info(f"  storyboard_data type={type(storyboard_data).__name__} "
+                       f"keys={list(storyboard_data.keys()) if isinstance(storyboard_data, dict) else 'N/A'}")
+
+        try:
+            board = SharedStoryboard.objects.create(
+                user=request.user,
+                device_id=request.headers.get("X-Device-Id", ""),
+                token=secrets.token_urlsafe(16),
+                title=title,
+                storyboard_data=storyboard_data,
+                snapshot_path=snapshot_path,
+                expires_at=timezone.now() + timedelta(days=expires_in_days),
+            )
+            board_log.info(f"  SAVED: token={board.token} id={board.id}")
+        except Exception as e:
+            board_log.exception(f"  SAVE FAILED: {e}")
+            return Response(
+                {"error": f"Failed to save storyboard: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response(
             {
                 "token": board.token,
                 "title": board.title,
                 "share_url": f"https://outfi.ai/storyboard/{board.token}",
+                "snapshot_url": self._snapshot_url(board),
                 "storyboard_data": board.storyboard_data,
                 "created_at": board.created_at.isoformat(),
                 "expires_at": board.expires_at.isoformat(),
             },
             status=status.HTTP_201_CREATED
         )
+
+    @staticmethod
+    def _snapshot_url(board):
+        if not board.snapshot_path:
+            return ""
+        from django.conf import settings as s
+        bucket = getattr(s, 'AWS_STORAGE_BUCKET_NAME', '')
+        region = getattr(s, 'AWS_S3_REGION_NAME', 'us-east-1')
+        if bucket:
+            return f"https://{bucket}.s3.{region}.amazonaws.com/{board.snapshot_path}"
+        return ""
 
 
 class MobileStoryboardDetailView(APIView):
@@ -1599,8 +1676,13 @@ class MobileStoryboardDetailView(APIView):
 
     def put(self, request, token):
         """Update an existing storyboard (owner only)."""
+        board_log = logging.getLogger("storyboard")
+        board_log.info(f"[STORYBOARD UPDATE] token={token} user={request.user.email}")
+        board_log.info(f"  request keys: {list(request.data.keys())}")
+
         board, err = self._get_owner_board(request, token)
         if err:
+            board_log.warning(f"  REJECTED: board not found or not owner")
             return err
 
         update_fields = []
@@ -1757,6 +1839,176 @@ class MobileFeaturedView(APIView):
 
 
 # ============================================
+# Fashion Timeline
+# ============================================
+
+class FashionTimelineView(APIView):
+    """
+    GET  /api/mobile/timeline/?month=2026-04  — list entries for month
+    POST /api/mobile/timeline/                — add/update a day's outfit
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import FashionTimelineEntry
+        from datetime import date
+
+        month_str = request.query_params.get("month", "")
+        if month_str:
+            try:
+                year, month = month_str.split("-")
+                start = date(int(year), int(month), 1)
+                if int(month) == 12:
+                    end = date(int(year) + 1, 1, 1)
+                else:
+                    end = date(int(year), int(month) + 1, 1)
+            except (ValueError, IndexError):
+                start = date.today().replace(day=1)
+                end = (start.replace(month=start.month + 1) if start.month < 12
+                       else start.replace(year=start.year + 1, month=1))
+        else:
+            start = date.today().replace(day=1)
+            end = (start.replace(month=start.month + 1) if start.month < 12
+                   else start.replace(year=start.year + 1, month=1))
+
+        entries = FashionTimelineEntry.objects.filter(
+            user=request.user,
+            date__gte=start,
+            date__lt=end,
+        )
+
+        return Response({
+            "month": start.strftime("%Y-%m"),
+            "entries": [
+                {
+                    "id": str(e.id),
+                    "date": e.date.isoformat(),
+                    "title": e.title,
+                    "image_url": e.image_url,
+                    "outfit_data": e.outfit_data,
+                    "mood": e.mood,
+                }
+                for e in entries
+            ],
+        })
+
+    def post(self, request):
+        from .models import FashionTimelineEntry
+        from datetime import date as date_cls
+
+        date_str = request.data.get("date")
+        if not date_str:
+            return Response({"error": "date is required (YYYY-MM-DD)"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            entry_date = date_cls.fromisoformat(date_str)
+        except ValueError:
+            return Response({"error": "Invalid date format"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        entry, created = FashionTimelineEntry.objects.update_or_create(
+            user=request.user,
+            date=entry_date,
+            defaults={
+                "title": request.data.get("title", ""),
+                "image_url": request.data.get("image_url", ""),
+                "outfit_data": request.data.get("outfit_data", {}),
+                "mood": request.data.get("mood", ""),
+            },
+        )
+
+        return Response({
+            "id": str(entry.id),
+            "date": entry.date.isoformat(),
+            "title": entry.title,
+            "image_url": entry.image_url,
+            "outfit_data": entry.outfit_data,
+            "mood": entry.mood,
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class FashionTimelineDetailView(APIView):
+    """DELETE /api/mobile/timeline/<date>/ — remove an entry."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, date_str):
+        from .models import FashionTimelineEntry
+        deleted, _ = FashionTimelineEntry.objects.filter(
+            user=request.user, date=date_str
+        ).delete()
+        if not deleted:
+            return Response({"error": "Entry not found"},
+                            status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FashionTimelineShareView(APIView):
+    """
+    POST /api/mobile/timeline/share/ — generate a shareable storyboard from timeline.
+
+    Takes a date range and creates a SharedStoryboard with the outfit calendar.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .models import FashionTimelineEntry
+        from deals.models import SharedStoryboard
+        from datetime import date as date_cls
+        import secrets
+
+        start_str = request.data.get("start_date")
+        end_str = request.data.get("end_date")
+        if not start_str or not end_str:
+            return Response({"error": "start_date and end_date required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            start = date_cls.fromisoformat(start_str)
+            end = date_cls.fromisoformat(end_str)
+        except ValueError:
+            return Response({"error": "Invalid date format"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        entries = FashionTimelineEntry.objects.filter(
+            user=request.user,
+            date__gte=start,
+            date__lte=end,
+        )
+
+        timeline_data = {
+            "type": "fashion_timeline",
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+            "entries": [
+                {
+                    "date": e.date.isoformat(),
+                    "title": e.title,
+                    "image_url": e.image_url,
+                    "mood": e.mood,
+                    "outfit_data": e.outfit_data,
+                }
+                for e in entries
+            ],
+        }
+
+        from datetime import timedelta
+        board = SharedStoryboard.objects.create(
+            user=request.user,
+            token=secrets.token_urlsafe(16),
+            title=f"My Fashion Timeline — {start.strftime('%b %d')} to {end.strftime('%b %d, %Y')}",
+            storyboard_data=timeline_data,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+
+        return Response({
+            "token": board.token,
+            "share_url": f"https://outfi.ai/storyboard/{board.token}",
+            "title": board.title,
+            "entries_count": entries.count(),
+        }, status=status.HTTP_201_CREATED)
+
+
+# ============================================
 # Storyboard Image Upload (S3)
 # ============================================
 
@@ -1837,16 +2089,28 @@ class StoryboardImageUploadView(APIView):
             filename = f"storyboard/{unique_id}.jpg"
 
             # Save to storage (S3 or local depending on config)
-            saved_path = default_storage.save(filename, ContentFile(buffer.read()))
+            content = ContentFile(buffer.read())
+            saved_path = default_storage.save(filename, content)
 
-            # Generate URL
-            image_url = default_storage.url(saved_path)
+            # Build a permanent (non-signed) URL for shared images.
+            # Signed URLs expire after 1 hour — useless for sharing.
+            from django.conf import settings as django_settings
+            bucket = getattr(django_settings, 'AWS_STORAGE_BUCKET_NAME', '')
+            region = getattr(django_settings, 'AWS_S3_REGION_NAME', 'us-east-1')
+
+            if bucket:
+                # Permanent S3 URL (requires bucket policy to allow public reads
+                # on the storyboard/ prefix)
+                image_url = f"https://{bucket}.s3.{region}.amazonaws.com/{saved_path}"
+            else:
+                # Local dev fallback
+                image_url = default_storage.url(saved_path)
 
             return Response(
                 {
                     "url": image_url,
                     "path": saved_path,
-                    "size": buffer.tell(),
+                    "size": content.size,
                 },
                 status=status.HTTP_201_CREATED,
             )
