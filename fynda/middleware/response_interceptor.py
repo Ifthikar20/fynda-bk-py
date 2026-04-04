@@ -52,12 +52,13 @@ class ResponseInterceptor:
         "duplicate key": "Resource already exists",
     }
     
-    # Paths that must return sensitive data intact (auth tokens, etc.)
-    EXEMPT_PATHS = [
-        '/api/mobile/auth/login/',
-        '/api/mobile/auth/register/',
-        '/api/mobile/auth/oauth/',
-        '/api/auth/token/refresh/',
+    # Path prefixes that must return sensitive data intact (auth tokens, etc.)
+    EXEMPT_PREFIXES = [
+        '/auth/login',
+        '/auth/register',
+        '/auth/oauth',
+        '/auth/token/refresh',
+        '/payments/',
     ]
     
     def __init__(self, get_response):
@@ -79,7 +80,7 @@ class ResponseInterceptor:
             response = self._sanitize_error(response)
         
         # Mask sensitive data in successful responses (skip auth endpoints)
-        if response.status_code < 400 and request.path not in self.EXEMPT_PATHS:
+        if response.status_code < 400 and not any(p in request.path for p in self.EXEMPT_PREFIXES):
             response = self._mask_sensitive_data(response)
         
         # Add anti-enumeration headers
