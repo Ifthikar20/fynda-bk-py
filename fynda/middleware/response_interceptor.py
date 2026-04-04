@@ -59,6 +59,7 @@ class ResponseInterceptor:
         '/auth/oauth',
         '/auth/token/refresh',
         '/payments/',
+        '/storyboard/',
     ]
     
     def __init__(self, get_response):
