@@ -10,7 +10,7 @@ Optimized serializers for mobile with:
 
 from rest_framework import serializers
 from django.utils import timezone
-from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession
+from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession, DealAlert, DealAlertMatch
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -152,6 +152,50 @@ class PriceAlertCompactSerializer(serializers.ModelSerializer):
             "current_price",
             "status",
         ]
+
+
+class DealAlertMatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DealAlertMatch
+        fields = ["id", "deal_id", "title", "price", "image_url", "source", "url", "is_seen", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class DealAlertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DealAlert
+        fields = [
+            "id", "description", "search_query", "reference_image", "max_price",
+            "status", "is_active", "last_checked_at", "matches_count",
+            "expires_at", "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "search_query", "reference_image", "last_checked_at",
+            "matches_count", "expires_at", "created_at", "updated_at",
+        ]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        # Enforce per-user limit
+        active_count = DealAlert.objects.filter(user=user, is_active=True).count()
+        if active_count >= DealAlert.MAX_ALERTS_PER_USER:
+            raise serializers.ValidationError(
+                f"Maximum {DealAlert.MAX_ALERTS_PER_USER} active alerts allowed. "
+                "Delete or pause an existing alert first."
+            )
+        validated_data["user"] = user
+        return super().create(validated_data)
+
+
+class DealAlertDetailSerializer(DealAlertSerializer):
+    recent_matches = serializers.SerializerMethodField()
+
+    class Meta(DealAlertSerializer.Meta):
+        fields = DealAlertSerializer.Meta.fields + ["recent_matches"]
+
+    def get_recent_matches(self, obj):
+        matches = obj.matches.order_by("-created_at")[:10]
+        return DealAlertMatchSerializer(matches, many=True).data
 
 
 class SyncStateSerializer(serializers.ModelSerializer):
@@ -453,3 +497,4 @@ class HealthCheckSerializer(serializers.Serializer):
     force_update = serializers.BooleanField()
     maintenance = serializers.BooleanField()
     message = serializers.CharField(required=False, allow_blank=True)
+    features = serializers.DictField(child=serializers.BooleanField(), required=False)

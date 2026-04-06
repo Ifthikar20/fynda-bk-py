@@ -1,91 +1,101 @@
 """
 Background tasks for the deals app.
-
-Auto-indexes Amazon product images into the FAISS visual search index
-after each successful search, so the visual similarity model gradually
-learns from real product data.
 """
 import logging
-import requests
+from collections import defaultdict
 from celery import shared_task
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
-def _get_ml_url():
-    """Lazy fetch of ML_SERVICE_URL to avoid import-time settings access."""
-    from django.conf import settings
-    return getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
-
-
 @shared_task(
-    name='deals.tasks.index_products_to_faiss',
     bind=True,
-    max_retries=1,
-    soft_time_limit=120,
-    ignore_result=True,
-    rate_limit='10/m',       # Max 10 indexing batches per minute
+    max_retries=2,
+    default_retry_delay=600,
+    name="deals.check_deal_alerts",
 )
-def index_products_to_faiss(self, deals_data: list):
+def check_deal_alerts(self):
     """
-    Index a batch of product images into the ML service FAISS index.
-    
-    Called automatically after Amazon returns search results.
-    Runs in the background so it doesn't slow down the user response.
-    
-    Args:
-        deals_data: List of deal dicts with at minimum:
-                    {id, title, price, image_url, merchant_name/source}
+    Periodic task: check all active deal alerts for new matches.
+
+    Runs every 4 hours via Celery Beat.
+
+    Deduplication: groups alerts by search_query so identical queries
+    only hit marketplace APIs once. At 100K users with overlapping
+    queries, this reduces API calls from 100K to ~2K per cycle.
     """
-    if not deals_data:
-        return
-    
-    indexed = 0
-    skipped = 0
-    
-    for deal in deals_data[:15]:  # Cap at 15 products per batch
-        product_id = str(deal.get('id', ''))
-        image_url = deal.get('image_url') or deal.get('image', '')
-        
-        if not product_id or not image_url:
-            skipped += 1
-            continue
-        
+    from mobile.models import DealAlert, DealAlertMatch
+    from deals.services.orchestrator import DealOrchestrator
+
+    # Expire old alerts
+    expired = DealAlert.objects.filter(
+        is_active=True, expires_at__lt=timezone.now(),
+    ).update(is_active=False, status="disabled")
+    if expired:
+        logger.info(f"Expired {expired} deal alerts")
+
+    # Get all active alerts
+    alerts = list(DealAlert.objects.filter(is_active=True, status="active"))
+    if not alerts:
+        return {"checked": 0, "new_matches": 0, "queries": 0}
+
+    # Group alerts by normalized search_query to deduplicate
+    query_groups = defaultdict(list)
+    for alert in alerts:
+        key = (alert.search_query or alert.description).strip().lower()
+        query_groups[key].append(alert)
+
+    orchestrator = DealOrchestrator()
+    total_new = 0
+
+    for query, group_alerts in query_groups.items():
         try:
-            response = requests.post(
-                f"{_get_ml_url()}/api/index-product",
-                json={
-                    "product_id": product_id,
-                    "image_url": image_url,
-                    "metadata": {
-                        "title": deal.get('title', ''),
-                        "price": float(deal.get('price', 0) or 0),
-                        "image_url": image_url,
-                        "merchant": deal.get('merchant_name') or deal.get('source', ''),
-                        "category": deal.get('category', ''),
-                    }
-                },
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    indexed += 1
-                else:
-                    skipped += 1  # Already exists
-            else:
-                skipped += 1
-                
-        except requests.RequestException as e:
-            logger.debug(f"ML index skip for {product_id}: {e}")
-            skipped += 1
-    
-    if indexed > 0:
-        # Save the FAISS index after batch
-        try:
-            requests.post(f"{_get_ml_url()}/api/save-index", timeout=10)
-        except requests.RequestException:
-            pass
-        
-        logger.info(f"FAISS auto-index: {indexed} indexed, {skipped} skipped")
+            # One search per unique query
+            result = orchestrator.search(query)
+            deals = result.deals
+
+            # Fan out results to each alert in this group
+            for alert in group_alerts:
+                filtered = deals
+                if alert.max_price:
+                    filtered = [d for d in deals if d.get("price") and d["price"] <= float(alert.max_price)]
+
+                new_count = 0
+                for deal in filtered:
+                    deal_id = str(deal.get("id", ""))
+                    if not deal_id:
+                        continue
+                    _, created = DealAlertMatch.objects.get_or_create(
+                        alert=alert,
+                        deal_id=deal_id,
+                        defaults={
+                            "title": (deal.get("title") or "")[:255],
+                            "price": deal.get("price"),
+                            "image_url": deal.get("image_url") or deal.get("image") or "",
+                            "source": (deal.get("source") or "")[:100],
+                            "url": deal.get("url") or "",
+                            "deal_data": deal,
+                        },
+                    )
+                    if created:
+                        new_count += 1
+
+                if new_count > 0:
+                    alert.matches_count = alert.matches.count()
+                alert.last_checked_at = timezone.now()
+                alert.save(update_fields=["last_checked_at", "matches_count"])
+                total_new += new_count
+
+        except Exception as e:
+            logger.warning(f"Deal alert check failed for query '{query[:50]}': {e}")
+
+    logger.info(
+        f"Deal alerts: {len(alerts)} alerts, {len(query_groups)} unique queries, "
+        f"{total_new} new matches"
+    )
+    return {
+        "checked": len(alerts),
+        "new_matches": total_new,
+        "queries": len(query_groups),
+    }

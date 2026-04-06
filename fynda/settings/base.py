@@ -233,10 +233,10 @@ CELERY_TIMEZONE = "UTC"
 # Celery Beat Schedule — automated blog generation every 2 hours
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
-    # "generate-blog-post": {
-    #     "task": "blog.generate_blog_post",
-    #     "schedule": crontab(minute=0),  # Disabled — re-enable when ready
-    # },
+    "check-deal-alerts": {
+        "task": "deals.check_deal_alerts",
+        "schedule": crontab(minute=0, hour="*/4"),  # Every 4 hours
+    },
 }
 
 # Cache Configuration
@@ -328,10 +328,6 @@ RAKUTEN_SITE_ID = config.apis.rakuten_site_id
 SHAREASALE_AFFILIATE_ID = config.apis.shareasale_affiliate_id
 SHAREASALE_API_TOKEN = config.apis.shareasale_api_token
 SHAREASALE_API_SECRET = config.apis.shareasale_api_secret
-
-# ML Service
-ML_SERVICE_URL = config.ml_service.url
-ML_SERVICE_TIMEOUT = config.ml_service.timeout
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB

@@ -114,14 +114,6 @@ class SearchView(APIView):
         response_data['has_more'] = (offset + limit) < len(all_deals)
         response_data['total_pages'] = max(1, -(-len(all_deals) // limit))
         
-        # Auto-index returned products into FAISS (background)
-        try:
-            from deals.tasks import index_products_to_faiss
-            if all_deals:
-                index_products_to_faiss.delay(all_deals)
-        except Exception:
-            pass  # Never let indexing failure affect search
-        
         return Response(response_data)
 
 
@@ -178,72 +170,60 @@ class ImageUploadView(APIView):
     from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
     throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
     
-    def _get_ml_url(self):
-        """Get ML service URL from config (resolves to http://ml:8001 in Docker)."""
-        from fynda.config import config
-        base = config.ml_service.url
-        return f"{base}/api/extract-attributes"
-    
     def post(self, request):
-        import requests
         import logging
         logger = logging.getLogger(__name__)
         from core.image_preprocessor import preprocess_image, cache_ml_result, ImageValidationError
-        
+        from deals.services.gemini_vision_service import gemini_vision
+
         if 'image' not in request.FILES:
             return Response(
                 {"error": "No image file provided. Use 'image' field."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             # Centralized image pre-processing (validate, resize, strip EXIF, hash dedup)
             processed = preprocess_image(request.FILES['image'])
             image_base64 = processed.image_base64
-            
-            # If identical image was recently processed, return cached ML result
+
+            # If identical image was recently processed, return cached result
             if processed.was_cached and processed.cached_result:
-                logger.info("Returning cached ML result for duplicate image")
+                logger.info("Returning cached result for duplicate image")
                 return Response(processed.cached_result)
-        
+
         except ImageValidationError as e:
             return Response(
                 {"error": e.message},
                 status=e.status_code
             )
-        
+
         try:
-            
-            # Step 1: Try to identify the product
+
+            # Step 1: Analyze image with Gemini Vision
             extracted = None
             search_queries = []
-            
-            # Primary: Own ML service (BLIP — free, fast, runs on EC2)
+
             try:
-                ml_url = self._get_ml_url()
-                logger.info(f"Calling ML service at {ml_url}")
-                ml_response = requests.post(
-                    ml_url,
-                    json={"image_base64": image_base64},
-                    timeout=30
-                )
-                if ml_response.status_code == 200:
-                    ml_data = ml_response.json()
-                    if ml_data.get("success"):
-                        extracted = {
-                            "caption": ml_data.get("caption", ""),
-                            "colors": ml_data.get("colors", {}),
-                            "textures": ml_data.get("textures", []),
-                            "category": ml_data.get("category", ""),
-                        }
-                        search_queries = ml_data.get("search_queries", [])
-                        logger.info(f"ML service identified product: {search_queries}")
-                else:
-                    logger.warning(f"ML service returned status {ml_response.status_code}")
-            except requests.RequestException as e:
-                logger.warning(f"ML service unavailable: {e}")
-            
-            # If ML service returned no queries, return a graceful empty response
+                result = gemini_vision.analyze_image(image_base64)
+                if result and result.get("search_queries"):
+                    items = result.get("items", [{}])
+                    main_item = items[0] if items else {}
+                    extracted = {
+                        "caption": result.get("overall_style", ""),
+                        "category": main_item.get("category", ""),
+                        "type": main_item.get("type", ""),
+                        "color": main_item.get("color", ""),
+                        "brand": main_item.get("brand"),
+                        "material": main_item.get("material", ""),
+                        "pattern": main_item.get("pattern", ""),
+                        "style": main_item.get("style", ""),
+                    }
+                    search_queries = result["search_queries"]
+                    logger.info(f"Gemini identified product: {search_queries}")
+            except Exception as e:
+                logger.warning(f"Gemini vision failed: {e}")
+
             if not search_queries:
                 return Response({
                     "extracted": extracted or {},

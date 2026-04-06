@@ -19,7 +19,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession
@@ -65,10 +65,23 @@ class HealthView(APIView):
         "ios": "1.0.0",
         "android": "1.0.0",
     }
-    
+
+    # Feature flags per platform — set to False to hide from that platform
+    PLATFORM_FEATURES = {
+        "ios": {
+            "image_search_enabled": True,
+        },
+        "android": {
+            "image_search_enabled": True,
+        },
+        "web": {
+            "image_search_enabled": False,
+        },
+    }
+
     def get(self, request):
         platform = request.query_params.get("platform", "ios")
-        
+
         data = {
             "status": "ok",
             "server_time": timezone.now(),
@@ -76,6 +89,7 @@ class HealthView(APIView):
             "force_update": False,
             "maintenance": False,
             "message": "",
+            "features": self.PLATFORM_FEATURES.get(platform, self.PLATFORM_FEATURES["ios"]),
         }
         
         return Response(HealthCheckSerializer(data).data)
@@ -1020,6 +1034,200 @@ class PriceAlertDetailView(APIView):
 
 
 # ============================================
+# Deal Alerts
+# ============================================
+
+class DealAlertListView(APIView):
+    """
+    List and create deal alerts.
+
+    GET  /api/mobile/deal-alerts/
+    POST /api/mobile/deal-alerts/
+
+    POST supports two modes:
+    - Text only: {"description": "black jacket", "max_price": 100}
+    - With image: multipart with 'image' file + optional 'description' + 'max_price'
+      Image is analyzed once via Gemini to generate search_query.
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get(self, request):
+        from .models import DealAlert
+        from .serializers import DealAlertSerializer
+
+        alerts = DealAlert.objects.filter(user=request.user)
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            alerts = alerts.filter(status=status_filter)
+        return Response({
+            "alerts": DealAlertSerializer(alerts, many=True).data,
+            "count": alerts.count(),
+        })
+
+    def post(self, request):
+        from .serializers import DealAlertSerializer
+        from .models import APIUsageLog
+
+        description = request.data.get("description", "").strip()
+        max_price = request.data.get("max_price")
+        search_query = ""
+        reference_image_url = ""
+
+        # If image provided, analyze with Gemini to generate search query
+        if "image" in request.FILES:
+            from core.image_preprocessor import preprocess_image, ImageValidationError
+            from deals.services.gemini_vision_service import gemini_vision
+
+            try:
+                processed = preprocess_image(request.FILES["image"])
+            except ImageValidationError as e:
+                return Response({"error": e.message}, status=e.status_code)
+
+            result = gemini_vision.analyze_image(processed.image_base64)
+            if result and result.get("search_queries"):
+                search_query = result["search_queries"][0]
+                if not description:
+                    # Use Gemini's description as the user-facing label
+                    items = result.get("items", [{}])
+                    item = items[0] if items else {}
+                    parts = [item.get("color", ""), item.get("type", "")]
+                    description = " ".join(p for p in parts if p) or search_query
+
+                APIUsageLog.log_usage(request, "gemini_vision", estimated_cost=0.0025)
+            else:
+                return Response(
+                    {"error": "Could not identify the item in this image. Try a clearer photo."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Store image to S3 if configured
+            try:
+                from django.core.files.storage import default_storage
+                import uuid as _uuid
+                ext = request.FILES["image"].name.rsplit(".", 1)[-1] if "." in request.FILES["image"].name else "jpg"
+                path = f"deal-alerts/{_uuid.uuid4().hex[:12]}.{ext}"
+                saved_path = default_storage.save(path, request.FILES["image"])
+                reference_image_url = default_storage.url(saved_path)
+            except Exception:
+                pass  # Image storage is optional
+
+        if not description:
+            return Response(
+                {"error": "Provide a description or upload an image."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = {"description": description}
+        if max_price:
+            data["max_price"] = max_price
+
+        serializer = DealAlertSerializer(data=data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        alert = serializer.save()
+
+        # Set generated fields
+        if search_query:
+            alert.search_query = search_query
+        if reference_image_url:
+            alert.reference_image = reference_image_url
+        alert.save(update_fields=["search_query", "reference_image"])
+
+        return Response(DealAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
+
+
+class DealAlertDetailView(APIView):
+    """
+    Single deal alert management.
+
+    GET    /api/mobile/deal-alerts/{id}/
+    PATCH  /api/mobile/deal-alerts/{id}/
+    DELETE /api/mobile/deal-alerts/{id}/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _get_alert(self, alert_id, user):
+        from .models import DealAlert
+        try:
+            return DealAlert.objects.get(id=alert_id, user=user)
+        except DealAlert.DoesNotExist:
+            return None
+
+    def get(self, request, alert_id):
+        from .serializers import DealAlertDetailSerializer
+
+        alert = self._get_alert(alert_id, request.user)
+        if not alert:
+            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(DealAlertDetailSerializer(alert).data)
+
+    def patch(self, request, alert_id):
+        from .serializers import DealAlertSerializer
+
+        alert = self._get_alert(alert_id, request.user)
+        if not alert:
+            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DealAlertSerializer(alert, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        alert = serializer.save()
+        # Sync is_active with status
+        alert.is_active = alert.status == "active"
+        alert.save(update_fields=["is_active"])
+        return Response(serializer.data)
+
+    def delete(self, request, alert_id):
+        alert = self._get_alert(alert_id, request.user)
+        if not alert:
+            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+        alert.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DealAlertMatchesView(APIView):
+    """
+    Matches for a deal alert.
+
+    GET  /api/mobile/deal-alerts/{id}/matches/
+    POST /api/mobile/deal-alerts/{id}/matches/  (mark seen)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, alert_id):
+        from .models import DealAlert
+        from .serializers import DealAlertMatchSerializer
+
+        try:
+            alert = DealAlert.objects.get(id=alert_id, user=request.user)
+        except DealAlert.DoesNotExist:
+            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        matches = alert.matches.all()
+        if request.query_params.get("unseen_only") == "true":
+            matches = matches.filter(is_seen=False)
+        return Response({
+            "matches": DealAlertMatchSerializer(matches[:50], many=True).data,
+            "count": matches.count(),
+        })
+
+    def post(self, request, alert_id):
+        from .models import DealAlert
+
+        try:
+            alert = DealAlert.objects.get(id=alert_id, user=request.user)
+        except DealAlert.DoesNotExist:
+            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        action = request.data.get("action")
+        if action == "mark_all_seen":
+            alert.matches.filter(is_seen=False).update(is_seen=True)
+        elif action == "mark_seen":
+            match_ids = request.data.get("match_ids", [])
+            alert.matches.filter(id__in=match_ids).update(is_seen=True)
+        return Response({"status": "ok"})
+
+
+# ============================================
 # Favorites
 # ============================================
 
@@ -1223,39 +1431,7 @@ class MobileImageUploadView(APIView):
             else:
                 img_log.warning("[STEP 1] GEMINI SKIPPED — no GEMINI_API_KEY configured")
 
-            # Fallback: Own ML service (BLIP) if Gemini didn't work
-            if not search_queries:
-                img_log.info("[STEP 1 FALLBACK] BLIP ML SERVICE — trying local model...")
-                try:
-                    ml_url = getattr(settings, 'ML_SERVICE_URL', 'http://localhost:8001')
-                    ml_url = f"{ml_url}/api/extract-attributes"
-                    img_log.info(f"  Calling: {ml_url}")
-                    ml_response = http_requests.post(
-                        ml_url,
-                        json={"image_base64": image_base64},
-                        timeout=30
-                    )
-                    img_log.info(f"  BLIP response status: {ml_response.status_code}")
-                    if ml_response.status_code == 200:
-                        ml_data = ml_response.json()
-                        img_log.info(f"  BLIP RAW response: {json.dumps(ml_data, indent=2, default=str)[:2000]}")
-                        if ml_data.get("success"):
-                            extracted = {
-                                "caption": ml_data.get("caption", ""),
-                                "colors": ml_data.get("colors", {}),
-                                "textures": ml_data.get("textures", []),
-                                "category": ml_data.get("category", ""),
-                            }
-                            search_queries = ml_data.get("search_queries", [])
-                            img_log.info(f"  BLIP SEARCH QUERIES: {search_queries}")
-                        else:
-                            img_log.warning(f"  BLIP returned success=false")
-                    else:
-                        img_log.warning(f"  BLIP returned HTTP {ml_response.status_code}: {ml_response.text[:500]}")
-                except http_requests.RequestException as e:
-                    img_log.error(f"  BLIP UNAVAILABLE: {e}")
-
-            # If nothing identified the product
+            # If Gemini couldn't identify the product
             if not search_queries:
                 img_log.error("  NO QUERIES GENERATED — returning empty to client")
                 img_log.info("=" * 70)

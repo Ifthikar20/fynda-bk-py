@@ -26,9 +26,13 @@ from .views import (
     MobileImageUploadView,
     # Price Compare
     MobilePriceCompareView,
-    # Alerts
+    # Price Alerts
     PriceAlertListView,
     PriceAlertDetailView,
+    # Deal Alerts
+    DealAlertListView,
+    DealAlertDetailView,
+    DealAlertMatchesView,
     # Favorites
     FavoritesView,
     FavoriteDetailView,
@@ -93,7 +97,14 @@ urlpatterns = [
     # ============================================
     path("alerts/", PriceAlertListView.as_view(), name="alert-list"),
     path("alerts/<uuid:alert_id>/", PriceAlertDetailView.as_view(), name="alert-detail"),
-    
+
+    # ============================================
+    # Deal Alerts
+    # ============================================
+    path("deal-alerts/", DealAlertListView.as_view(), name="deal-alert-list"),
+    path("deal-alerts/<uuid:alert_id>/", DealAlertDetailView.as_view(), name="deal-alert-detail"),
+    path("deal-alerts/<uuid:alert_id>/matches/", DealAlertMatchesView.as_view(), name="deal-alert-matches"),
+
     # ============================================
     # Favorites / Saved Deals
     # ============================================

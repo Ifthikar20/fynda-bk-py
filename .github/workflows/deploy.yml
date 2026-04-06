@@ -84,9 +84,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Note: ML service (FYNDA_ML_Services) is a separate repository
-      # It should be built and deployed from its own CI/CD pipeline
-
       - name: Build and push Nginx image
         uses: docker/build-push-action@v5
         with:
@@ -167,15 +164,6 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
-            # Pull latest ML service code (separate repo)
-            if [ -d "FYNDA_ML_Services/.git" ]; then
-              echo "Pulling latest ML service code..."
-              cd FYNDA_ML_Services
-              git fetch origin main
-              git reset --hard origin/main
-              cd "$PROJECT_DIR"
-            fi
-            
             # ── Rebuild Frontend ──────────────────────────────────────────
             # The Vite build bakes VITE_API_URL into the JS bundle.
             # Frontend source lives in a separate repo on the server.
@@ -217,8 +205,8 @@ jobs:
             echo "Using compose file: $COMPOSE_FILE"
             
             # Build and restart services (build locally - celery shares api Dockerfile)
-            docker compose -f $COMPOSE_FILE build api celery nginx ml || echo "Build failed"
-            docker compose -f $COMPOSE_FILE up -d api nginx db redis celery ml --remove-orphans --force-recreate
+            docker compose -f $COMPOSE_FILE build api celery nginx || echo "Build failed"
+            docker compose -f $COMPOSE_FILE up -d api nginx db redis celery --remove-orphans --force-recreate
             
             # Run migrations
             sleep 5

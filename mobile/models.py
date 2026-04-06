@@ -316,6 +316,93 @@ class FashionTimelineEntry(models.Model):
         return f"{self.user.email} — {self.date} — {self.title or 'Outfit'}"
 
 
+class DealAlert(models.Model):
+    """
+    Deal alerts — users describe what they want and get notified
+    when matching deals are found.
+    """
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("paused", "Paused"),
+        ("disabled", "Disabled"),
+    ]
+
+    MAX_ALERTS_PER_USER = 5
+    EXPIRY_DAYS = 30
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="deal_alerts",
+    )
+    description = models.CharField(max_length=500, help_text="e.g. black leather jacket under $100")
+    search_query = models.CharField(max_length=500, blank=True, help_text="Normalized query for marketplace search (auto-generated)")
+    reference_image = models.URLField(max_length=1000, blank=True, help_text="S3 URL of reference image")
+    max_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    is_active = models.BooleanField(default=True)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    matches_count = models.IntegerField(default=0)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "mobile_deal_alerts"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["status"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timezone.timedelta(days=self.EXPIRY_DAYS)
+        if not self.search_query:
+            self.search_query = self.description
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return self.expires_at and timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"{self.description[:50]} ({self.status})"
+
+
+class DealAlertMatch(models.Model):
+    """A deal that matched a user's alert."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    alert = models.ForeignKey(DealAlert, on_delete=models.CASCADE, related_name="matches")
+    deal_id = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    image_url = models.URLField(max_length=1000, blank=True)
+    source = models.CharField(max_length=100, blank=True)
+    url = models.URLField(max_length=2000, blank=True)
+    deal_data = models.JSONField(default=dict)
+    is_seen = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "mobile_deal_alert_matches"
+        ordering = ["-created_at"]
+        unique_together = [["alert", "deal_id"]]
+        indexes = [
+            models.Index(fields=["alert", "is_seen"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title[:40]} — ${self.price}"
+
+
 class MobileSession(models.Model):
     """
     Track mobile app sessions for analytics and security.

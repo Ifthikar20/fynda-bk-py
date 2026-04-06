@@ -22,7 +22,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - ML_SERVICE_URL=http://ml:8001
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -44,30 +43,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # =============================================================================
-  # ML SERVICES - Internal Only (not publicly exposed)
-  # =============================================================================
-  ml:
-    build:
-      context: ./FYNDA_ML_Services
-      dockerfile: Dockerfile
-    container_name: fynda-ml
-    restart: unless-stopped
-    expose:
-      - "8001"
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ml_data:/app/data
-    networks:
-      - fynda-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   # =============================================================================
   # POSTGRESQL DATABASE
@@ -178,6 +153,5 @@ volumes:
   redis_data:
   media_data:
   static_data:
-  ml_data:
   certbot_www:
   certbot_conf:

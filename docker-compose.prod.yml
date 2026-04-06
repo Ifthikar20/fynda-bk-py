@@ -22,7 +22,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - ML_SERVICE_URL=http://ml:8001
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -47,46 +46,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 384M
         reservations:
-          memory: 256M
+          memory: 192M
     healthcheck:
       test: ["CMD", "curl", "-f", "-H", "X-Forwarded-Proto: https", "http://localhost:8000/api/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # =============================================================================
-  # ML SERVICES - Internal Only (not publicly exposed)
-  # =============================================================================
-  ml:
-    build:
-      context: ./FYNDA_ML_Services
-      dockerfile: Dockerfile
-    container_name: fynda-ml
-    restart: unless-stopped
-    expose:
-      - "8001"
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ml_data:/app/data
-      - ./FYNDA_ML_Services/models:/app/models
-    networks:
-      - fynda-network
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    healthcheck:
-      test: ["CMD", "curl", "-fL", "http://localhost:8001/api/health"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
 
   # =============================================================================
   # POSTGRESQL DATABASE
@@ -123,7 +91,7 @@ services:
     image: redis:7-alpine
     container_name: fynda-redis
     restart: unless-stopped
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --save ""
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
     volumes:
       - redis_data:/data
     networks:
@@ -131,9 +99,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 192M
+          memory: 128M
         reservations:
-          memory: 64M
+          memory: 48M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -172,9 +140,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 256M
         reservations:
-          memory: 192M
+          memory: 128M
     healthcheck:
       test: ["CMD", "celery", "-A", "fynda", "inspect", "ping", "--timeout", "5"]
       interval: 60s
@@ -232,6 +200,5 @@ volumes:
   redis_data:
   media_data:
   static_data:
-  ml_data:
   certbot_www:
   certbot_conf:

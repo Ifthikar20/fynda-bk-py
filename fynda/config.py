@@ -162,21 +162,6 @@ class SecurityConfig:
 
 
 @dataclass(frozen=True)
-class MLServiceConfig:
-    """ML Service connection settings."""
-    url: str = field(default_factory=lambda: os.getenv("ML_SERVICE_URL", "http://127.0.0.1:8001"))
-    timeout: int = field(default_factory=lambda: int(os.getenv("ML_SERVICE_TIMEOUT", "30")))
-    
-    @property
-    def visual_search_endpoint(self) -> str:
-        return f"{self.url}/api/visual-search"
-    
-    @property
-    def index_product_endpoint(self) -> str:
-        return f"{self.url}/api/index-product"
-
-
-@dataclass(frozen=True)
 class EmailConfig:
     """Email (AWS SES) settings."""
     backend: str = field(default_factory=lambda: os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"))
@@ -203,7 +188,6 @@ class AppConfig:
     redis: RedisConfig = field(default_factory=RedisConfig)
     apis: APIKeysConfig = field(default_factory=APIKeysConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
-    ml_service: MLServiceConfig = field(default_factory=MLServiceConfig)
     email: EmailConfig = field(default_factory=EmailConfig)
     
     @property
