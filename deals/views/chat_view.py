@@ -147,100 +147,12 @@ Rules:
 
 class ChatView(APIView):
     """
-    AI chat shopping assistant.
-
-    POST /api/chat/
-
-    Request body:
-        message  - User's message (required)
-        history  - Previous messages [{ role, text }] (optional, max 10)
-
-    Response:
-        response  - AI's conversational response
-        products  - List of matching products
-        search_query - The extracted search query
+    AI chat shopping assistant — temporarily disabled to save AI tokens.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        message = (request.data.get("message") or "").strip()
-        history = request.data.get("history") or []
-
-        if not message:
-            return Response(
-                {"error": "message is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if len(message) > 500:
-            message = message[:500]
-
-        # Build conversation for OpenAI
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-
-        # Add recent history (last 10 messages max)
-        for msg in history[-10:]:
-            role = msg.get("role", "user")
-            text = msg.get("text", "")
-            if role in ("user", "assistant") and text:
-                messages.append({"role": role, "content": text})
-
-        messages.append({"role": "user", "content": message})
-
-        # Call OpenAI
-        client = _get_openai_client()
-        if not client:
-            # Fallback: use message as search query directly
-            products = _search_products(message)
-            return Response({
-                "response": f"Here's what I found for \"{message}\".",
-                "products": products,
-                "search_query": message,
-            })
-
-        try:
-            completion = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                tools=[{
-                    "type": "function",
-                    "function": CHAT_FUNCTION_SCHEMA,
-                }],
-                tool_choice="auto",
-                temperature=0.7,
-                max_tokens=200,
-            )
-
-            choice = completion.choices[0].message
-
-            # Case 1: GPT called search_products → ready to show products
-            if choice.tool_calls:
-                tool_call = choice.tool_calls[0]
-                args = json.loads(tool_call.function.arguments)
-                search_query = args.get("search_query", message)
-                ai_response = args.get("response", "Let me find that for you.")
-                max_price = args.get("max_price")
-
-                return Response({
-                    "response": ai_response,
-                    "search_query": search_query,
-                    "max_price": max_price,
-                })
-
-            # Case 2: GPT responded conversationally → asking a follow-up
-            else:
-                ai_response = choice.content or "Could you tell me more about what you're looking for?"
-                return Response({
-                    "response": ai_response,
-                    "search_query": None,
-                    "max_price": None,
-                })
-
-        except Exception as e:
-            logger.error(f"OpenAI chat failed: {e}")
-            # Fallback: treat message as search query
-            return Response({
-                "response": f'Here\'s what I found for "{message}".',
-                "search_query": message,
-                "max_price": None,
-            })
+        return Response(
+            {"error": "AI chat is temporarily disabled."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
