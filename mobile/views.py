@@ -1708,6 +1708,7 @@ class MobileStoryboardView(APIView):
                 "token": b.token,
                 "title": b.title or "Untitled",
                 "share_url": f"https://outfi.ai/storyboard/{b.token}",
+                "snapshot_url": self._snapshot_url(b),
                 "is_public": b.is_public,
                 "storyboard_data": b.storyboard_data or {},
                 "view_count": b.view_count,
@@ -1784,7 +1785,11 @@ class MobileStoryboardView(APIView):
         region = getattr(s, 'AWS_S3_REGION_NAME', 'us-east-1')
         if bucket:
             return f"https://{bucket}.s3.{region}.amazonaws.com/{board.snapshot_path}"
-        return ""
+        # Local storage — build full URL via API host
+        path = board.snapshot_path
+        if not path.startswith('/media/'):
+            path = f"/media/{path}" if not path.startswith('media/') else f"/{path}"
+        return f"https://api.outfi.ai{path}"
 
 
 class MobileStoryboardDetailView(APIView):
@@ -1886,6 +1891,9 @@ class MobileStoryboardDetailView(APIView):
         if "storyboard_data" in request.data:
             board.storyboard_data = request.data["storyboard_data"]
             update_fields.append("storyboard_data")
+        if "snapshot_path" in request.data and request.data["snapshot_path"]:
+            board.snapshot_path = request.data["snapshot_path"]
+            update_fields.append("snapshot_path")
         if "is_public" in request.data:
             board.is_public = bool(request.data["is_public"])
             update_fields.append("is_public")
@@ -1897,6 +1905,7 @@ class MobileStoryboardDetailView(APIView):
             "token": board.token,
             "title": board.title,
             "share_url": f"https://outfi.ai/storyboard/{board.token}",
+            "snapshot_url": MobileStoryboardView._snapshot_url(board),
             "storyboard_data": board.storyboard_data,
             "is_public": board.is_public,
         })
