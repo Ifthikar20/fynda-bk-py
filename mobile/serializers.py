@@ -233,6 +233,7 @@ class MobileDealSerializer(serializers.Serializer):
     currency = serializers.CharField(default="USD", required=False)
     image = serializers.CharField(source="image_url", required=False, default="", allow_blank=True)
     source = serializers.CharField(required=False, default="")
+    brand = serializers.CharField(required=False, default="", allow_blank=True)
     seller = serializers.CharField(required=False, default="", allow_blank=True)
     url = serializers.URLField(required=False, default="")
     rating = serializers.FloatField(allow_null=True, required=False)
@@ -261,6 +262,7 @@ class MobileDealSerializer(serializers.Serializer):
 
             instance.setdefault("discount_percent", 0)
             instance.setdefault("source", "")
+            instance.setdefault("brand", instance.get("merchant_name") or instance.get("seller") or "")
             instance.setdefault("url", "")
             instance.setdefault("price", 0)
             instance.setdefault("description", "")
