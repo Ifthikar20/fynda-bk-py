@@ -1,6 +1,4 @@
-"""
-Background tasks for the deals app.
-"""
+"""Background tasks for the deals app."""
 import logging
 from collections import defaultdict
 from celery import shared_task
@@ -9,93 +7,85 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-@shared_task(
-    bind=True,
-    max_retries=2,
-    default_retry_delay=600,
-    name="deals.check_deal_alerts",
-)
+@shared_task(bind=True, max_retries=2, default_retry_delay=600, name="deals.check_deal_alerts")
 def check_deal_alerts(self):
     """
-    Periodic task: check all active deal alerts for new matches.
-
-    Runs every 4 hours via Celery Beat.
+    Check active deal alerts every 4 hours.
 
     Deduplication: groups alerts by search_query so identical queries
-    only hit marketplace APIs once. At 100K users with overlapping
-    queries, this reduces API calls from 100K to ~2K per cycle.
+    only hit marketplace APIs once.
     """
     from mobile.models import DealAlert, DealAlertMatch
     from deals.services.orchestrator import DealOrchestrator
 
-    # Expire old alerts
-    expired = DealAlert.objects.filter(
-        is_active=True, expires_at__lt=timezone.now(),
-    ).update(is_active=False, status="disabled")
-    if expired:
-        logger.info(f"Expired {expired} deal alerts")
+    now = timezone.now()
 
-    # Get all active alerts
+    # Expire old alerts in one query
+    DealAlert.objects.filter(
+        is_active=True, expires_at__lt=now,
+    ).update(is_active=False, status="disabled")
+
     alerts = list(DealAlert.objects.filter(is_active=True, status="active"))
     if not alerts:
         return {"checked": 0, "new_matches": 0, "queries": 0}
 
-    # Group alerts by normalized search_query to deduplicate
-    query_groups = defaultdict(list)
-    for alert in alerts:
-        key = (alert.search_query or alert.description).strip().lower()
-        query_groups[key].append(alert)
+    # Group by query
+    groups = defaultdict(list)
+    for a in alerts:
+        groups[(a.search_query or a.description).strip().lower()].append(a)
 
     orchestrator = DealOrchestrator()
     total_new = 0
 
-    for query, group_alerts in query_groups.items():
+    for query, group in groups.items():
         try:
-            # One search per unique query
-            result = orchestrator.search(query)
-            deals = result.deals
-
-            # Fan out results to each alert in this group
-            for alert in group_alerts:
-                filtered = deals
-                if alert.max_price:
-                    filtered = [d for d in deals if d.get("price") and d["price"] <= float(alert.max_price)]
-
-                new_count = 0
-                for deal in filtered:
-                    deal_id = str(deal.get("id", ""))
-                    if not deal_id:
-                        continue
-                    _, created = DealAlertMatch.objects.get_or_create(
-                        alert=alert,
-                        deal_id=deal_id,
-                        defaults={
-                            "title": (deal.get("title") or "")[:255],
-                            "price": deal.get("price"),
-                            "image_url": deal.get("image_url") or deal.get("image") or "",
-                            "source": (deal.get("source") or "")[:100],
-                            "url": deal.get("url") or "",
-                            "deal_data": deal,
-                        },
-                    )
-                    if created:
-                        new_count += 1
-
-                if new_count > 0:
-                    alert.matches_count = alert.matches.count()
-                alert.last_checked_at = timezone.now()
-                alert.save(update_fields=["last_checked_at", "matches_count"])
-                total_new += new_count
-
+            deals = orchestrator.search(query).deals
         except Exception as e:
-            logger.warning(f"Deal alert check failed for query '{query[:50]}': {e}")
+            logger.warning(f"Search failed for '{query[:50]}': {e}")
+            continue
 
-    logger.info(
-        f"Deal alerts: {len(alerts)} alerts, {len(query_groups)} unique queries, "
-        f"{total_new} new matches"
-    )
-    return {
-        "checked": len(alerts),
-        "new_matches": total_new,
-        "queries": len(query_groups),
-    }
+        for alert in group:
+            # Filter by max_price
+            filtered = deals
+            if alert.max_price:
+                cap = float(alert.max_price)
+                filtered = [d for d in deals if d.get("price") and d["price"] <= cap]
+
+            # Skip if no deals
+            if not filtered:
+                alert.last_checked_at = now
+                alert.save(update_fields=["last_checked_at"])
+                continue
+
+            # Find existing deal_ids to avoid duplicates (one query)
+            deal_ids = [str(d.get("id", "")) for d in filtered if d.get("id")]
+            existing = set(
+                alert.matches.filter(deal_id__in=deal_ids).values_list("deal_id", flat=True)
+            )
+
+            # Bulk create new matches
+            new_matches = [
+                DealAlertMatch(
+                    alert=alert,
+                    deal_id=str(d["id"]),
+                    title=(d.get("title") or "")[:255],
+                    price=d.get("price"),
+                    image_url=d.get("image_url") or d.get("image") or "",
+                    source=(d.get("source") or "")[:100],
+                    url=d.get("url") or "",
+                    deal_data=d,
+                )
+                for d in filtered
+                if d.get("id") and str(d["id"]) not in existing
+            ]
+
+            if new_matches:
+                DealAlertMatch.objects.bulk_create(new_matches, ignore_conflicts=True)
+                alert.matches_count = alert.matches.count()
+                total_new += len(new_matches)
+
+            alert.last_checked_at = now
+            alert.save(update_fields=["last_checked_at", "matches_count"])
+
+    logger.info(f"Deal alerts: {len(alerts)} alerts, {len(groups)} queries, {total_new} new matches")
+    return {"checked": len(alerts), "new_matches": total_new, "queries": len(groups)}

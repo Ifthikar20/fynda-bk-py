@@ -1056,14 +1056,12 @@ class DealAlertListView(APIView):
         from .models import DealAlert
         from .serializers import DealAlertSerializer
 
-        alerts = DealAlert.objects.filter(user=request.user)
+        alerts = DealAlert.objects.filter(user=request.user).order_by("-created_at")
         status_filter = request.query_params.get("status")
         if status_filter:
             alerts = alerts.filter(status=status_filter)
-        return Response({
-            "alerts": DealAlertSerializer(alerts, many=True).data,
-            "count": alerts.count(),
-        })
+        data = DealAlertSerializer(alerts, many=True).data
+        return Response({"alerts": data, "count": len(data)})
 
     def post(self, request):
         from .serializers import DealAlertSerializer
