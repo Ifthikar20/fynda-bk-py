@@ -13,6 +13,7 @@ from fynda.config import config
 
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticBlogSitemap
 from blog.feeds import LatestPostsFeed
+from users.analytics_views import analytics_dashboard, analytics_data
 
 # Sitemap configuration
 sitemaps = {
@@ -107,6 +108,10 @@ urlpatterns = [
     path('share/<str:token>/', include(([
         path('', __import__('deals.views.social_og', fromlist=['SharedStoryboardOGView']).SharedStoryboardOGView.as_view(), name='shared-storyboard-og'),
     ], 'social_og'))),
+
+    # Internal staff-only analytics dashboard (mounted outside /api/ to bypass APIGuard)
+    path('internal/analytics/', analytics_dashboard, name='internal_analytics'),
+    path('internal/analytics/data/', analytics_data, name='internal_analytics_data'),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 
