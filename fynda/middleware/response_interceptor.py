@@ -58,6 +58,13 @@ class ResponseInterceptor:
         '/auth/register',
         '/auth/oauth',
         '/auth/token/refresh',
+        # Analytics PIN verify returns a short-lived session token. The
+        # generic "token" regex below mangles the JSON body if this path
+        # is not exempt (it replaces `"analytics_token":"..."` with
+        # `***REDACTED***`, producing invalid JSON that blows up the SPA's
+        # res.json() call with a SyntaxError). Same class of bug as
+        # fa76fb7 (JWT login redaction).
+        '/auth/analytics/',
         '/payments/',
         '/storyboard/',
     ]
