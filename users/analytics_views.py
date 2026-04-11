@@ -1,12 +1,14 @@
 """
 Internal analytics dashboard.
 
-Two staff-only endpoints:
-  GET /internal/analytics/         → HTML dashboard (uses template)
-  GET /internal/analytics/data/    → JSON payload consumed by the dashboard
+Three endpoints, all staff-only, sharing one data builder:
 
-Mounted outside /api/ on purpose: APIGuardMiddleware treats /api/internal/
-as a honeypot path (see fynda/middleware/api_guard.py).
+  GET /internal/analytics/         → HTML dashboard (Django session auth)
+  GET /internal/analytics/data/    → JSON for the HTML page (Django session auth)
+  GET /api/auth/analytics/data/    → JSON for the Vue SPA (JWT bearer auth)
+
+The HTML pair is mounted outside /api/ on purpose: APIGuardMiddleware treats
+/api/internal/ as a honeypot path (see fynda/middleware/api_guard.py).
 """
 
 from datetime import timedelta
@@ -20,6 +22,10 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 User = get_user_model()
 
 
@@ -31,17 +37,11 @@ def _safe_count(qs):
         return 0
 
 
-@staff_member_required
-@require_GET
-def analytics_dashboard(request):
-    """Render the dashboard shell. All numbers come from the JSON endpoint."""
-    return render(request, "users/analytics.html")
-
-
-@staff_member_required
-@require_GET
-def analytics_data(request):
-    """Aggregate signup + engagement metrics. Staff only."""
+def build_analytics_payload():
+    """
+    Aggregate signup + engagement metrics. Pure function so it can be reused
+    by the session-based JSON view and the DRF/JWT view.
+    """
     now = timezone.now()
     day_ago = now - timedelta(days=1)
     week_ago = now - timedelta(days=7)
@@ -49,7 +49,6 @@ def analytics_data(request):
 
     users_qs = User.objects.all()
 
-    # Signup counts
     total_users = _safe_count(users_qs)
     active_users = _safe_count(users_qs.filter(is_active=True))
     staff_users = _safe_count(users_qs.filter(is_staff=True))
@@ -57,7 +56,6 @@ def analytics_data(request):
     signups_7d = _safe_count(users_qs.filter(created_at__gte=week_ago))
     signups_30d = _safe_count(users_qs.filter(created_at__gte=month_ago))
 
-    # OAuth provider breakdown
     provider_rows = (
         users_qs.values("oauth_provider")
         .annotate(n=Count("id"))
@@ -68,7 +66,6 @@ def analytics_data(request):
         for row in provider_rows
     ]
 
-    # Daily signup histogram (last 30 days), filled with zeros for missing days
     daily_rows = (
         users_qs.filter(created_at__gte=month_ago)
         .annotate(day=TruncDate("created_at"))
@@ -82,7 +79,6 @@ def analytics_data(request):
         d = (month_ago + timedelta(days=i)).date().isoformat()
         daily_signups.append({"date": d, "count": daily_map.get(d, 0)})
 
-    # Engagement counts (best-effort — wrapped so missing tables don't blow up)
     engagement = {}
     try:
         from users.models import SearchHistory, SavedDeal
@@ -104,19 +100,47 @@ def analytics_data(request):
     except Exception:
         pass
 
-    return JsonResponse(
-        {
-            "generated_at": now.isoformat(),
-            "users": {
-                "total": total_users,
-                "active": active_users,
-                "staff": staff_users,
-                "signups_24h": signups_24h,
-                "signups_7d": signups_7d,
-                "signups_30d": signups_30d,
-                "by_provider": by_provider,
-            },
-            "daily_signups": daily_signups,
-            "engagement": engagement,
-        }
-    )
+    return {
+        "generated_at": now.isoformat(),
+        "users": {
+            "total": total_users,
+            "active": active_users,
+            "staff": staff_users,
+            "signups_24h": signups_24h,
+            "signups_7d": signups_7d,
+            "signups_30d": signups_30d,
+            "by_provider": by_provider,
+        },
+        "daily_signups": daily_signups,
+        "engagement": engagement,
+    }
+
+
+# ─── Session-authenticated views (used by the Django HTML dashboard) ──────
+
+@staff_member_required
+@require_GET
+def analytics_dashboard(request):
+    """Render the dashboard shell. All numbers come from the JSON endpoint."""
+    return render(request, "users/analytics.html")
+
+
+@staff_member_required
+@require_GET
+def analytics_data(request):
+    return JsonResponse(build_analytics_payload())
+
+
+# ─── JWT-authenticated view (used by the Vue SPA) ─────────────────────────
+
+class AnalyticsDataAPIView(APIView):
+    """
+    Staff-only analytics JSON for the Vue SPA.
+
+    Auth: JWT bearer (DEFAULT_AUTHENTICATION_CLASSES in REST_FRAMEWORK).
+    Permission: IsAdminUser ⇒ requires user.is_staff.
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response(build_analytics_payload())
