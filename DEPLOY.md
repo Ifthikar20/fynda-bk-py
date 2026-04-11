@@ -82,8 +82,8 @@ git push origin main
 That's it. `.github/workflows/deploy.yml` runs on every push to `main`:
 
 1. `npm ci`
-2. `npm run build` with `VITE_API_URL=https://api.fynda.shop` baked in
-   - ⚠️ If the API host has moved (e.g. to `api.outfi.ai`), update `VITE_API_URL` in the workflow before pushing or the SPA will call the wrong host.
+2. `npm run build` with `VITE_API_URL=https://api.outfi.ai` baked in
+   - ⚠️ The hostname is hardcoded in the workflow YAML, not a GitHub `vars` value. If the API ever moves, edit `.github/workflows/deploy.yml` and push — there's no other source of truth.
 3. SCPs `dist/` to EC2 using the `EC2_SSH_KEY` GitHub secret.
 
 ### Verify
@@ -220,7 +220,7 @@ If the page renders empty or errors, check:
 
 ## 7. Things that bite
 
-- **Frontend deploy targets the wrong API host.** `.github/workflows/deploy.yml` hard-codes `VITE_API_URL`. If the API moves, update the workflow or set it via `vars`.
+- **Frontend deploy targets the wrong API host.** `.github/workflows/deploy.yml` hard-codes `VITE_API_URL` (currently `https://api.outfi.ai`) and the verify step curls `https://outfi.ai`. Both are literal strings — there's no `vars`/`secrets` indirection. Update both lines together if either domain moves.
 - **Migrations fail mid-deploy.** `deploy.sh` runs them after containers are up — if they fail, the API is up but talking to a partially-migrated DB. Fix the migration, push, re-run `deploy.sh`. Don't try to "patch" by editing the DB by hand.
 - **Throttles look like bugs in dev.** `BotDetectionMiddleware` and `RateLimitMiddleware` will return 429 to repeated curl bursts. In dev this resets on server restart (LocMemCache); in prod it's per-IP and self-clears within a minute.
 - **`is_staff` cached on the client.** The SPA stores `is_staff` from the login response. Promoting a user in the DB doesn't unlock the page until they log out and back in.
