@@ -126,6 +126,41 @@ def build_analytics_payload():
     except Exception:
         pass
 
+    # Individual user list for the dashboard table.
+    # Capped at 500 to bound payload size. Staff-only + PIN-gated, so
+    # emails are fine to return — but we still exclude sensitive fields
+    # (password hash, analytics_pin hash, oauth_uid).
+    try:
+        user_rows = (
+            users_qs.order_by("-created_at")
+            .values(
+                "id",
+                "email",
+                "first_name",
+                "last_name",
+                "oauth_provider",
+                "is_active",
+                "is_staff",
+                "created_at",
+                "last_login",
+            )[:500]
+        )
+        users_list = [
+            {
+                "id": str(row["id"]),
+                "email": row["email"],
+                "name": f"{row['first_name']} {row['last_name']}".strip(),
+                "provider": row["oauth_provider"] or "email",
+                "is_active": row["is_active"],
+                "is_staff": row["is_staff"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "last_login": row["last_login"].isoformat() if row["last_login"] else None,
+            }
+            for row in user_rows
+        ]
+    except Exception:
+        users_list = []
+
     return {
         "generated_at": now.isoformat(),
         "users": {
@@ -136,6 +171,7 @@ def build_analytics_payload():
             "signups_7d": signups_7d,
             "signups_30d": signups_30d,
             "by_provider": by_provider,
+            "list": users_list,
         },
         "daily_signups": daily_signups,
         "engagement": engagement,
