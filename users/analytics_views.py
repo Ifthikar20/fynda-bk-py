@@ -5,16 +5,27 @@ Three endpoints, all staff-only, sharing one data builder:
 
   GET /internal/analytics/         → HTML dashboard (Django session auth)
   GET /internal/analytics/data/    → JSON for the HTML page (Django session auth)
-  GET /api/auth/analytics/data/    → JSON for the Vue SPA (JWT bearer auth)
+  GET /api/auth/analytics/data/    → JSON for the Vue SPA (JWT bearer auth + analytics token)
+  POST /api/auth/analytics/verify-pin/ → PIN verification, returns analytics session token
 
 The HTML pair is mounted outside /api/ on purpose: APIGuardMiddleware treats
 /api/internal/ as a honeypot path (see fynda/middleware/api_guard.py).
+
+Security layers for the SPA analytics:
+  1. JWT authentication (user must be logged in)
+  2. IsAdminUser (user.is_staff must be True)
+  3. Analytics session token (issued after PIN verification, 15-min TTL in Redis)
+  4. Rate limiting on PIN attempts (5 per hour per user)
 """
 
+import hashlib
+import logging
+import secrets
 from datetime import timedelta
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from django.http import JsonResponse
@@ -22,11 +33,26 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
+
+# Analytics session token TTL (seconds)
+ANALYTICS_TOKEN_TTL = 900  # 15 minutes
+
+# PIN attempt rate limiting
+MAX_PIN_ATTEMPTS = 5
+PIN_ATTEMPT_WINDOW = 3600  # 1 hour
+
+
+def _hash_pin(pin):
+    """Hash a PIN using SHA-256 with a static salt. Not bcrypt because
+    the PIN space is small and we rate-limit attempts instead."""
+    return hashlib.sha256(f"outfi_analytics_{pin}".encode()).hexdigest()
 
 
 def _safe_count(qs):
@@ -131,7 +157,75 @@ def analytics_data(request):
     return JsonResponse(build_analytics_payload())
 
 
-# ─── JWT-authenticated view (used by the Vue SPA) ─────────────────────────
+# ─── JWT-authenticated views (used by the Vue SPA) ─────────────────────────
+
+class VerifyAnalyticsPinView(APIView):
+    """
+    Verify a staff user's analytics PIN and issue a short-lived session token.
+
+    POST /api/auth/analytics/verify-pin/
+    Body: { "pin": "123456" }
+    Returns: { "analytics_token": "...", "expires_in": 900 }
+
+    Rate limited to MAX_PIN_ATTEMPTS per hour per user.
+    """
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        user = request.user
+        pin = request.data.get("pin", "").strip()
+
+        if not pin:
+            return Response(
+                {"error": "PIN is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Rate-limit check
+        attempt_key = f"analytics_pin_attempts:{user.id}"
+        attempts = cache.get(attempt_key, 0)
+        if attempts >= MAX_PIN_ATTEMPTS:
+            logger.warning(f"Analytics PIN rate limit reached for user {user.email}")
+            return Response(
+                {"error": "Too many attempts. Try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        # Check if user has a PIN set
+        if not user.analytics_pin:
+            return Response(
+                {"error": "No analytics PIN configured. Contact an admin."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Verify PIN
+        if _hash_pin(pin) != user.analytics_pin:
+            cache.set(attempt_key, attempts + 1, PIN_ATTEMPT_WINDOW)
+            remaining = MAX_PIN_ATTEMPTS - attempts - 1
+            logger.warning(
+                f"Failed analytics PIN attempt for {user.email} "
+                f"({remaining} attempts remaining)"
+            )
+            return Response(
+                {"error": f"Invalid PIN. {remaining} attempts remaining."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # PIN correct — issue analytics session token
+        token = secrets.token_urlsafe(32)
+        cache_key = f"analytics_session:{token}"
+        cache.set(cache_key, str(user.id), ANALYTICS_TOKEN_TTL)
+
+        # Reset attempt counter on success
+        cache.delete(attempt_key)
+
+        logger.info(f"Analytics PIN verified for {user.email}")
+
+        return Response({
+            "analytics_token": token,
+            "expires_in": ANALYTICS_TOKEN_TTL,
+        })
+
 
 class AnalyticsDataAPIView(APIView):
     """
@@ -139,8 +233,37 @@ class AnalyticsDataAPIView(APIView):
 
     Auth: JWT bearer (DEFAULT_AUTHENTICATION_CLASSES in REST_FRAMEWORK).
     Permission: IsAdminUser ⇒ requires user.is_staff.
+    Second factor: X-Analytics-Token header (issued by VerifyAnalyticsPinView).
     """
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        # Verify analytics session token
+        analytics_token = request.META.get("HTTP_X_ANALYTICS_TOKEN", "")
+        if not analytics_token:
+            return Response(
+                {"error": "Analytics session required. Please verify your PIN."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        cache_key = f"analytics_session:{analytics_token}"
+        session_user_id = cache.get(cache_key)
+
+        if not session_user_id:
+            return Response(
+                {"error": "Analytics session expired. Please re-verify your PIN."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Ensure the analytics token belongs to the requesting user
+        if session_user_id != str(request.user.id):
+            logger.warning(
+                f"Analytics token mismatch: token user={session_user_id}, "
+                f"request user={request.user.id}"
+            )
+            return Response(
+                {"error": "Invalid analytics session."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         return Response(build_analytics_payload())

@@ -6,7 +6,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import RegisterView, LoginView, ProfileView, ChangePasswordView, LogoutView, OAuthView
-from .analytics_views import AnalyticsDataAPIView
+from .analytics_views import AnalyticsDataAPIView, VerifyAnalyticsPinView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
@@ -16,6 +16,7 @@ urlpatterns = [
     path("profile/", ProfileView.as_view(), name="profile"),
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("analytics/verify-pin/", VerifyAnalyticsPinView.as_view(), name="analytics_verify_pin"),
     path("analytics/data/", AnalyticsDataAPIView.as_view(), name="analytics_data_api"),
 ]
 
