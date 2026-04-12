@@ -18,7 +18,7 @@ FROM python:3.12-slim
 # Environment
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DJANGO_SETTINGS_MODULE=fynda.settings.production
+    DJANGO_SETTINGS_MODULE=outfi.settings.production
 
 WORKDIR /app
 
@@ -55,7 +55,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Optimized gunicorn for t3.micro/small (1-2 vCPU, 1-2GB RAM)
 # Lean config: 2 workers × 2 threads = 4 concurrent requests
 # Set GUNICORN_WORKERS=1 in env to further reduce for t3.micro
-CMD ["sh", "-c", "gunicorn fynda.wsgi:application \
+CMD ["sh", "-c", "gunicorn outfi.wsgi:application \
      --bind 0.0.0.0:8000 \
      --workers ${GUNICORN_WORKERS:-2} \
      --threads 2 \
