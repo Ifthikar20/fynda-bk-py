@@ -4,6 +4,8 @@ from collections import defaultdict
 from celery import shared_task
 from django.utils import timezone
 
+from emails.services import EmailService
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,4 +90,72 @@ def check_deal_alerts(self):
             alert.save(update_fields=["last_checked_at", "matches_count"])
 
     logger.info(f"Deal alerts: {len(alerts)} alerts, {len(groups)} queries, {total_new} new matches")
+
+    # ── Send collated email notifications ──────────────────────
+    # Group new matches by user so each user gets ONE email per cycle.
+    if total_new > 0:
+        _send_alert_emails(alerts)
+
     return {"checked": len(alerts), "new_matches": total_new, "queries": len(groups)}
+
+
+def _send_alert_emails(alerts):
+    """Send one collated email per user for all their triggered alerts."""
+    user_alerts = defaultdict(list)
+    for alert in alerts:
+        if alert.matches.exists():
+            user_alerts[alert.user].append(alert)
+
+    if not user_alerts:
+        return
+
+    email_service = EmailService()
+
+    for user, triggered_alerts in user_alerts.items():
+        if not user.email:
+            continue
+
+        # Build a summary of all matches across this user's alerts
+        lines = []
+        total_matches = 0
+        for alert in triggered_alerts:
+            count = alert.matches.count()
+            total_matches += count
+            price_info = f" (under ${alert.max_price:.0f})" if alert.max_price else ""
+            lines.append(f"• {alert.description}{price_info} — {count} match{'es' if count != 1 else ''}")
+
+        subject = f"Outfi: {total_matches} new deal match{'es' if total_matches != 1 else ''} found"
+
+        text_body = (
+            f"Hi {user.first_name or 'there'},\n\n"
+            f"Your deal alerts found new matches:\n\n"
+            + "\n".join(lines)
+            + "\n\nOpen the Outfi app → Profile → Alerts to see your deals.\n\n"
+            "Happy shopping!\n— Outfi"
+        )
+
+        html_body = (
+            f"<div style='font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;'>"
+            f"<h2 style='color: #1A1A1A; font-weight: 300;'>Hi {user.first_name or 'there'},</h2>"
+            f"<p style='color: #6E6E73;'>Your deal alerts found new matches:</p>"
+            f"<div style='background: #F5F3EF; border-radius: 12px; padding: 16px; margin: 16px 0;'>"
+            + "".join(
+                f"<p style='margin: 8px 0; color: #1A1A1A;'>{line}</p>"
+                for line in lines
+            )
+            + "</div>"
+            f"<p style='color: #6E6E73;'>Open the Outfi app → Profile → Alerts to see your deals.</p>"
+            f"<p style='color: #C9A96E; font-weight: 500;'>Happy shopping!<br>— Outfi</p>"
+            f"</div>"
+        )
+
+        try:
+            email_service.send_single(
+                to_email=user.email,
+                subject=subject,
+                html_content=html_body,
+                text_content=text_body,
+            )
+            logger.info(f"Alert email sent to {user.email}: {total_matches} matches")
+        except Exception as e:
+            logger.error(f"Failed to send alert email to {user.email}: {e}")
