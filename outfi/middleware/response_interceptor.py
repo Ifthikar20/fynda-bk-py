@@ -104,22 +104,24 @@ class ResponseInterceptor:
                 if hasattr(response, 'content'):
                     content = response.content.decode('utf-8')
                     data = json.loads(content)
-                    
-                    # Sanitize error messages
-                    if 'error' in data:
-                        data['error'] = self._sanitize_message(str(data['error']))
-                    if 'detail' in data:
-                        data['detail'] = self._sanitize_message(str(data['detail']))
-                    if 'message' in data:
-                        data['message'] = self._sanitize_message(str(data['message']))
-                    
-                    # Remove stack traces
-                    data.pop('traceback', None)
-                    data.pop('stack', None)
-                    data.pop('exception', None)
-                    
-                    # Rebuild response
-                    response.content = json.dumps(data).encode('utf-8')
+
+                    # Only sanitize dict responses (lists, strings etc. are left as-is)
+                    if isinstance(data, dict):
+                        # Sanitize error messages
+                        if 'error' in data:
+                            data['error'] = self._sanitize_message(str(data['error']))
+                        if 'detail' in data:
+                            data['detail'] = self._sanitize_message(str(data['detail']))
+                        if 'message' in data:
+                            data['message'] = self._sanitize_message(str(data['message']))
+
+                        # Remove stack traces
+                        data.pop('traceback', None)
+                        data.pop('stack', None)
+                        data.pop('exception', None)
+
+                        # Rebuild response
+                        response.content = json.dumps(data).encode('utf-8')
                     
             except (json.JSONDecodeError, UnicodeDecodeError):
                 pass
