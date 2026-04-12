@@ -16,3 +16,4 @@ google-genai>=1.0
 boto3>=1.34
 django-storages>=1.14
 stripe>=8.0
+PyAPNs2>=0.7.0

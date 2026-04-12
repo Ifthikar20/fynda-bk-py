@@ -5,6 +5,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from emails.services import EmailService
+from mobile.push_service import send_push_to_user
 
 logger = logging.getLogger(__name__)
 
@@ -91,10 +92,10 @@ def check_deal_alerts(self):
 
     logger.info(f"Deal alerts: {len(alerts)} alerts, {len(groups)} queries, {total_new} new matches")
 
-    # ── Send collated email notifications ──────────────────────
-    # Group new matches by user so each user gets ONE email per cycle.
+    # ── Notify users about new matches ──────────────────────
     if total_new > 0:
         _send_alert_emails(alerts)
+        _send_alert_pushes(alerts)
 
     return {"checked": len(alerts), "new_matches": total_new, "queries": len(groups)}
 
@@ -159,3 +160,26 @@ def _send_alert_emails(alerts):
             logger.info(f"Alert email sent to {user.email}: {total_matches} matches")
         except Exception as e:
             logger.error(f"Failed to send alert email to {user.email}: {e}")
+
+
+def _send_alert_pushes(alerts):
+    """Send one push notification per user for their triggered alerts."""
+    user_alerts = defaultdict(list)
+    for alert in alerts:
+        if alert.matches.exists():
+            user_alerts[alert.user].append(alert)
+
+    for user, triggered_alerts in user_alerts.items():
+        total = sum(a.matches.count() for a in triggered_alerts)
+        title = "Outfi Deal Alert"
+        body = f"{total} new deal match{'es' if total != 1 else ''} found — tap to view"
+
+        try:
+            send_push_to_user(
+                user=user,
+                title=title,
+                body=body,
+                data={"type": "deal_alert", "count": str(total)},
+            )
+        except Exception as e:
+            logger.error(f"Failed to send push to {user.email}: {e}")
