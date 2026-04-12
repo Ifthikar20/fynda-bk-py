@@ -33,6 +33,11 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_KEY_PATH=${APNS_KEY_PATH}
+      - APNS_USE_SANDBOX=${APNS_USE_SANDBOX}
     depends_on:
       db:
         condition: service_healthy
@@ -133,6 +138,14 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - RAPIDAPI_KEY=${RAPIDAPI_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SES_REGION_NAME=${AWS_SES_REGION_NAME}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_KEY_PATH=${APNS_KEY_PATH}
+      - APNS_USE_SANDBOX=${APNS_USE_SANDBOX}
     depends_on:
       db:
         condition: service_healthy
