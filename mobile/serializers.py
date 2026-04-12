@@ -162,6 +162,10 @@ class DealAlertMatchSerializer(serializers.ModelSerializer):
 
 
 class DealAlertSerializer(serializers.ModelSerializer):
+    # Compute from the actual relation so it's always accurate,
+    # regardless of whether the stored counter was incremented.
+    matches_count = serializers.SerializerMethodField()
+
     class Meta:
         model = DealAlert
         fields = [
@@ -173,6 +177,9 @@ class DealAlertSerializer(serializers.ModelSerializer):
             "id", "search_query", "reference_image", "last_checked_at",
             "matches_count", "expires_at", "created_at", "updated_at",
         ]
+
+    def get_matches_count(self, obj):
+        return obj.matches.count()
 
     def create(self, validated_data):
         user = self.context["request"].user
