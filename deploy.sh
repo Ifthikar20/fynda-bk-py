@@ -10,9 +10,9 @@
 
 set -e
 
-SSH_KEY="$HOME/.ssh/outfi-api-key.pem"
+SSH_KEY="$HOME/.ssh/fynda-api-key.pem"
 SERVER="ubuntu@54.81.148.134"
-REMOTE_DIR="/home/ubuntu/outfi"
+REMOTE_DIR="/home/ubuntu/fynda"
 FRONTEND_DIR="$HOME/FB_APP/frontend"
 DEPLOY_DIR="/var/www/frontend"
 
