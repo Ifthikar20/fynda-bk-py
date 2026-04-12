@@ -41,6 +41,7 @@ services:
     volumes:
       - media_data:/app/media
       - static_data:/app/staticfiles
+      - ./certs:/app/certs:ro
     networks:
       - outfi-network
     deploy:
@@ -137,6 +138,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    volumes:
+      - ./certs:/app/certs:ro
     networks:
       - outfi-network
     deploy:
