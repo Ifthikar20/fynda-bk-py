@@ -266,7 +266,7 @@ def test_large_payload(session, results):
 
 # ── Runner ───────────────────────────────────────────
 def main():
-    print(f"🎯 Fynda API Payload Tests")
+    print(f"🎯 Outfi API Payload Tests")
     print(f"   Target: {API_V1}\n")
 
     results = TestResult()

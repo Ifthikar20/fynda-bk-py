@@ -63,7 +63,7 @@ graph TB
 - `.env.production` - API URLs
 
 ### 2. Django API
-**Container**: `fynda-api` on port 8000
+**Container**: `outfi-api` on port 8000
 
 | App | Purpose |
 |-----|---------|
@@ -82,7 +82,7 @@ GET  /blog/<slug>               → SSR blog post
 ```
 
 ### 3. ML Service (Internal)
-**Container**: `fynda-ml` on port 8001
+**Container**: `outfi-ml` on port 8001
 
 > ⚠️ **Internal only** - Not exposed to public
 
@@ -98,9 +98,9 @@ GET  /blog/<slug>               → SSR blog post
 
 | Service | Container | Purpose |
 |---------|-----------|---------|
-| Celery | `fynda-celery` | Async email, analytics |
-| Redis | `fynda-redis` | Cache, message broker |
-| PostgreSQL | `fynda-db` | Primary database |
+| Celery | `outfi-celery` | Async email, analytics |
+| Redis | `outfi-redis` | Cache, message broker |
+| PostgreSQL | `outfi-db` | Primary database |
 
 ---
 
@@ -175,8 +175,8 @@ FB_APP/
 ├── users/             # Auth & profiles
 ├── blog/              # SSR blog
 ├── emails/            # Email service
-├── fynda/             # Django settings
-├── FYNDA_ML_Services/ # ML service (separate repo)
+├── outfi/             # Django settings
+├── OUTFI_ML_Services/ # ML service (separate repo)
 ├── nginx/             # Nginx config
 └── docker-compose.local.yml
 ```

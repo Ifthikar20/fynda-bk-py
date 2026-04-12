@@ -9,7 +9,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
-from fynda.config import config
+from outfi.config import config
 
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticBlogSitemap
 from blog.feeds import LatestPostsFeed
@@ -30,7 +30,7 @@ def api_root(request):
     """
     # Minimal public response — no endpoint enumeration
     public = {
-        "service": "Fynda API",
+        "service": "Outfi API",
         "version": "1.0.0",
     }
 

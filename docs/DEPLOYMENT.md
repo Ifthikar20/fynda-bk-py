@@ -58,7 +58,7 @@ ssh -L 8888:localhost:8000 ubuntu@54.227.94.35
 
 ### Backend Deployment
 ```bash
-# Commit and push to fynda-bk-py
+# Commit and push to outfi-bk-py
 git add .
 git commit -m "your message"
 git push origin main
@@ -67,7 +67,7 @@ git push origin main
 
 ### Frontend Deployment
 ```bash
-# In frontend directory (separate repo: fynda-frontend-vue)
+# In frontend directory (separate repo: outfi-frontend-vue)
 cd frontend
 git add .
 git commit -m "your message"  
@@ -76,7 +76,7 @@ git push origin main
 ```
 
 ### Monitor Deployment
-- GitHub Actions: https://github.com/Ifthikar20/fynda-bk-py/actions
+- GitHub Actions: https://github.com/Ifthikar20/outfi-bk-py/actions
 - Check run status, logs, and health check results
 
 ---
@@ -100,7 +100,7 @@ ssh ubuntu@54.227.94.35 "sudo nginx -t && sudo systemctl reload nginx"
 ```bash
 # SSH to EC2
 ssh ubuntu@54.227.94.35
-cd /opt/fynda
+cd /opt/outfi
 
 # Pull latest code
 git pull origin main
@@ -110,21 +110,21 @@ docker-compose -f docker-compose.local.yml down
 docker-compose -f docker-compose.local.yml up -d --build
 
 # Run migrations
-docker exec fynda-api python manage.py migrate
+docker exec outfi-api python manage.py migrate
 
 # Collect static files
-docker exec fynda-api python manage.py collectstatic --noinput
+docker exec outfi-api python manage.py collectstatic --noinput
 ```
 
 ### 3. Deploy Blog Updates
 ```bash
 # SSH to EC2
 ssh ubuntu@54.227.94.35
-cd /opt/fynda
+cd /opt/outfi
 
 git pull origin main
 docker-compose -f docker-compose.local.yml restart api
-docker exec fynda-api python manage.py collectstatic --noinput
+docker exec outfi-api python manage.py collectstatic --noinput
 ```
 
 ---
@@ -133,23 +133,23 @@ docker exec fynda-api python manage.py collectstatic --noinput
 
 | Container | Internal Port | Purpose |
 |-----------|---------------|---------|
-| `fynda-nginx` | 80, 443 | Reverse proxy, SSL |
-| `fynda-api` | 8000 | Django REST API |
-| `fynda-ml` | 8001 | ML service (internal) |
-| `fynda-celery` | - | Background tasks |
-| `fynda-redis` | 6379 | Cache & broker |
-| `fynda-db` | 5432 | PostgreSQL |
+| `outfi-nginx` | 80, 443 | Reverse proxy, SSL |
+| `outfi-api` | 8000 | Django REST API |
+| `outfi-ml` | 8001 | ML service (internal) |
+| `outfi-celery` | - | Background tasks |
+| `outfi-redis` | 6379 | Cache & broker |
+| `outfi-db` | 5432 | PostgreSQL |
 
 ### Service Commands
 ```bash
 # View logs
-docker logs -f fynda-api
+docker logs -f outfi-api
 
 # Restart specific service
 docker-compose -f docker-compose.local.yml restart api
 
 # Shell into container
-docker exec -it fynda-api bash
+docker exec -it outfi-api bash
 ```
 
 ---
@@ -161,8 +161,8 @@ docker exec -it fynda-api bash
 SECRET_KEY=<django-secret>
 DEBUG=False
 ALLOWED_HOSTS=outfi.ai,api.outfi.ai
-DB_NAME=fynda
-DB_USER=fynda
+DB_NAME=outfi
+DB_USER=outfi
 DB_PASSWORD=<password>
 OPENAI_API_KEY=<key>
 CJ_API_TOKEN=<token>
@@ -203,7 +203,7 @@ curl https://api.outfi.ai/api/health/
 docker ps
 
 # Container logs
-docker logs fynda-api --tail 100
+docker logs outfi-api --tail 100
 ```
 
 ### Common Issues
@@ -221,7 +221,7 @@ docker logs fynda-api --tail 100
 
 ### Database
 ```bash
-docker exec fynda-db pg_dump -U fynda fynda > backup.sql
+docker exec outfi-db pg_dump -U outfi outfi > backup.sql
 ```
 
 ### Media Files

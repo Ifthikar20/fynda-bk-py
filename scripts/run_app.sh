@@ -37,12 +37,12 @@ echo -e "${CYAN}Device: $DEVICE${NC}"
 echo ""
 
 # Start EC2 server logs in background (optional)
-EC2_KEY="$HOME/.ssh/fynda-api-key.pem"
+EC2_KEY="$HOME/.ssh/outfi-api-key.pem"
 EC2_HOST="ubuntu@54.81.148.134"
 if [ -f "$EC2_KEY" ]; then
     echo -e "${YELLOW}Starting EC2 server logs in background...${NC}"
     ssh -i "$EC2_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$EC2_HOST" \
-        "docker logs -f fynda-api --tail 5 2>&1" 2>/dev/null | while IFS= read -r line; do
+        "docker logs -f outfi-api --tail 5 2>&1" 2>/dev/null | while IFS= read -r line; do
         echo -e "${CYAN}[SERVER] $line${NC}"
     done &
     SERVER_PID=$!

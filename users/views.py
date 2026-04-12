@@ -172,7 +172,7 @@ class OAuthView(APIView):
     
     def post(self, request):
         from users.services import UserService
-        from core.exceptions import ValidationError as FyndaValidation, AuthenticationError
+        from core.exceptions import ValidationError as OutfiValidation, AuthenticationError
 
         provider = request.data.get('provider', '').lower()
         code = request.data.get('code')
@@ -217,7 +217,7 @@ class OAuthView(APIView):
                 "created": created,
             })
             
-        except FyndaValidation as e:
+        except OutfiValidation as e:
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST

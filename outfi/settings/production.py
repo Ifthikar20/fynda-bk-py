@@ -3,7 +3,7 @@ Production Settings - Security Hardened
 """
 
 from .base import *
-from fynda.config import config, get_database_config
+from outfi.config import config, get_database_config
 
 DEBUG = False
 SECRET_KEY = config.security.secret_key

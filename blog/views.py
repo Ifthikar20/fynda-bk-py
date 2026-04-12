@@ -28,7 +28,7 @@ class PostListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
-        context['page_title'] = 'Fynda Fashion Blog'
+        context['page_title'] = 'Outfi Fashion Blog'
         context['page_description'] = 'Your ultimate destination for fashion deals, style tips, and shopping inspiration.'
         return context
 
@@ -88,8 +88,8 @@ class CategoryPostsView(ListView):
         context = super().get_context_data(**kwargs)
         context['category'] = self.category
         context['categories'] = Category.objects.all()
-        context['page_title'] = f'{self.category.name} | Fynda Blog'
-        context['page_description'] = self.category.description or f'Browse {self.category.name} posts on Fynda Blog.'
+        context['page_title'] = f'{self.category.name} | Outfi Blog'
+        context['page_description'] = self.category.description or f'Browse {self.category.name} posts on Outfi Blog.'
         return context
 
 
@@ -111,8 +111,8 @@ class TagPostsView(ListView):
         context = super().get_context_data(**kwargs)
         context['tag'] = self.tag
         context['categories'] = Category.objects.all()
-        context['page_title'] = f'#{self.tag.name} | Fynda Blog'
-        context['page_description'] = f'Posts tagged with {self.tag.name} on Fynda Blog.'
+        context['page_title'] = f'#{self.tag.name} | Outfi Blog'
+        context['page_description'] = f'Posts tagged with {self.tag.name} on Outfi Blog.'
         return context
 
 
@@ -138,5 +138,5 @@ class SearchView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
-        context['page_title'] = f"Search: {context['query']} | Fynda Blog"
+        context['page_title'] = f"Search: {context['query']} | Outfi Blog"
         return context

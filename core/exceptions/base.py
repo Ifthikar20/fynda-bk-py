@@ -1,5 +1,5 @@
 """
-Fynda Exception Hierarchy
+Outfi Exception Hierarchy
 =========================
 
 Domain-specific exceptions for structured error handling across the platform.
@@ -23,8 +23,8 @@ from rest_framework import status
 # Base Exception
 # =============================================================================
 
-class FyndaError(Exception):
-    """Base exception for all Fynda application errors."""
+class OutfiError(Exception):
+    """Base exception for all Outfi application errors."""
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     error_code = "server_error"
@@ -48,7 +48,7 @@ class FyndaError(Exception):
 # Service Errors (external dependencies)
 # =============================================================================
 
-class ServiceError(FyndaError):
+class ServiceError(OutfiError):
     """External service or API call failed."""
 
     status_code = status.HTTP_502_BAD_GATEWAY
@@ -96,7 +96,7 @@ class MLServiceError(ServiceError):
 # Client Errors
 # =============================================================================
 
-class ValidationError(FyndaError):
+class ValidationError(OutfiError):
     """Invalid input from the client."""
 
     status_code = status.HTTP_400_BAD_REQUEST
@@ -108,7 +108,7 @@ class ValidationError(FyndaError):
         super().__init__(message, **kwargs)
 
 
-class NotFoundError(FyndaError):
+class NotFoundError(OutfiError):
     """Requested resource does not exist."""
 
     status_code = status.HTTP_404_NOT_FOUND
@@ -120,7 +120,7 @@ class NotFoundError(FyndaError):
         super().__init__(message, **kwargs)
 
 
-class AuthenticationError(FyndaError):
+class AuthenticationError(OutfiError):
     """Authentication failed."""
 
     status_code = status.HTTP_401_UNAUTHORIZED
@@ -130,7 +130,7 @@ class AuthenticationError(FyndaError):
         super().__init__(message, **kwargs)
 
 
-class AuthorizationError(FyndaError):
+class AuthorizationError(OutfiError):
     """User lacks permission for this action."""
 
     status_code = status.HTTP_403_FORBIDDEN
@@ -140,7 +140,7 @@ class AuthorizationError(FyndaError):
         super().__init__(message, **kwargs)
 
 
-class ConflictError(FyndaError):
+class ConflictError(OutfiError):
     """Resource conflict (duplicate, version mismatch, etc.)."""
 
     status_code = status.HTTP_409_CONFLICT
@@ -152,7 +152,7 @@ class ConflictError(FyndaError):
         super().__init__(message, **kwargs)
 
 
-class RateLimitError(FyndaError):
+class RateLimitError(OutfiError):
     """Client-side rate limit exceeded."""
 
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
@@ -166,7 +166,7 @@ class RateLimitError(FyndaError):
 # Configuration Errors
 # =============================================================================
 
-class ConfigurationError(FyndaError):
+class ConfigurationError(OutfiError):
     """Missing or invalid configuration (env vars, settings)."""
 
     error_code = "configuration_error"

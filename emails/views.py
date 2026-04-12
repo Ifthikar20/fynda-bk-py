@@ -95,7 +95,7 @@ def subscribe(request):
     
     return Response(
         {
-            'message': 'Successfully subscribed! We\'ll notify you when Fynda launches.',
+            'message': 'Successfully subscribed! We\'ll notify you when Outfi launches.',
             'subscriber_id': str(subscriber.id)
         },
         status=status.HTTP_201_CREATED

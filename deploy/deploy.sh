@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Fynda Deployment Script
+# Outfi Deployment Script
 # Run this for each deployment/update
 # =============================================================================
 
@@ -19,7 +19,7 @@ NC='\033[0m'
 cd "$PROJECT_DIR"
 
 echo "=========================================="
-echo "Fynda Deployment"
+echo "Outfi Deployment"
 echo "=========================================="
 echo "Project directory: $PROJECT_DIR"
 echo ""

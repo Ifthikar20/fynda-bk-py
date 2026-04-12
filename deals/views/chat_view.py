@@ -119,7 +119,7 @@ CHAT_FUNCTION_SCHEMA = {
     },
 }
 
-SYSTEM_PROMPT = """You are Fynda, a friendly AI fashion shopping assistant.
+SYSTEM_PROMPT = """You are Outfi, a friendly AI fashion shopping assistant.
 
 CRITICAL RULES:
 1. ALWAYS read the FULL conversation history before responding. Combine ALL context the user has provided across messages into your search query.

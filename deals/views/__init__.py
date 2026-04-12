@@ -167,7 +167,7 @@ class ImageUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
-    from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
+    from outfi.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
     throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
     
     def post(self, request):

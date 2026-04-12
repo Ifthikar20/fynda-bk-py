@@ -2,7 +2,7 @@
 Configuration Validators
 ========================
 
-Startup validation for the Fynda configuration layer.
+Startup validation for the Outfi configuration layer.
 Raises ImproperlyConfigured for critical issues in production,
 logs warnings in development.
 
@@ -26,7 +26,7 @@ def validate_config_on_startup():
     Development:
         All issues are logged as warnings/info.
     """
-    from fynda.config import config
+    from outfi.config import config
 
     issues = config.validate()
 

@@ -70,16 +70,16 @@ jobs:
         with:
           context: .
           push: false
-          tags: fynda-api:test
+          tags: outfi-api:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build ML image
         uses: docker/build-push-action@v5
         with:
-          context: ./FYNDA_ML_Services
+          context: ./OUTFI_ML_Services
           push: false
-          tags: fynda-ml:test
+          tags: outfi-ml:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -88,4 +88,4 @@ jobs:
         with:
           context: ./nginx
           push: false
-          tags: fynda-nginx:test
+          tags: outfi-nginx:test

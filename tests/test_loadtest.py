@@ -107,7 +107,7 @@ def run_load_test(users, duration, ramp_up=2):
     for `duration` seconds.
     """
     print(f"\n{'='*60}")
-    print(f"  Fynda API Load Test")
+    print(f"  Outfi API Load Test")
     print(f"  Target:     {API_V1}")
     print(f"  Users:      {users}")
     print(f"  Duration:   {duration}s")
@@ -215,7 +215,7 @@ def run_load_test(users, duration, ramp_up=2):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fynda API Load Test")
+    parser = argparse.ArgumentParser(description="Outfi API Load Test")
     parser.add_argument("--users", type=int, default=20, help="Concurrent virtual users (default: 20)")
     parser.add_argument("--duration", type=int, default=15, help="Test duration in seconds (default: 15)")
     parser.add_argument("--ramp-up", type=int, default=2, help="Ramp-up period in seconds (default: 2)")

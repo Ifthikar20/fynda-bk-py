@@ -5,17 +5,17 @@ How to ship Outfi to production. Two repos, two pipelines, one EC2 box.
 ```
                   ┌──────────────────────── EC2 (Ubuntu) ─────────────────┐
 git push          │                                                       │
-  │               │  /opt/fynda  ── docker compose ──┐                    │
+  │               │  /opt/outfi  ── docker compose ──┐                    │
   ├─► FB_APP ─────┤      api · db · redis · nginx ◄──┘  (deploy.sh)       │
   │   (this repo) │                                                       │
   │               │  /var/www/frontend/dist  ◄── scp from GitHub Actions  │
-  └─► fynda-frontend-vue                                                  │
+  └─► outfi-frontend-vue                                                  │
       (separate repo)                                                     │
                   └───────────────────────────────────────────────────────┘
 ```
 
 - **Backend** (`FB_APP`) — manual: push → SSH → run `deploy/deploy.sh`.
-- **Frontend** (`fynda-frontend-vue`) — automatic: push → GitHub Actions builds & SCPs `dist/` to EC2.
+- **Frontend** (`outfi-frontend-vue`) — automatic: push → GitHub Actions builds & SCPs `dist/` to EC2.
 
 > **Order matters when you change both.** Backend first, frontend second. Otherwise the SPA will hit endpoints that don't exist yet.
 
@@ -25,8 +25,8 @@ git push          │                                                       │
 
 ### Pre-flight (one time)
 - EC2 box has run `deploy/setup-ec2.sh` once (Docker, swap, ufw, fail2ban).
-- `/opt/fynda` is a clone of this repo.
-- `/opt/fynda/.env.production` exists and is filled in (see `.env.production.example`).
+- `/opt/outfi` is a clone of this repo.
+- `/opt/outfi/.env.production` exists and is filled in (see `.env.production.example`).
 - DNS for `api.outfi.ai` (and any other subdomains in `nginx/conf.d/api.conf`) points at the EC2 elastic IP.
 - TLS certs are in place (`deploy/ssl-setup.sh` for the initial Let's Encrypt issue).
 
@@ -42,7 +42,7 @@ Then SSH to EC2 and run:
 
 ```bash
 ssh ubuntu@<EC2_HOST>
-cd /opt/fynda
+cd /opt/outfi
 ./deploy/deploy.sh
 ```
 
@@ -68,9 +68,9 @@ All five containers (`api`, `db`, `redis`, `nginx`, `celery` if enabled) should 
 
 ---
 
-## 2. Frontend (`fynda-frontend-vue`)
+## 2. Frontend (`outfi-frontend-vue`)
 
-The frontend lives in its own repo at `Ifthikar20/fynda-frontend-vue` (cloned to `frontend/` here, and **gitignored** from `FB_APP` — see `.gitignore`).
+The frontend lives in its own repo at `Ifthikar20/outfi-frontend-vue` (cloned to `frontend/` here, and **gitignored** from `FB_APP` — see `.gitignore`).
 
 ### Deploy
 
@@ -88,7 +88,7 @@ That's it. `.github/workflows/deploy.yml` runs on every push to `main`:
 
 ### Verify
 
-- Watch the run at `https://github.com/Ifthikar20/fynda-frontend-vue/actions`.
+- Watch the run at `https://github.com/Ifthikar20/outfi-frontend-vue/actions`.
 - Hard-refresh the production URL (`Cmd-Shift-R`). Check the network tab — it should be loading hashed asset filenames newer than the previous deploy.
 
 ---
@@ -101,7 +101,7 @@ When a feature touches both repos (e.g. a new endpoint + the page that consumes 
 # 1. Backend first
 cd ~/FB_APP
 git push origin main
-ssh ubuntu@<EC2_HOST> 'cd /opt/fynda && ./deploy/deploy.sh'
+ssh ubuntu@<EC2_HOST> 'cd /opt/outfi && ./deploy/deploy.sh'
 
 # 2. Then frontend
 cd ~/FB_APP/frontend
@@ -117,7 +117,7 @@ After the frontend Action finishes, hard-refresh the prod URL.
 ### Tail logs
 ```bash
 ssh ubuntu@<EC2_HOST>
-cd /opt/fynda
+cd /opt/outfi
 ./deploy/logs.sh            # all services
 ./deploy/logs.sh api        # just one
 ```
@@ -163,7 +163,7 @@ There's no automated rollback. Procedure:
 
 ```bash
 ssh ubuntu@<EC2_HOST>
-cd /opt/fynda
+cd /opt/outfi
 git log --oneline -10                    # find the last good SHA
 git checkout <good-sha>
 ./deploy/deploy.sh                       # rebuilds at that SHA
@@ -182,14 +182,14 @@ Only needed once per box. Documented in `deploy/setup-ec2.sh` — run it as root
 sudo bash deploy/setup-ec2.sh
 ```
 
-It installs Docker, configures `ufw` (22/80/443), creates `/opt/fynda`, sets up 2 GB swap, and installs `fail2ban`. After it finishes:
+It installs Docker, configures `ufw` (22/80/443), creates `/opt/outfi`, sets up 2 GB swap, and installs `fail2ban`. After it finishes:
 
-1. `git clone <FB_APP repo> /opt/fynda`
+1. `git clone <FB_APP repo> /opt/outfi`
 2. `cp .env.production.example .env.production` and fill it in
 3. `bash deploy/ssl-setup.sh` to get Let's Encrypt certs
 4. `bash deploy/deploy.sh` for the first deploy
 
-Set the GitHub secrets `EC2_HOST` and `EC2_SSH_KEY` in the `fynda-frontend-vue` repo so its Action can SCP to the box.
+Set the GitHub secrets `EC2_HOST` and `EC2_SSH_KEY` in the `outfi-frontend-vue` repo so its Action can SCP to the box.
 
 ---
 
@@ -224,4 +224,4 @@ If the page renders empty or errors, check:
 - **Migrations fail mid-deploy.** `deploy.sh` runs them after containers are up — if they fail, the API is up but talking to a partially-migrated DB. Fix the migration, push, re-run `deploy.sh`. Don't try to "patch" by editing the DB by hand.
 - **Throttles look like bugs in dev.** `BotDetectionMiddleware` and `RateLimitMiddleware` will return 429 to repeated curl bursts. In dev this resets on server restart (LocMemCache); in prod it's per-IP and self-clears within a minute.
 - **`is_staff` cached on the client.** The SPA stores `is_staff` from the login response. Promoting a user in the DB doesn't unlock the page until they log out and back in.
-- **`/api/internal/` is a honeypot**, not a real path. Internal HTML analytics is at `/internal/analytics/` (no `/api/` prefix) on purpose. See `fynda/middleware/api_guard.py:41`.
+- **`/api/internal/` is a honeypot**, not a real path. Internal HTML analytics is at `/internal/analytics/` (no `/api/` prefix) on purpose. See `outfi/middleware/api_guard.py:41`.

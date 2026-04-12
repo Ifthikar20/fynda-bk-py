@@ -9,9 +9,9 @@ from .models import Post
 
 class LatestPostsFeed(Feed):
     """RSS feed for latest blog posts."""
-    title = "Fynda Fashion Blog"
+    title = "Outfi Fashion Blog"
     link = "/blog/"
-    description = "Latest fashion deals, style tips, and shopping inspiration from Fynda."
+    description = "Latest fashion deals, style tips, and shopping inspiration from Outfi."
     
     def items(self):
         return Post.objects.filter(status='published')[:10]
@@ -28,7 +28,7 @@ class LatestPostsFeed(Feed):
     def item_author_name(self, item):
         if item.author:
             return item.author.get_full_name() or item.author.username
-        return "Fynda Team"
+        return "Outfi Team"
     
     def item_categories(self, item):
         return [tag.name for tag in item.tags.all()]

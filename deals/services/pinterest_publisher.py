@@ -15,7 +15,7 @@ import logging
 from urllib.parse import urlencode
 from datetime import timedelta
 from django.utils import timezone
-from fynda.config import config
+from outfi.config import config
 
 logger = logging.getLogger(__name__)
 

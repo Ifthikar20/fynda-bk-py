@@ -4,11 +4,11 @@ core.exceptions — Re-exports for convenient imports.
 Usage::
 
     from core.exceptions import ValidationError, NotFoundError, ConflictError
-    from core.exceptions import fynda_exception_handler
+    from core.exceptions import outfi_exception_handler
 """
 
 from .base import (
-    FyndaError,
+    OutfiError,
     ServiceError,
     VendorAPIError,
     VendorTimeoutError,
@@ -24,11 +24,11 @@ from .base import (
     PermissionError,
 )
 
-from .handlers import fynda_exception_handler
+from .handlers import outfi_exception_handler
 
 __all__ = [
     # Base
-    "FyndaError",
+    "OutfiError",
     # Service / vendor
     "ServiceError",
     "VendorAPIError",
@@ -47,5 +47,5 @@ __all__ = [
     # Aliases
     "PermissionError",
     # Handler
-    "fynda_exception_handler",
+    "outfi_exception_handler",
 ]

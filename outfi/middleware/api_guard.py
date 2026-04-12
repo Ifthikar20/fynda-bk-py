@@ -146,12 +146,12 @@ class APIGuardMiddleware:
         
         Or they must be accessing /api/mobile/ endpoints with valid JWT.
         """
-        # Check for mobile API key (accept both old Fynda and new Outfi headers)
-        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "") or request.META.get("HTTP_X_FYNDA_MOBILE_KEY", "")
-        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "") or request.META.get("HTTP_X_FYNDA_PLATFORM", "")
+        # Check for mobile API key (accept both old Outfi and new Outfi headers)
+        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "") or request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "")
+        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "") or request.META.get("HTTP_X_OUTFI_PLATFORM", "")
         
         # Get configured mobile key from settings/env
-        from fynda.config import config
+        from outfi.config import config
         expected_key = getattr(config.security, 'mobile_api_key', None)
         
         # If mobile key is configured and matches

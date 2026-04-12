@@ -1,4 +1,4 @@
-# Fynda API Test Suite
+# Outfi API Test Suite
 
 Run API payload validation, load testing, and stress tests against any environment.
 

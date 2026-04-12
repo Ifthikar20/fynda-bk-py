@@ -1,5 +1,5 @@
 """
-Email Marketing Models for Fynda
+Email Marketing Models for Outfi
 """
 
 from django.db import models

@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================================
-# Fynda EC2 Setup Script
+# Outfi EC2 Setup Script
 # Run this ONCE on a fresh Ubuntu EC2 instance
 # =============================================================================
 
 set -e
 
 echo "=========================================="
-echo "Fynda Production Setup"
+echo "Outfi Production Setup"
 echo "=========================================="
 
 # Colors
@@ -68,10 +68,10 @@ echo -e "${GREEN}Docker installed: $(docker --version)${NC}"
 # =============================================================================
 echo -e "${YELLOW}[3/6] Creating directories...${NC}"
 
-mkdir -p /opt/fynda
-mkdir -p /var/log/fynda
-chown -R ubuntu:ubuntu /opt/fynda
-chown -R ubuntu:ubuntu /var/log/fynda
+mkdir -p /opt/outfi
+mkdir -p /var/log/outfi
+chown -R ubuntu:ubuntu /opt/outfi
+chown -R ubuntu:ubuntu /var/log/outfi
 
 # =============================================================================
 # 4. Configure firewall
@@ -126,8 +126,8 @@ echo "Setup complete!"
 echo "==========================================${NC}"
 echo ""
 echo "Next steps:"
-echo "1. Clone your repository to /opt/fynda"
+echo "1. Clone your repository to /opt/outfi"
 echo "2. Copy .env.production.example to .env.production and configure"
-echo "3. Run: cd /opt/fynda && bash deploy/deploy.sh"
+echo "3. Run: cd /opt/outfi && bash deploy/deploy.sh"
 echo ""
 echo "NOTE: Log out and back in for docker permissions to take effect"

@@ -1,5 +1,5 @@
 """
-Blog Models - SEO-optimized blog for Fynda
+Blog Models - SEO-optimized blog for Outfi
 """
 
 from django.db import models
@@ -135,7 +135,7 @@ class Post(models.Model):
     @property
     def seo_title(self):
         """Return SEO title or fallback to post title."""
-        return self.meta_title or f"{self.title} | Fynda Blog"
+        return self.meta_title or f"{self.title} | Outfi Blog"
     
     @property
     def seo_description(self):
@@ -199,7 +199,7 @@ class ProductCard(models.Model):
     """
     Product cards within a brand showcase section.
     Displays product image, brand, name, price, and link.
-    Links to Fynda search by default.
+    Links to Outfi search by default.
     """
     section = models.ForeignKey(
         ContentSection,
@@ -231,10 +231,10 @@ class ProductCard(models.Model):
         help_text="Retailer name, e.g. 'HARRODS', 'MR PORTER'"
     )
     
-    # Optional external link (if empty, links to Fynda search)
+    # Optional external link (if empty, links to Outfi search)
     product_url = models.URLField(
         blank=True,
-        help_text="Optional external link. Leave empty to link to Fynda search."
+        help_text="Optional external link. Leave empty to link to Outfi search."
     )
     
     class Meta:
@@ -250,16 +250,16 @@ class ProductCard(models.Model):
         return bool(self.sale_price)
     
     @property
-    def fynda_url(self):
-        """Generate Fynda search URL for this product."""
+    def outfi_url(self):
+        """Generate Outfi search URL for this product."""
         from urllib.parse import quote
         search_query = f"{self.brand} {self.product_name}"
         return f"{settings.SITE_URL}/?q={quote(search_query)}"
     
     @property
     def link(self):
-        """Return the product URL - either external or Fynda search."""
-        return self.product_url if self.product_url else self.fynda_url
+        """Return the product URL - either external or Outfi search."""
+        return self.product_url if self.product_url else self.outfi_url
 
 
 class IndexingLog(models.Model):

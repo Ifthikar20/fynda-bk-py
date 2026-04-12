@@ -13,7 +13,7 @@ from typing import Optional
 from datetime import datetime
 import requests
 
-from fynda.config import config
+from outfi.config import config
 
 logger = logging.getLogger(__name__)
 

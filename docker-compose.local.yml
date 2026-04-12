@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fynda-api
+    container_name: outfi-api
     restart: unless-stopped
     expose:
       - "8000"
@@ -36,7 +36,7 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
     networks:
-      - fynda-network
+      - outfi-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 30s
@@ -49,18 +49,18 @@ services:
   # =============================================================================
   db:
     image: postgres:16-alpine
-    container_name: fynda-db
+    container_name: outfi-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-fynda}
-      POSTGRES_USER: ${DB_USER:-fynda}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-fynda123}
+      POSTGRES_DB: ${DB_NAME:-outfi}
+      POSTGRES_USER: ${DB_USER:-outfi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-outfi123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - fynda-network
+      - outfi-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fynda -d fynda"]
+      test: ["CMD-SHELL", "pg_isready -U outfi -d outfi"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,13 +70,13 @@ services:
   # =============================================================================
   redis:
     image: redis:7-alpine
-    container_name: fynda-redis
+    container_name: outfi-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     networks:
-      - fynda-network
+      - outfi-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -90,9 +90,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fynda-celery
+    container_name: outfi-celery
     restart: unless-stopped
-    command: celery -A fynda worker -l info --concurrency=1 -P solo
+    command: celery -A outfi worker -l info --concurrency=1 -P solo
     environment:
       - DJANGO_ENV=production
       - DEBUG=False
@@ -111,7 +111,7 @@ services:
       redis:
         condition: service_started
     networks:
-      - fynda-network
+      - outfi-network
 
   # =============================================================================
   # NGINX - Reverse Proxy & SSL Termination
@@ -120,7 +120,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    container_name: fynda-nginx
+    container_name: outfi-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -136,13 +136,13 @@ services:
     depends_on:
       - api
     networks:
-      - fynda-network
+      - outfi-network
 
 # =============================================================================
 # NETWORKS
 # =============================================================================
 networks:
-  fynda-network:
+  outfi-network:
     driver: bridge
 
 # =============================================================================

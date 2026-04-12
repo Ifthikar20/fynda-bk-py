@@ -44,7 +44,7 @@ class PostListSerializer(serializers.ModelSerializer):
     def get_author_name(self, obj):
         if obj.author:
             return obj.author.get_full_name() or obj.author.email
-        return 'Fynda Team'
+        return 'Outfi Team'
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
@@ -76,4 +76,4 @@ class PostDetailSerializer(serializers.ModelSerializer):
     def get_author_name(self, obj):
         if obj.author:
             return obj.author.get_full_name() or obj.author.email
-        return 'Fynda Team'
+        return 'Outfi Team'

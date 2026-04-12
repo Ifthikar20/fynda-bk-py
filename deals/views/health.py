@@ -15,6 +15,6 @@ class HealthCheckView(View):
     def get(self, request):
         return JsonResponse({
             "status": "healthy",
-            "service": "fynda-api",
+            "service": "outfi-api",
             "version": "1.0.0",
         })

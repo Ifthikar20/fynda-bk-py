@@ -24,7 +24,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from deals.models import PinterestConnection, SharedStoryboard
 from deals.services.pinterest_publisher import PinterestPublisher, PinterestPublisherError
-from fynda.config import config
+from outfi.config import config
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ and a price verdict (great deal / fair / above average / overpriced).
 import logging
 import statistics
 from deals.services.orchestrator import DealOrchestrator
-from fynda.config import config
+from outfi.config import config
 
 logger = logging.getLogger(__name__)
 

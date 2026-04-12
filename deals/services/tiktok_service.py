@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Optional
 import requests
 
-from fynda.config import config
+from outfi.config import config
 
 logger = logging.getLogger(__name__)
 

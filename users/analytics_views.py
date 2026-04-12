@@ -9,7 +9,7 @@ Three endpoints, all staff-only, sharing one data builder:
   POST /api/auth/analytics/verify-pin/ → PIN verification, returns analytics session token
 
 The HTML pair is mounted outside /api/ on purpose: APIGuardMiddleware treats
-/api/internal/ as a honeypot path (see fynda/middleware/api_guard.py).
+/api/internal/ as a honeypot path (see outfi/middleware/api_guard.py).
 
 Security layers for the SPA analytics:
   1. JWT authentication (user must be logged in)

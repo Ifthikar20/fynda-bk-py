@@ -7,7 +7,7 @@ import os
 from datetime import timedelta
 
 # Import centralized config
-from fynda.config import config, get_database_config
+from outfi.config import config, get_database_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -51,27 +51,27 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Request filters (run first - stateless validation)
-    "fynda.middleware.PathTraversalFilter",
-    "fynda.middleware.RequestSizeFilter",
-    "fynda.middleware.ContentTypeFilter",
-    "fynda.middleware.ParameterValidationFilter",
-    "fynda.middleware.JSONValidationFilter",
+    "outfi.middleware.PathTraversalFilter",
+    "outfi.middleware.RequestSizeFilter",
+    "outfi.middleware.ContentTypeFilter",
+    "outfi.middleware.ParameterValidationFilter",
+    "outfi.middleware.JSONValidationFilter",
     # API protection (anti-enumeration, bot detection)
-    "fynda.middleware.APIGuardMiddleware",
-    "fynda.middleware.BotDetectionMiddleware",
+    "outfi.middleware.APIGuardMiddleware",
+    "outfi.middleware.BotDetectionMiddleware",
     # Core security middleware
-    "fynda.middleware.SecurityHeadersMiddleware",
-    "fynda.middleware.RateLimitMiddleware",
-    "fynda.middleware.InputSanitizationMiddleware",
-    "fynda.middleware.RequestLoggingMiddleware",
+    "outfi.middleware.SecurityHeadersMiddleware",
+    "outfi.middleware.RateLimitMiddleware",
+    "outfi.middleware.InputSanitizationMiddleware",
+    "outfi.middleware.RequestLoggingMiddleware",
     # Response interceptors (run last - sanitize output)
-    "fynda.middleware.ResponseInterceptor",
-    "fynda.middleware.NotFoundNormalizerMiddleware",
+    "outfi.middleware.ResponseInterceptor",
+    "outfi.middleware.NotFoundNormalizerMiddleware",
     # API versioning deprecation headers
     "core.middleware.deprecation.APIDeprecationMiddleware",
 ]
 
-ROOT_URLCONF = "fynda.urls"
+ROOT_URLCONF = "outfi.urls"
 
 TEMPLATES = [
     {
@@ -88,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "fynda.wsgi.application"
+WSGI_APPLICATION = "outfi.wsgi.application"
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -183,7 +183,7 @@ REST_FRAMEWORK = {
         "image_burst": "5/minute",
         "image_daily": "100/day",  # Placeholder — actual limits enforced in throttle class
     },
-    "EXCEPTION_HANDLER": "core.exceptions.handlers.fynda_exception_handler",
+    "EXCEPTION_HANDLER": "core.exceptions.handlers.outfi_exception_handler",
 }
 
 # JWT Settings
@@ -299,7 +299,7 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
-        "fynda.config": {
+        "outfi.config": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
@@ -310,7 +310,7 @@ LOGGING = {
 # =============================================================================
 # API Keys - Now accessed via config module
 # =============================================================================
-# Usage: from fynda.config import config
+# Usage: from outfi.config import config
 #        api_key = config.apis.rapidapi_key
 
 OPENAI_API_KEY = config.apis.openai_api_key

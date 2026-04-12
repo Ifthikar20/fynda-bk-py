@@ -166,7 +166,7 @@ class ResponseInterceptor:
     def _add_security_headers(self, response):
         """Add headers to help prevent enumeration."""
         # Don't leak server info
-        response['Server'] = 'Fynda'
+        response['Server'] = 'Outfi'
         
         # Prevent caching of API responses with sensitive data
         if not response.get('Cache-Control'):

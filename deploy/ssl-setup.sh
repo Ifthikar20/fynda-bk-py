@@ -46,8 +46,8 @@ for domain in "${DOMAINS[@]}"; do
     echo -e "${YELLOW}Generating certificate for $domain...${NC}"
     
     docker run --rm \
-        -v "$(docker volume inspect fynda_certbot_conf --format '{{ .Mountpoint }}')":/etc/letsencrypt \
-        -v "$(docker volume inspect fynda_certbot_www --format '{{ .Mountpoint }}')":/var/www/certbot \
+        -v "$(docker volume inspect outfi_certbot_conf --format '{{ .Mountpoint }}')":/etc/letsencrypt \
+        -v "$(docker volume inspect outfi_certbot_www --format '{{ .Mountpoint }}')":/var/www/certbot \
         -p 80:80 \
         certbot/certbot certonly \
         --standalone \

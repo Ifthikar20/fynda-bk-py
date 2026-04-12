@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
             name="product_url",
             field=models.URLField(
                 blank=True,
-                help_text="Optional external link. Leave empty to link to Fynda search.",
+                help_text="Optional external link. Leave empty to link to Outfi search.",
             ),
         ),
     ]

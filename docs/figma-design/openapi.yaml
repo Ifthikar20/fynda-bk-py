@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: BetterBliss Auth API
   description: |
-    Authentication & user management API for BetterBliss (Fynda).
+    Authentication & user management API for BetterBliss (Outfi).
     Supports email/password login, Google OAuth, Apple Sign In, JWT token management.
   version: 1.0.0
   contact:

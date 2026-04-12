@@ -10,7 +10,7 @@ on:
 env:
   EC2_HOST: ${{ secrets.EC2_HOST }}
   EC2_USER: ubuntu
-  DEPLOY_PATH: /opt/fynda
+  DEPLOY_PATH: /opt/outfi
 
 jobs:
   # =============================================================================
@@ -142,10 +142,10 @@ jobs:
             echo "Starting deployment..."
             
             # Find the project directory (must be a git repo)
-            if [ -d "/opt/fynda/.git" ]; then
-              PROJECT_DIR="/opt/fynda"
-            elif [ -d "/home/ubuntu/fynda/.git" ]; then
-              PROJECT_DIR="/home/ubuntu/fynda"
+            if [ -d "/opt/outfi/.git" ]; then
+              PROJECT_DIR="/opt/outfi"
+            elif [ -d "/home/ubuntu/outfi/.git" ]; then
+              PROJECT_DIR="/home/ubuntu/outfi"
             elif [ -d "/home/ubuntu/FB_APP/.git" ]; then
               PROJECT_DIR="/home/ubuntu/FB_APP"
             else
@@ -167,7 +167,7 @@ jobs:
             # ── Rebuild Frontend ──────────────────────────────────────────
             # The Vite build bakes VITE_API_URL into the JS bundle.
             # Frontend source lives in a separate repo on the server.
-            FRONTEND_DIR="/home/ubuntu/fynda-frontend-vue"
+            FRONTEND_DIR="/home/ubuntu/outfi-frontend-vue"
             if [ -d "$FRONTEND_DIR" ]; then
               echo "Building frontend..."
               cd "$FRONTEND_DIR"
@@ -187,8 +187,8 @@ jobs:
             fi
             
             # ── Verify no stale domains in built bundle ──────────────────
-            if grep -r "fynda\.shop" /var/www/frontend/ 2>/dev/null; then
-              echo "ERROR: Built frontend still contains fynda.shop references!"
+            if grep -r "outfi\.shop" /var/www/frontend/ 2>/dev/null; then
+              echo "ERROR: Built frontend still contains outfi.shop references!"
               echo "Check frontend/.env.production has VITE_API_URL=https://api.outfi.ai"
               exit 1
             fi

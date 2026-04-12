@@ -2,7 +2,7 @@
 DRF Exception Handler
 =====================
 
-Custom exception handler that catches FyndaError subtypes and returns
+Custom exception handler that catches OutfiError subtypes and returns
 consistent ``{error, message, details}`` JSON responses.
 
 Registered in ``REST_FRAMEWORK["EXCEPTION_HANDLER"]``.
@@ -12,24 +12,24 @@ import logging
 from rest_framework.views import exception_handler as drf_exception_handler
 from rest_framework.response import Response
 
-from .base import FyndaError
+from .base import OutfiError
 
 logger = logging.getLogger(__name__)
 
 
-def fynda_exception_handler(exc, context):
+def outfi_exception_handler(exc, context):
     """
     Custom DRF exception handler.
 
-    - Catches any ``FyndaError`` subtype → structured JSON response.
+    - Catches any ``OutfiError`` subtype → structured JSON response.
     - Falls back to DRF's default handler for standard DRF exceptions.
     - Logs unhandled exceptions that slip through both layers.
     """
 
     # Handle our custom exceptions
-    if isinstance(exc, FyndaError):
+    if isinstance(exc, OutfiError):
         logger.warning(
-            "FyndaError [%s]: %s %s",
+            "OutfiError [%s]: %s %s",
             exc.error_code,
             exc.message,
             exc.details or "",

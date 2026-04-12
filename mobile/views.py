@@ -391,7 +391,7 @@ class UsageStatsView(APIView):
         except Subscription.DoesNotExist:
             pass
 
-        from fynda.throttles import DailyImageQuotaThrottle as Q
+        from outfi.throttles import DailyImageQuotaThrottle as Q
         daily_limit = Q.PREMIUM_DAILY_LIMIT if is_premium else Q.FREE_DAILY_LIMIT
         biweekly_limit = Q.PREMIUM_BIWEEKLY_LIMIT if is_premium else Q.FREE_BIWEEKLY_LIMIT
 
@@ -1338,7 +1338,7 @@ class MobileImageUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     
-    from fynda.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle, DailyImageQuotaThrottle
+    from outfi.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle, DailyImageQuotaThrottle
     throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle, DailyImageQuotaThrottle]
 
     def post(self, request):
@@ -1606,7 +1606,7 @@ class MobileOAuthView(APIView):
         try:
             from users.services import UserService
             from mobile.services import MobileDeviceService
-            from core.exceptions import ValidationError as FyndaValidation, AuthenticationError
+            from core.exceptions import ValidationError as OutfiValidation, AuthenticationError
             
             # Build extra params for Apple
             extra_params = {}
@@ -1652,7 +1652,7 @@ class MobileOAuthView(APIView):
             
             return Response(MobileLoginResponseSerializer(response_data).data)
         
-        except (FyndaValidation, ValueError) as e:
+        except (OutfiValidation, ValueError) as e:
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST

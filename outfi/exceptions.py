@@ -2,7 +2,7 @@
 Backward-compatibility shim.
 
 All exceptions have moved to ``core.exceptions``.
-This module re-exports them so existing ``from fynda.exceptions import …``
+This module re-exports them so existing ``from outfi.exceptions import …``
 statements continue to work.
 
 Prefer::
@@ -12,7 +12,7 @@ Prefer::
 
 # Re-export everything from the canonical location
 from core.exceptions import (  # noqa: F401
-    FyndaError,
+    OutfiError,
     ServiceError,
     VendorAPIError,
     VendorTimeoutError,
@@ -26,5 +26,5 @@ from core.exceptions import (  # noqa: F401
     RateLimitError,
     ConfigurationError,
     PermissionError,
-    fynda_exception_handler,
+    outfi_exception_handler,
 )

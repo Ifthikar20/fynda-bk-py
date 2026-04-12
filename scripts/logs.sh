@@ -21,18 +21,18 @@ set -euo pipefail
 
 # --- Remote Config ---
 EC2_HOST="ubuntu@54.81.148.134"
-SSH_KEY="$HOME/.ssh/fynda-api-key.pem"
-PROJECT_DIR="/home/ubuntu/fynda"
+SSH_KEY="$HOME/.ssh/outfi-api-key.pem"
+PROJECT_DIR="/home/ubuntu/outfi"
 COMPOSE_FILE="docker-compose.prod.yml"
 TAIL_LINES=100
 
 # Container names
-API="fynda-api"
-ML="fynda-ml"
-NGINX="fynda-nginx"
-CELERY="fynda-celery"
-DB="fynda-db"
-REDIS="fynda-redis"
+API="outfi-api"
+ML="outfi-ml"
+NGINX="outfi-nginx"
+CELERY="outfi-celery"
+DB="outfi-db"
+REDIS="outfi-redis"
 
 # Colors
 RED='\033[0;31m'

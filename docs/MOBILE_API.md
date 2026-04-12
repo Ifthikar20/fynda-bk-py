@@ -93,7 +93,7 @@ POST /api/mobile/auth/oauth/
 {
   "provider": "google",
   "code": "authorization_code_from_oauth_flow",
-  "redirect_uri": "com.fynda.app:/oauth/callback",
+  "redirect_uri": "com.outfi.app:/oauth/callback",
   "device_id": "unique-device-uuid",
   "platform": "ios",
   "push_token": "fcm-token"

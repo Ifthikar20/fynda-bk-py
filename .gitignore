@@ -6,7 +6,7 @@
 frontend/
 
 # ML Services (separate repo)
-FYNDA_ML_Services/
+outfi_ml_services/
 # SECRETS - NEVER COMMIT THESE
 # =============================================================================
 .env
@@ -101,3 +101,8 @@ Thumbs.db
 *.tmp
 *.temp
 Flutter_fynda_app/
+
+# Large binary assets (not for git)
+*.mp4
+*.sketch
+*_SKETCH.png

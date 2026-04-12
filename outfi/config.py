@@ -6,7 +6,7 @@ Centralized, type-safe configuration management for all environment variables.
 This replaces scattered os.getenv() calls throughout the codebase.
 
 Usage:
-    from fynda.config import config
+    from outfi.config import config
     
     # Access API keys
     api_key = config.apis.rapidapi_key
@@ -145,7 +145,7 @@ class SecurityConfig:
     ).split(","))
     
     # Mobile API key for Flutter app authentication
-    mobile_api_key: str = field(default_factory=lambda: os.getenv("OUTFI_MOBILE_API_KEY", "") or os.getenv("FYNDA_MOBILE_API_KEY", ""))
+    mobile_api_key: str = field(default_factory=lambda: os.getenv("OUTFI_MOBILE_API_KEY", "") or os.getenv("OUTFI_MOBILE_API_KEY", ""))
     
     # Dynamic admin URL path (without leading/trailing slashes)
     # Set to a secret value in production for security through obscurity

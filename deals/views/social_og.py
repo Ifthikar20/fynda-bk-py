@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.views import View
 from deals.repositories import SharedStoryboardRepository
 from django.utils import timezone
-from fynda.config import config
+from outfi.config import config
 
 
 # Match user-agents from social media crawlers

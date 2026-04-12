@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fynda-api
+    container_name: outfi-api
     restart: unless-stopped
     expose:
       - "8000"
@@ -42,7 +42,7 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
     networks:
-      - fynda-network
+      - outfi-network
     deploy:
       resources:
         limits:
@@ -61,7 +61,7 @@ services:
   # =============================================================================
   db:
     image: postgres:16-alpine
-    container_name: fynda-db
+    container_name: outfi-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -71,7 +71,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - fynda-network
+      - outfi-network
     deploy:
       resources:
         limits:
@@ -89,13 +89,13 @@ services:
   # =============================================================================
   redis:
     image: redis:7-alpine
-    container_name: fynda-redis
+    container_name: outfi-redis
     restart: unless-stopped
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
     volumes:
       - redis_data:/data
     networks:
-      - fynda-network
+      - outfi-network
     deploy:
       resources:
         limits:
@@ -115,9 +115,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fynda-celery
+    container_name: outfi-celery
     restart: unless-stopped
-    command: celery -A fynda worker -B -l info --concurrency=1 --schedule=/tmp/celerybeat-schedule
+    command: celery -A outfi worker -B -l info --concurrency=1 --schedule=/tmp/celerybeat-schedule
     environment:
       - DJANGO_ENV=production
       - DEBUG=False
@@ -138,7 +138,7 @@ services:
       redis:
         condition: service_started
     networks:
-      - fynda-network
+      - outfi-network
     deploy:
       resources:
         limits:
@@ -146,7 +146,7 @@ services:
         reservations:
           memory: 128M
     healthcheck:
-      test: ["CMD", "celery", "-A", "fynda", "inspect", "ping", "--timeout", "5"]
+      test: ["CMD", "celery", "-A", "outfi", "inspect", "ping", "--timeout", "5"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -159,7 +159,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    container_name: fynda-nginx
+    container_name: outfi-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -175,14 +175,14 @@ services:
     depends_on:
       - api
     networks:
-      - fynda-network
+      - outfi-network
 
   # =============================================================================
   # CERTBOT - SSL Certificate Management
   # =============================================================================
   certbot:
     image: certbot/certbot
-    container_name: fynda-certbot
+    container_name: outfi-certbot
     volumes:
       - certbot_www:/var/www/certbot
       - certbot_conf:/etc/letsencrypt
@@ -192,7 +192,7 @@ services:
 # NETWORKS
 # =============================================================================
 networks:
-  fynda-network:
+  outfi-network:
     driver: bridge
 
 # =============================================================================
