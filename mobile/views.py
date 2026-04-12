@@ -1541,6 +1541,16 @@ class MobileImageUploadView(APIView):
             if quota_warning:
                 response["quota_warning"] = quota_warning
 
+            # Include quota status so Flutter can show "X searches remaining"
+            quota_status = getattr(request, "_quota_status", None)
+            if quota_status:
+                # Subtract 1 because this search just consumed a slot
+                quota_status["daily_remaining"] = max(0, quota_status["daily_remaining"] - 1)
+                quota_status["monthly_remaining"] = max(0, quota_status["monthly_remaining"] - 1)
+                quota_status["daily_used"] += 1
+                quota_status["monthly_used"] += 1
+                response["quota_status"] = quota_status
+
             # Cache result against image hash for dedup
             cache_ml_result(processed.cache_key, response)
 

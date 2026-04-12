@@ -103,14 +103,14 @@ class ImageBurstThrottle(SimpleRateThrottle):
 
 class DailyImageQuotaThrottle(SimpleRateThrottle):
     """
-    Per-user daily + bi-weekly quota for Gemini image search.
+    Per-user daily + monthly quota for Gemini image search.
 
-    Limits:
-        Free users:    3/day,   20/bi-week
-        Premium users: 25/day,  250/bi-week ($4.99/2wk ≈ $0.02/search budget)
+    Limits (daily is the binding constraint; monthly is a safety net):
+        Free users:    3/day,   45/month   (enough to try, not enough to abuse)
+        Premium users: 25/day,  500/month  ($10/mo → $0.02/search budget)
 
-    Gemini 2.5 Flash costs ~$0.0025/call.
-    Premium 2-week revenue: $4.99 → budget ~250 calls ($0.625 cost, 87% margin).
+    Gemini 2.5 Flash costs ~$0.001–$0.0025/call.
+    Premium monthly revenue: $10 → budget 500 calls ($1.25 worst-case cost, 87% margin).
     Free users get enough to try the feature but must upgrade for regular use.
     """
     scope = "image_daily"
@@ -120,9 +120,11 @@ class DailyImageQuotaThrottle(SimpleRateThrottle):
     FREE_DAILY_LIMIT = 3
     PREMIUM_DAILY_LIMIT = 25
 
-    # Bi-weekly caps (aligned with $4.99/2-week subscription)
-    FREE_BIWEEKLY_LIMIT = 20
-    PREMIUM_BIWEEKLY_LIMIT = 250
+    # Monthly caps (safety net — daily limit is the real constraint)
+    # Free:    3/day × 15 days = 45 (generous buffer)
+    # Premium: 25/day × 20 days = 500 (allows heavy use without exceeding $1.25 AI cost)
+    FREE_MONTHLY_LIMIT = 45
+    PREMIUM_MONTHLY_LIMIT = 500
 
     def allow_request(self, request, view):
         from mobile.models import APIUsageLog
@@ -137,7 +139,7 @@ class DailyImageQuotaThrottle(SimpleRateThrottle):
 
         is_premium = self._is_premium(request.user)
         daily_limit = self.PREMIUM_DAILY_LIMIT if is_premium else self.FREE_DAILY_LIMIT
-        biweekly_limit = self.PREMIUM_BIWEEKLY_LIMIT if is_premium else self.FREE_BIWEEKLY_LIMIT
+        monthly_limit = self.PREMIUM_MONTHLY_LIMIT if is_premium else self.FREE_MONTHLY_LIMIT
 
         # Check daily count
         daily_count = APIUsageLog.get_daily_count(
@@ -156,32 +158,43 @@ class DailyImageQuotaThrottle(SimpleRateThrottle):
             )
             return False
 
-        # Check bi-weekly count (cost control aligned with subscription)
+        # Check monthly count (safety net for cost control)
         period_stats = APIUsageLog.get_period_stats(
-            request.user, days=14, endpoint="image_search"
+            request.user, days=30, endpoint="image_search"
         )
-        biweekly_count = period_stats["count"]
+        monthly_count = period_stats["count"]
 
-        if biweekly_count >= biweekly_limit:
+        if monthly_count >= monthly_limit:
             self.message = (
-                f"Bi-weekly limit reached ({biweekly_limit} searches per 2 weeks). "
+                f"Monthly limit reached ({monthly_limit} searches/month). "
                 "Your quota resets soon."
             )
             logger.warning(
-                f"QUOTA BLOCK (biweekly): user={request.user.email} "
-                f"count={biweekly_count}/{biweekly_limit} "
+                f"QUOTA BLOCK (monthly): user={request.user.email} "
+                f"count={monthly_count}/{monthly_limit} "
                 f"cost=${period_stats['total_cost']}"
             )
             return False
 
-        # Log remaining quota for proactive monitoring
+        # Attach quota status to request so the view can include it in the response
         daily_remaining = daily_limit - daily_count
-        biweekly_remaining = biweekly_limit - biweekly_count
-        if daily_remaining <= 2 or biweekly_remaining <= 10:
+        monthly_remaining = monthly_limit - monthly_count
+        request._quota_status = {
+            "daily_used": daily_count,
+            "daily_limit": daily_limit,
+            "daily_remaining": daily_remaining,
+            "monthly_used": monthly_count,
+            "monthly_limit": monthly_limit,
+            "monthly_remaining": monthly_remaining,
+            "is_premium": is_premium,
+        }
+
+        # Log when quota is running low
+        if daily_remaining <= 1 or monthly_remaining <= 10:
             logger.info(
                 f"QUOTA LOW: user={request.user.email} "
                 f"daily={daily_count}/{daily_limit} "
-                f"biweekly={biweekly_count}/{biweekly_limit} "
+                f"monthly={monthly_count}/{monthly_limit} "
                 f"cost=${period_stats['total_cost']}"
             )
 
