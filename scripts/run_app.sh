@@ -62,7 +62,19 @@ trap cleanup INT TERM
 # Run Flutter app
 echo -e "${GREEN}Building and launching app...${NC}"
 echo ""
+# Dart-define secrets (override with env vars)
+OUTFI_API_KEY="${OUTFI_MOBILE_API_KEY:-A-wkfUfqEj864To5QA2QsRavy4yphfDsfuhiGiY1h2E}"
+STRIPE_KEY="${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}"
+GOOGLE_ID="${GOOGLE_CLIENT_ID:-placeholder}"
+
+DART_DEFINES=(
+  --dart-define=OUTFI_MOBILE_API_KEY="$OUTFI_API_KEY"
+  --dart-define=STRIPE_PUBLISHABLE_KEY="$STRIPE_KEY"
+  --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_ID"
+)
+
 cd "$(dirname "$0")/../Flutter_outfi_app"
-flutter run -d "$DEVICE"
+flutter run "${DART_DEFINES[@]}" -d "$DEVICE"
+
 
 cleanup

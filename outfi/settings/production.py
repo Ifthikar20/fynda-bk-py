@@ -96,6 +96,8 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "anon": "60/minute",  # 60 requests per minute for anonymous
     "user": "300/minute",  # 300 requests per minute for authenticated
     "burst": "10/second",  # Burst protection
+    # Auth endpoint limits (brute-force protection — stricter in prod)
+    "auth": "3/minute",
     # Image/OCR endpoint limits (production — hard limits)
     "image_upload_anon": "5/hour",
     "image_upload_user": "30/hour",

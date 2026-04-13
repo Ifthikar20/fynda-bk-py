@@ -25,7 +25,8 @@ class SecurityHeadersMiddleware:
         
         # Skip strict CSP for admin pages — Jazzmin/AdminLTE 3 + Bootstrap 5
         # requires unsafe-eval and inline event handlers to render properly
-        is_admin = request.path.startswith("/admin/")
+        from outfi.config import config
+        is_admin = request.path.startswith(f"/{config.security.admin_url}/")
         
         # Content Security Policy
         if not settings.DEBUG and not is_admin:
@@ -109,7 +110,12 @@ class RateLimitMiddleware:
         return self.get_response(request)
     
     def get_client_ip(self, request):
-        """Get the real client IP, handling proxies."""
+        """Get the real client IP, preferring X-Real-IP set by nginx."""
+        # X-Real-IP is set by nginx to $remote_addr (not spoofable)
+        real_ip = request.META.get("HTTP_X_REAL_IP")
+        if real_ip:
+            return real_ip.strip()
+        # Fallback to X-Forwarded-For (less trustworthy)
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
             ip = x_forwarded_for.split(",")[0].strip()
@@ -192,6 +198,9 @@ class RequestLoggingMiddleware:
         return response
     
     def get_client_ip(self, request):
+        real_ip = request.META.get("HTTP_X_REAL_IP")
+        if real_ip:
+            return real_ip.strip()
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
             return x_forwarded_for.split(",")[0].strip()

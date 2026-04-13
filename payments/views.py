@@ -279,6 +279,10 @@ class RestoreSubscriptionView(APIView):
         })
 
 
+from django.utils.decorators import method_decorator
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(APIView):
     """
     POST /payments/webhook/ — Stripe webhook handler.

@@ -160,6 +160,18 @@ echo ""
 # ── Step 3: Flutter dependencies ─────────────────────────────
 echo -e "${YELLOW}[3/6] Installing Flutter dependencies...${NC}"
 cd "$FLUTTER_DIR"
+
+# Dart-define secrets (override with env vars)
+OUTFI_API_KEY="${OUTFI_MOBILE_API_KEY:-A-wkfUfqEj864To5QA2QsRavy4yphfDsfuhiGiY1h2E}"
+STRIPE_KEY="${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}"
+GOOGLE_ID="${GOOGLE_CLIENT_ID:-placeholder}"
+
+DART_DEFINES=(
+  --dart-define=OUTFI_MOBILE_API_KEY="$OUTFI_API_KEY"
+  --dart-define=STRIPE_PUBLISHABLE_KEY="$STRIPE_KEY"
+  --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_ID"
+)
+
 flutter pub get
 echo -e "${GREEN}Flutter dependencies installed.${NC}"
 echo ""
@@ -212,9 +224,9 @@ echo -e "${YELLOW}[6/6] Building and installing on device...${NC}"
 cd "$FLUTTER_DIR"
 
 if [ -n "$DEVICE_ID" ]; then
-  flutter run --release -d "$DEVICE_ID"
+  flutter run --release "${DART_DEFINES[@]}" -d "$DEVICE_ID"
 else
-  flutter run --release
+  flutter run --release "${DART_DEFINES[@]}"
 fi
 
 echo ""

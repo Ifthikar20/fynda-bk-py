@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from outfi.throttles import AuthLoginThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession
@@ -116,6 +117,7 @@ class MobileLoginView(APIView):
     }
     """
     permission_classes = [AllowAny]
+    throttle_classes = [AuthLoginThrottle]
     
     def post(self, request):
         serializer = MobileLoginSerializer(data=request.data)
@@ -184,6 +186,7 @@ class MobileRegisterView(APIView):
     POST /api/mobile/auth/register/
     """
     permission_classes = [AllowAny]
+    throttle_classes = [AuthLoginThrottle]
     
     def post(self, request):
         serializer = MobileRegisterSerializer(data=request.data)

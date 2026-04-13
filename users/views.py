@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
 
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, ChangePasswordSerializer
+from outfi.throttles import AuthLoginThrottle
 
 User = get_user_model()
 
@@ -23,6 +24,7 @@ class RegisterView(APIView):
     POST /api/auth/register/
     """
     permission_classes = [AllowAny]
+    throttle_classes = [AuthLoginThrottle]
     
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -51,6 +53,11 @@ class LoginView(APIView):
     POST /api/auth/login/
     """
     permission_classes = [AllowAny]
+    throttle_classes = [AuthLoginThrottle]
+    
+    # Account lockout settings
+    MAX_FAILED_ATTEMPTS = 5
+    LOCKOUT_DURATION = 900  # 15 minutes
     
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -58,12 +65,38 @@ class LoginView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+        email = serializer.validated_data["email"]
+        
+        # Check account lockout
+        from django.core.cache import cache
+        lockout_key = f"login_lockout:{email}"
+        attempt_key = f"login_fails:{email}"
+        
+        if cache.get(lockout_key):
+            return Response(
+                {"error": "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
         user = authenticate(
-            email=serializer.validated_data["email"],
+            email=email,
             password=serializer.validated_data["password"]
         )
         
         if not user:
+            # Track failed attempts
+            fails = cache.get(attempt_key, 0) + 1
+            cache.set(attempt_key, fails, self.LOCKOUT_DURATION)
+            
+            if fails >= self.MAX_FAILED_ATTEMPTS:
+                cache.set(lockout_key, True, self.LOCKOUT_DURATION)
+                cache.delete(attempt_key)
+                return Response(
+                    {"error": "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+            
+            remaining = self.MAX_FAILED_ATTEMPTS - fails
             return Response(
                 {"error": "Invalid email or password"},
                 status=status.HTTP_401_UNAUTHORIZED
@@ -74,6 +107,10 @@ class LoginView(APIView):
                 {"error": "Account is disabled"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+        
+        # Clear failed attempt counters on successful login
+        cache.delete(attempt_key)
+        cache.delete(lockout_key)
         
         # Generate tokens
         refresh = RefreshToken.for_user(user)

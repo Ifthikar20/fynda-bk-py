@@ -19,6 +19,20 @@ Daily quotas enforced via DailyImageQuotaThrottle:
 from rest_framework.throttling import SimpleRateThrottle
 
 
+class AuthLoginThrottle(SimpleRateThrottle):
+    """
+    Rate limit login/register attempts to prevent brute-force attacks.
+    Uses client IP as the cache key. Configured via DEFAULT_THROTTLE_RATES['auth'].
+    """
+    scope = "auth"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": self.get_ident(request),
+        }
+
+
 class ImageUploadAnonThrottle(SimpleRateThrottle):
     """
     Hourly limit for anonymous users uploading images for visual search.

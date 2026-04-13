@@ -170,6 +170,9 @@ class APIGuardMiddleware:
         return False
     
     def _get_client_ip(self, request):
+        real_ip = request.META.get("HTTP_X_REAL_IP")
+        if real_ip:
+            return real_ip.strip()
         x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded:
             return x_forwarded.split(",")[0].strip()
@@ -422,6 +425,9 @@ class BotDetectionMiddleware:
         return self.get_response(request)
     
     def _get_client_ip(self, request):
+        real_ip = request.META.get("HTTP_X_REAL_IP")
+        if real_ip:
+            return real_ip.strip()
         x_forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded:
             return x_forwarded.split(",")[0].strip()

@@ -166,7 +166,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -175,6 +175,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/hour",
         "user": "1000/hour",
+        # Auth endpoint limits (brute-force protection)
+        "auth": "5/minute",
         # Image/OCR endpoint limits (dev — more generous for testing)
         "image_upload_anon": "20/hour",
         "image_upload_user": "60/hour",
@@ -189,7 +191,7 @@ REST_FRAMEWORK = {
 # JWT Settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
