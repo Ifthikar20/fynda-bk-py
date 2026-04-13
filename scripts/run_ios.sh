@@ -161,14 +161,31 @@ echo ""
 echo -e "${YELLOW}[3/6] Installing Flutter dependencies...${NC}"
 cd "$FLUTTER_DIR"
 
+# Source .env for secrets
+ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  echo -e "${GREEN}Sourcing secrets from .env${NC}"
+  set -a
+  source "$ENV_FILE"
+  set +a
+else
+  echo -e "${YELLOW}No .env found — using shell env / defaults${NC}"
+fi
+
 # Dart-define secrets (override with env vars)
 OUTFI_API_KEY="${OUTFI_MOBILE_API_KEY:-A-wkfUfqEj864To5QA2QsRavy4yphfDsfuhiGiY1h2E}"
 STRIPE_KEY="${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}"
+STRIPE_MERCHANT="${STRIPE_MERCHANT_ID:-merchant.ai.outfi.app}"
 GOOGLE_ID="${GOOGLE_CLIENT_ID:-placeholder}"
+# Detect test vs live mode for Google Pay
+STRIPE_TEST_MODE="false"
+[[ "$STRIPE_KEY" == pk_test_* ]] && STRIPE_TEST_MODE="true"
 
 DART_DEFINES=(
   --dart-define=OUTFI_MOBILE_API_KEY="$OUTFI_API_KEY"
   --dart-define=STRIPE_PUBLISHABLE_KEY="$STRIPE_KEY"
+  --dart-define=STRIPE_MERCHANT_ID="$STRIPE_MERCHANT"
+  --dart-define=STRIPE_TEST_MODE="$STRIPE_TEST_MODE"
   --dart-define=GOOGLE_CLIENT_ID="$GOOGLE_ID"
 )
 
