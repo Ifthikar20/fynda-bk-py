@@ -46,10 +46,10 @@ def _search_products(query, limit=20):
     # Try 2: Direct Amazon RapidAPI (same as frontend classic mode)
     try:
         import requests as req
-        rapidapi_key = os.getenv(
-            "RAPIDAPI_KEY",
-            "ad5affb386msh86b1de74187a3cep186fbejsn29e5c0f03e34",
-        )
+        rapidapi_key = os.getenv("RAPIDAPI_KEY", "")
+        if not rapidapi_key:
+            logger.warning("RAPIDAPI_KEY not set — skipping Amazon fallback")
+            return []
         resp = req.get(
             "https://real-time-amazon-data.p.rapidapi.com/search",
             params={"query": query, "page": "1", "country": "US"},

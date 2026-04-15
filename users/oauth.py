@@ -194,9 +194,21 @@ class AppleOAuth(OAuthProvider):
         if not id_token:
             raise ValueError("No ID token in response")
         
-        # Decode ID token (without verification for now - Apple's tokens are already verified)
-        # In production, you should verify against Apple's public keys
-        payload = jwt.decode(id_token, options={"verify_signature": False})
+        # Verify ID token against Apple's public keys (JWKS)
+        try:
+            from jwt import PyJWKClient
+            jwks_client = PyJWKClient("https://appleid.apple.com/auth/keys")
+            signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+            payload = jwt.decode(
+                id_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=self.client_id,
+                issuer="https://appleid.apple.com",
+            )
+        except Exception as e:
+            logger.error(f"Apple ID token verification failed: {e}")
+            raise ValueError("Invalid Apple ID token")
         
         # Apple only provides name on first login via 'user' field in form_post
         # For subsequent logins, we won't have the name

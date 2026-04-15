@@ -74,7 +74,10 @@ else
 fi
 
 # Dart-define secrets (override with env vars)
-OUTFI_API_KEY="${OUTFI_MOBILE_API_KEY:-A-wkfUfqEj864To5QA2QsRavy4yphfDsfuhiGiY1h2E}"
+OUTFI_API_KEY="${OUTFI_MOBILE_API_KEY:-}"
+if [[ -z "$OUTFI_API_KEY" ]]; then
+  echo -e "${YELLOW}Warning: OUTFI_MOBILE_API_KEY not set — mobile API auth will fail${NC}"
+fi
 STRIPE_KEY="${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}"
 STRIPE_MERCHANT="${STRIPE_MERCHANT_ID:-merchant.ai.outfi.app}"
 GOOGLE_ID="${GOOGLE_CLIENT_ID:-placeholder}"

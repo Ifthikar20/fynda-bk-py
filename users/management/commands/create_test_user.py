@@ -6,13 +6,15 @@ Usage:
     python manage.py create_test_user --email admin@outfi.ai --password MyPass123
 """
 
+import os
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model, authenticate
 
 User = get_user_model()
 
 DEFAULT_EMAIL = "test@outfi.ai"
-DEFAULT_PASSWORD = "Outfi2024!"
+DEFAULT_PASSWORD = os.getenv("TEST_USER_PASSWORD", "")
 DEFAULT_FIRST = "Test"
 DEFAULT_LAST = "User"
 
