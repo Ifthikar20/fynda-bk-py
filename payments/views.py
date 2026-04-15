@@ -312,6 +312,16 @@ class StripeWebhookView(APIView):
         event_type = event["type"]
         data = event["data"]["object"]
 
+        # Idempotency: Stripe may deliver the same event multiple times.
+        # Skip if we've already processed this event (24h dedup window).
+        from django.core.cache import cache
+        event_id = event.get("id", "")
+        idempotency_key = f"stripe_event:{event_id}"
+        if cache.get(idempotency_key):
+            logger.info(f"Stripe webhook: duplicate event {event_id}, skipping")
+            return HttpResponse(status=200)
+        cache.set(idempotency_key, True, timeout=86400)  # 24 hours
+
         logger.info(f"Stripe webhook: {event_type}")
 
         if event_type == "payment_intent.succeeded":

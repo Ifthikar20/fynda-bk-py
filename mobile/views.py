@@ -2241,6 +2241,9 @@ class StoryboardImageUploadView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
 
+    from outfi.throttles import ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle
+    throttle_classes = [ImageUploadAnonThrottle, ImageUploadUserThrottle, ImageBurstThrottle]
+
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
     ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
     MAX_DIMENSION = 1200  # Resize to max 1200px

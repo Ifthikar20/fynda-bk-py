@@ -164,7 +164,7 @@ class UserProfileView(APIView):
             "user": {
                 "id": str(user.id),
                 "name": user.get_short_name(),
-                "email": user.email,
+                # email intentionally excluded — never expose in public API
                 "date_joined": user.date_joined,
             },
             "stats": {

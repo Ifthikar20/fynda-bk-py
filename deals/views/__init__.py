@@ -667,8 +667,9 @@ class VendorStatusView(APIView):
     
     Shows which vendors are enabled, loaded, configured,
     and whether their circuit breakers are open.
+    Requires authentication — exposes internal infrastructure details.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
         from deals.services.vendors import vendor_manager as vm

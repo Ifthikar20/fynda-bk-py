@@ -45,6 +45,9 @@ class RemoveBackgroundView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
 
+    from outfi.throttles import RemoveBgAnonThrottle, RemoveBgUserThrottle, ImageBurstThrottle
+    throttle_classes = [RemoveBgAnonThrottle, RemoveBgUserThrottle, ImageBurstThrottle]
+
     def post(self, request):
         if 'image' not in request.FILES:
             return Response(
