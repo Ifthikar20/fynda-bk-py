@@ -115,11 +115,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# ─── AWS S3 Storage ───────────────────────────────
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "outfi-media")
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
+# ─── AWS S3 Storage (from config) ─────────────────────
+AWS_ACCESS_KEY_ID = config.aws.access_key_id
+AWS_SECRET_ACCESS_KEY = config.aws.secret_access_key
+AWS_STORAGE_BUCKET_NAME = config.aws.storage_bucket_name
+AWS_S3_REGION_NAME = config.aws.s3_region_name
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None  # Use bucket policy
 AWS_S3_OBJECT_PARAMETERS = {
@@ -128,7 +128,7 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWS_QUERYSTRING_EXPIRE = 3600  # Signed URL expiry: 1 hour
 
 # Use S3 for media uploads when credentials are configured
-if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+if config.aws.is_configured:
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -147,10 +147,10 @@ if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
     }
     MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/"
 
-# ─── Stripe / Apple Pay ──────────────────────────────
-STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# ─── Stripe / Apple Pay (from config) ────────────────
+STRIPE_PUBLISHABLE_KEY = config.stripe.publishable_key
+STRIPE_SECRET_KEY = config.stripe.secret_key
+STRIPE_WEBHOOK_SECRET = config.stripe.webhook_secret
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -249,7 +249,26 @@ CACHES = {
 }
 
 # IndexNow Key for automated search engine indexing (Bing, Yandex, DuckDuckGo)
-INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "546739fd9e48406791555cb49282bb77")
+INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "")
+
+# ─── OAuth / APNs / Awin (from config) ───────────────
+# Exposed as settings so services read from `settings.X` not os.getenv()
+GOOGLE_CLIENT_ID = config.oauth.google_client_id
+GOOGLE_CLIENT_SECRET = config.oauth.google_client_secret
+GOOGLE_REDIRECT_URI = config.oauth.google_redirect_uri
+APPLE_CLIENT_ID = config.oauth.apple_client_id
+APPLE_TEAM_ID = config.oauth.apple_team_id
+APPLE_KEY_ID = config.oauth.apple_key_id
+APPLE_PRIVATE_KEY_PATH = config.oauth.apple_private_key_path
+APPLE_REDIRECT_URI = config.oauth.apple_redirect_uri
+
+APNS_KEY_ID = config.apns.key_id
+APNS_TEAM_ID = config.apns.team_id
+APNS_KEY_PATH = config.apns.key_path
+APNS_BUNDLE_ID = config.apns.bundle_id
+APNS_USE_SANDBOX = config.apns.use_sandbox
+
+AWIN_PUBLISHER_ID = config.awin.publisher_id
 
 # Logging Configuration
 LOGGING = {

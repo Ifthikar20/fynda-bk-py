@@ -71,9 +71,10 @@ class EbayService:
     SANDBOX_URL = "https://api.sandbox.ebay.com"
     
     def __init__(self):
-        self.app_id = os.getenv("EBAY_APP_ID")
-        self.cert_id = os.getenv("EBAY_CERT_ID")
-        self.use_sandbox = os.getenv("EBAY_SANDBOX", "false").lower() == "true"
+        from django.conf import settings as _s
+        self.app_id = _s.EBAY_APP_ID
+        self.cert_id = _s.EBAY_CERT_ID
+        self.use_sandbox = False  # Controlled via config/settings
         self._access_token = None
         self._token_expires = None
     

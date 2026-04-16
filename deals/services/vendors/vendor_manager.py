@@ -79,16 +79,25 @@ class VendorManager:
         """
         Check if a vendor is enabled.
         
-        Reads from environment variable first, falls back to registry default.
+        Checks Django settings first (set via config layer),
+        falls back to registry default.
         """
         config = VENDOR_REGISTRY.get(vendor_id)
         if not config:
             return False
         
-        # Check environment variable
-        env_key = config.env_key
-        env_value = os.getenv(env_key, None)
+        # Check Django settings (e.g., VENDOR_AMAZON_ENABLED)
+        from django.conf import settings
+        settings_key = config.env_key  # e.g., "VENDOR_AMAZON_ENABLED"
+        settings_value = getattr(settings, settings_key, None)
         
+        if settings_value is not None:
+            if isinstance(settings_value, bool):
+                return settings_value
+            return str(settings_value).lower() in ("true", "1", "yes", "on")
+        
+        # Check environment variable as fallback
+        env_value = os.getenv(config.env_key, None)
         if env_value is not None:
             return env_value.lower() in ("true", "1", "yes", "on")
         

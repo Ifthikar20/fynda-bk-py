@@ -39,8 +39,9 @@ class CJAffiliateService(AffiliateService):
     
     def _load_credentials(self):
         """Load CJ API credentials from environment."""
-        self.api_key = os.getenv("CJ_AFFILIATE_API_TOKEN")
-        self.website_id = os.getenv("CJ_WEBSITE_ID")
+        from django.conf import settings as _s
+        self.api_key = _s.CJ_API_TOKEN
+        self.website_id = _s.CJ_WEBSITE_ID
         self.timeout = 15
     
     def search_products(self, query: str, limit: int = 20) -> list[AffiliateProduct]:

@@ -40,8 +40,9 @@ class RakutenService(AffiliateService):
     
     def _load_credentials(self):
         """Load Rakuten API credentials from environment."""
-        self.api_key = os.getenv("RAKUTEN_API_TOKEN")
-        self.site_id = os.getenv("RAKUTEN_SITE_ID")
+        from django.conf import settings as _s
+        self.api_key = _s.RAKUTEN_API_TOKEN
+        self.site_id = _s.RAKUTEN_SITE_ID
         self.timeout = 15
     
     def search_products(self, query: str, limit: int = 20) -> list[AffiliateProduct]:

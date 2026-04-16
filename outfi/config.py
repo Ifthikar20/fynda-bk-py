@@ -131,6 +131,59 @@ class APIKeysConfig:
 
 
 @dataclass(frozen=True)
+class OAuthConfig:
+    """OAuth provider credentials — Google and Apple Sign In."""
+    # Google OAuth
+    google_client_id: str = field(default_factory=lambda: os.getenv("GOOGLE_CLIENT_ID", ""))
+    google_client_secret: str = field(default_factory=lambda: os.getenv("GOOGLE_CLIENT_SECRET", ""))
+    google_redirect_uri: str = field(default_factory=lambda: os.getenv("GOOGLE_REDIRECT_URI", ""))
+
+    # Apple Sign In
+    apple_client_id: str = field(default_factory=lambda: os.getenv("APPLE_CLIENT_ID", ""))
+    apple_team_id: str = field(default_factory=lambda: os.getenv("APPLE_TEAM_ID", ""))
+    apple_key_id: str = field(default_factory=lambda: os.getenv("APPLE_KEY_ID", ""))
+    apple_private_key_path: str = field(default_factory=lambda: os.getenv("APPLE_PRIVATE_KEY_PATH", ""))
+    apple_redirect_uri: str = field(default_factory=lambda: os.getenv("APPLE_REDIRECT_URI", ""))
+
+
+@dataclass(frozen=True)
+class APNsConfig:
+    """Apple Push Notification service credentials."""
+    key_id: str = field(default_factory=lambda: os.getenv("APNS_KEY_ID", ""))
+    team_id: str = field(default_factory=lambda: os.getenv("APNS_TEAM_ID", ""))
+    key_path: str = field(default_factory=lambda: os.getenv("APNS_KEY_PATH", "/app/certs/apns_key.p8"))
+    bundle_id: str = field(default_factory=lambda: os.getenv("APNS_BUNDLE_ID", "com.outfi.outfiApp"))
+    use_sandbox: bool = field(default_factory=lambda: os.getenv("APNS_USE_SANDBOX", "true").lower() == "true")
+
+
+@dataclass(frozen=True)
+class AwinConfig:
+    """Awin affiliate network credentials."""
+    publisher_id: str = field(default_factory=lambda: os.getenv("AWIN_PUBLISHER_ID", ""))
+
+
+@dataclass(frozen=True)
+class StripeConfig:
+    """Stripe payment credentials."""
+    publishable_key: str = field(default_factory=lambda: os.getenv("STRIPE_PUBLISHABLE_KEY", ""))
+    secret_key: str = field(default_factory=lambda: os.getenv("STRIPE_SECRET_KEY", ""))
+    webhook_secret: str = field(default_factory=lambda: os.getenv("STRIPE_WEBHOOK_SECRET", ""))
+
+
+@dataclass(frozen=True)
+class AWSConfig:
+    """AWS S3 / general AWS credentials."""
+    access_key_id: str = field(default_factory=lambda: os.getenv("AWS_ACCESS_KEY_ID", ""))
+    secret_access_key: str = field(default_factory=lambda: os.getenv("AWS_SECRET_ACCESS_KEY", ""))
+    storage_bucket_name: str = field(default_factory=lambda: os.getenv("AWS_STORAGE_BUCKET_NAME", "outfi-media"))
+    s3_region_name: str = field(default_factory=lambda: os.getenv("AWS_S3_REGION_NAME", "us-east-1"))
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.access_key_id and self.secret_access_key)
+
+
+@dataclass(frozen=True)
 class SecurityConfig:
     """Security-related settings."""
     secret_key: str = field(default_factory=lambda: os.getenv("SECRET_KEY", "django-insecure-dev-key-change-in-production"))
@@ -189,6 +242,11 @@ class AppConfig:
     apis: APIKeysConfig = field(default_factory=APIKeysConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     email: EmailConfig = field(default_factory=EmailConfig)
+    oauth: OAuthConfig = field(default_factory=OAuthConfig)
+    apns: APNsConfig = field(default_factory=APNsConfig)
+    awin: AwinConfig = field(default_factory=AwinConfig)
+    stripe: StripeConfig = field(default_factory=StripeConfig)
+    aws: AWSConfig = field(default_factory=AWSConfig)
     
     @property
     def is_production(self) -> bool:

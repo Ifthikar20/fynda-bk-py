@@ -27,7 +27,8 @@ class BestBuyVendor(BaseVendorService):
     BASE_URL = "https://api.bestbuy.com/v1"
     
     def _load_credentials(self):
-        self.api_key = os.getenv("BESTBUY_API_KEY")
+        from django.conf import settings
+        self.api_key = settings.BESTBUY_API_KEY
         if self.api_key:
             logger.info("Best Buy vendor initialized")
     

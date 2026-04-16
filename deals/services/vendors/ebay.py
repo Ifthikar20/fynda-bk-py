@@ -29,8 +29,9 @@ class EbayVendor(BaseVendorService):
     SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
     
     def _load_credentials(self):
-        self.client_id = os.getenv("EBAY_CLIENT_ID")
-        self.client_secret = os.getenv("EBAY_CLIENT_SECRET")
+        from django.conf import settings as _s
+        self.client_id = _s.EBAY_APP_ID
+        self.client_secret = _s.EBAY_CERT_ID
         self._access_token = None
         
         if self.client_id and self.client_secret:

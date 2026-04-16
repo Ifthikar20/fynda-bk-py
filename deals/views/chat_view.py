@@ -6,7 +6,6 @@ Uses OpenAI GPT-4o-mini to understand natural language queries
 and generate conversational responses alongside product results.
 """
 
-import os
 import json
 import logging
 
@@ -22,7 +21,7 @@ def _get_openai_client():
     """Lazy-load OpenAI client."""
     try:
         from openai import OpenAI
-        api_key = os.getenv("OPENAI_API_KEY", "")
+        api_key = settings.OPENAI_API_KEY
         if not api_key:
             return None
         return OpenAI(api_key=api_key)
@@ -46,7 +45,7 @@ def _search_products(query, limit=20):
     # Try 2: Direct Amazon RapidAPI (same as frontend classic mode)
     try:
         import requests as req
-        rapidapi_key = os.getenv("RAPIDAPI_KEY", "")
+        rapidapi_key = settings.RAPIDAPI_KEY
         if not rapidapi_key:
             logger.warning("RAPIDAPI_KEY not set — skipping Amazon fallback")
             return []

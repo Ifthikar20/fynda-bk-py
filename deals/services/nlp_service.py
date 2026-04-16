@@ -5,7 +5,6 @@ Advanced natural language processing for query understanding.
 Uses OpenAI API for intent extraction, falls back to regex if unavailable.
 """
 
-import os
 import re
 import json
 import logging
@@ -97,7 +96,8 @@ class NLPService:
     }
     
     def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY", "")
+        from django.conf import settings
+        self.api_key = settings.OPENAI_API_KEY
         self._client = None
     
     @property

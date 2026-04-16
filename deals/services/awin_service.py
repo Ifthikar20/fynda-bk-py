@@ -2,7 +2,6 @@
 Awin Affiliate Service
 Generates affiliate tracking deep links for Awin partner retailers
 """
-import os
 import urllib.parse
 from typing import Optional, Dict
 
@@ -21,7 +20,8 @@ class AwinAffiliateService:
     BASE_URL = "https://www.awin1.com/cread.php"
     
     # Publisher ID from environment or default
-    PUBLISHER_ID = os.getenv('AWIN_PUBLISHER_ID', '2754350')
+    from django.conf import settings as _s
+    PUBLISHER_ID = _s.AWIN_PUBLISHER_ID if hasattr(_s, 'AWIN_PUBLISHER_ID') else ''
     
     # Advertiser IDs - Add more as you get approved
     # Get these from Awin dashboard after advertiser approval

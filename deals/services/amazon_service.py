@@ -73,7 +73,8 @@ class AmazonService:
     BASE_URL = "https://real-time-amazon-data.p.rapidapi.com"
     
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        from django.conf import settings
+        self.api_key = settings.RAPIDAPI_KEY
         self.enabled = bool(self.api_key)
         
         if self.enabled:

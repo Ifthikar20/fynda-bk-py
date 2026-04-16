@@ -5,7 +5,6 @@ Searches Amazon via RapidAPI Real-Time Amazon Data API.
 Extends BaseVendorService — returns VendorProduct.
 """
 
-import os
 import logging
 from typing import List, Optional
 from datetime import datetime
@@ -27,7 +26,8 @@ class AmazonVendor(BaseVendorService):
     BASE_URL = "https://real-time-amazon-data.p.rapidapi.com"
     
     def _load_credentials(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        from django.conf import settings
+        self.api_key = settings.RAPIDAPI_KEY
         if self.api_key:
             logger.info("Amazon RapidAPI vendor initialized")
         else:

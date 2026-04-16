@@ -5,7 +5,6 @@ Image processing for product recognition and price extraction.
 Uses OpenAI Vision API to analyze product screenshots.
 """
 
-import os
 import base64
 import json
 import logging
@@ -75,7 +74,8 @@ IMPORTANT RULES:
 - Respond with ONLY the JSON object, no other text"""
 
     def __init__(self):
-        self.api_key = os.getenv("OPENAI_API_KEY", "")
+        from django.conf import settings
+        self.api_key = settings.OPENAI_API_KEY
         self._client = None
     
     @property

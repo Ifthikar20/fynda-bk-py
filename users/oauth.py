@@ -4,7 +4,6 @@ OAuth Provider Handlers
 Supports Google and Apple OAuth authentication.
 """
 
-import os
 import jwt
 import json
 import logging
@@ -43,8 +42,8 @@ class GoogleOAuth(OAuthProvider):
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
     
     def __init__(self):
-        self.client_id = os.getenv('GOOGLE_CLIENT_ID', '')
-        self.client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '')
+        self.client_id = settings.GOOGLE_CLIENT_ID
+        self.client_secret = settings.GOOGLE_CLIENT_SECRET
     
     def get_authorization_url(self, redirect_uri: str, state: str = None) -> str:
         """Generate Google OAuth authorization URL."""
@@ -73,7 +72,7 @@ class GoogleOAuth(OAuthProvider):
             'code': code,
             'client_id': self.client_id,
             'client_secret': self.client_secret,
-            'redirect_uri': redirect_uri or os.getenv('GOOGLE_REDIRECT_URI', ''),
+            'redirect_uri': redirect_uri or settings.GOOGLE_REDIRECT_URI,
             'grant_type': 'authorization_code',
         }, timeout=10)
         
@@ -117,10 +116,10 @@ class AppleOAuth(OAuthProvider):
     KEYS_URL = "https://appleid.apple.com/auth/keys"
     
     def __init__(self):
-        self.client_id = os.getenv('APPLE_CLIENT_ID', '')  # Service ID
-        self.team_id = os.getenv('APPLE_TEAM_ID', '')
-        self.key_id = os.getenv('APPLE_KEY_ID', '')
-        self.private_key_path = os.getenv('APPLE_PRIVATE_KEY_PATH', '')
+        self.client_id = settings.APPLE_CLIENT_ID  # Service ID
+        self.team_id = settings.APPLE_TEAM_ID
+        self.key_id = settings.APPLE_KEY_ID
+        self.private_key_path = settings.APPLE_PRIVATE_KEY_PATH
         self._private_key = None
     
     @property
@@ -181,7 +180,7 @@ class AppleOAuth(OAuthProvider):
             'client_secret': client_secret,
             'code': code,
             'grant_type': 'authorization_code',
-            'redirect_uri': redirect_uri or os.getenv('APPLE_REDIRECT_URI', ''),
+            'redirect_uri': redirect_uri or settings.APPLE_REDIRECT_URI,
         }, timeout=10)
         
         if token_response.status_code != 200:

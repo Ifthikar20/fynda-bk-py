@@ -84,7 +84,8 @@ class FacebookVendor(BaseVendorService):
     _max_distance_miles: Optional[float] = None
 
     def _load_credentials(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        from django.conf import settings
+        self.api_key = settings.RAPIDAPI_KEY
         if self.api_key:
             logger.info("Facebook Marketplace vendor initialized")
 

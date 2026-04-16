@@ -42,9 +42,10 @@ class ShareASaleService(AffiliateService):
     
     def _load_credentials(self):
         """Load ShareASale API credentials from environment."""
-        self.affiliate_id = os.getenv("SHAREASALE_AFFILIATE_ID")
-        self.api_key = os.getenv("SHAREASALE_API_TOKEN")
-        self.api_secret = os.getenv("SHAREASALE_API_SECRET")
+        from django.conf import settings as _s
+        self.affiliate_id = _s.SHAREASALE_AFFILIATE_ID
+        self.api_key = _s.SHAREASALE_API_TOKEN
+        self.api_secret = _s.SHAREASALE_API_SECRET
         self.timeout = 15
     
     def is_configured(self) -> bool:

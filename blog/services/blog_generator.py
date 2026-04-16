@@ -7,7 +7,6 @@ Posts are saved as drafts for editorial review before publishing.
 
 import json
 import logging
-import os
 import random
 
 from openai import OpenAI
@@ -262,7 +261,8 @@ def generate_blog_post(topic=None):
         dict with keys: title, excerpt, content, meta_title, meta_description, category, tags
         None if generation fails.
     """
-    api_key = os.getenv("OPENAI_API_KEY", "")
+    from django.conf import settings
+    api_key = settings.OPENAI_API_KEY
     if not api_key:
         logger.error("OPENAI_API_KEY not set — cannot generate blog post")
         return None

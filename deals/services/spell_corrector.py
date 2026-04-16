@@ -9,7 +9,6 @@ Timeout: 2s max — if OpenAI is slow, returns None gracefully.
 """
 
 import logging
-import os
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
@@ -41,7 +40,8 @@ def _get_openai_client():
     """Lazy-load OpenAI client to avoid import errors if not configured."""
     try:
         from openai import OpenAI
-        api_key = os.environ.get("OPENAI_API_KEY")
+        from django.conf import settings
+        api_key = settings.OPENAI_API_KEY
         if not api_key:
             logger.warning("OPENAI_API_KEY not set — spell correction disabled")
             return None

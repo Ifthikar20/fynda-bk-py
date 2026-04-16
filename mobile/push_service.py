@@ -15,18 +15,17 @@ Generate the key:
 """
 
 import logging
-import os
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# APNs config from environment
-APNS_KEY_ID = os.getenv("APNS_KEY_ID", "")
-APNS_TEAM_ID = os.getenv("APNS_TEAM_ID", "")
-APNS_KEY_PATH = os.getenv("APNS_KEY_PATH", "/app/certs/apns_key.p8")
-APNS_BUNDLE_ID = "com.outfi.outfiApp"
-APNS_USE_SANDBOX = os.getenv("APNS_USE_SANDBOX", "true").lower() == "true"
+# APNs config from settings (centralized config layer)
+APNS_KEY_ID = settings.APNS_KEY_ID
+APNS_TEAM_ID = settings.APNS_TEAM_ID
+APNS_KEY_PATH = settings.APNS_KEY_PATH
+APNS_BUNDLE_ID = settings.APNS_BUNDLE_ID
+APNS_USE_SANDBOX = settings.APNS_USE_SANDBOX
 
 
 def _get_client():

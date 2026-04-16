@@ -69,7 +69,8 @@ class BestBuyService:
     BASE_URL = "https://api.bestbuy.com/v1"
     
     def __init__(self):
-        self.api_key = os.getenv("BESTBUY_API_KEY")
+        from django.conf import settings
+        self.api_key = settings.BESTBUY_API_KEY
     
     def search(self, query: str, limit: int = 10, max_price: Optional[float] = None) -> list[BestBuyDeal]:
         """
