@@ -31,15 +31,20 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
-# Plan pricing in cents
+# Plan pricing in cents (kept for web/Stripe — Apple IAP uses App Store pricing)
 PLAN_PRICES = {
+    "premium_weekly": {
+        "amount": 399,   # $3.99
+        "interval_days": 7,
+        "label": "Outfi Premium — Weekly",
+    },
     "premium_biweekly": {
-        "amount": 499,   # $4.99
-        "interval_days": 14,
-        "label": "Outfi Premium — 2 Weeks",
+        "amount": 399,   # $3.99 (legacy alias → weekly)
+        "interval_days": 7,
+        "label": "Outfi Premium — Weekly",
     },
     "premium_monthly": {
-        "amount": 999,   # $9.99
+        "amount": 1299,  # $12.99
         "interval_days": 30,
         "label": "Outfi Premium — Monthly",
     },

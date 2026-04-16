@@ -19,7 +19,8 @@ class Subscription(models.Model):
 
     PLAN_CHOICES = [
         ("free", "Free"),
-        ("premium_biweekly", "Premium — 2 Weeks"),
+        ("premium_weekly", "Premium — Weekly"),
+        ("premium_biweekly", "Premium — 2 Weeks"),  # Legacy
         ("premium_monthly", "Premium — Monthly"),
     ]
 

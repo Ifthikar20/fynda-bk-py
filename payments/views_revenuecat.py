@@ -150,8 +150,8 @@ class RevenueCatWebhookView(APIView):
         product_id = event.get('product_id', '')
         if 'monthly' in product_id:
             return 'premium_monthly'
-        elif 'biweekly' in product_id or 'two_week' in product_id:
-            return 'premium_biweekly'
+        elif 'biweekly' in product_id or 'weekly' in product_id:
+            return 'premium_weekly'
         return 'premium_monthly'  # Default
 
     def _handle_purchase(self, event, app_user_id):
