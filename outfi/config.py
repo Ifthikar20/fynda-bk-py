@@ -229,14 +229,13 @@ class EmailConfig:
 
 
 @dataclass(frozen=True)
-class RevenueCatConfig:
-    """RevenueCat configuration for Apple IAP webhooks."""
-    webhook_secret: str = field(default_factory=lambda: os.getenv("REVENUECAT_WEBHOOK_SECRET", ""))
-    api_key: str = field(default_factory=lambda: os.getenv("REVENUECAT_API_KEY", ""))
+class AppleIAPConfig:
+    """Apple In-App Purchase configuration."""
+    shared_secret: str = field(default_factory=lambda: os.getenv("APPLE_IAP_SHARED_SECRET", ""))
 
     @property
     def is_configured(self) -> bool:
-        return bool(self.webhook_secret)
+        return bool(self.shared_secret)
 
 
 @dataclass(frozen=True)
@@ -258,7 +257,7 @@ class AppConfig:
     awin: AwinConfig = field(default_factory=AwinConfig)
     stripe: StripeConfig = field(default_factory=StripeConfig)
     aws: AWSConfig = field(default_factory=AWSConfig)
-    revenuecat: RevenueCatConfig = field(default_factory=RevenueCatConfig)
+    apple_iap: AppleIAPConfig = field(default_factory=AppleIAPConfig)
     
     @property
     def is_production(self) -> bool:

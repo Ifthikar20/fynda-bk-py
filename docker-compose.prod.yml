@@ -38,7 +38,7 @@ services:
       - APNS_TEAM_ID=${APNS_TEAM_ID:-}
       - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/certs/apns_key.p8}
       - APNS_USE_SANDBOX=${APNS_USE_SANDBOX:-true}
-      - REVENUECAT_WEBHOOK_SECRET=${REVENUECAT_WEBHOOK_SECRET:-}
+      - APPLE_IAP_SHARED_SECRET=${APPLE_IAP_SHARED_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -147,7 +147,7 @@ services:
       - APNS_TEAM_ID=${APNS_TEAM_ID:-}
       - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/certs/apns_key.p8}
       - APNS_USE_SANDBOX=${APNS_USE_SANDBOX:-true}
-      - REVENUECAT_WEBHOOK_SECRET=${REVENUECAT_WEBHOOK_SECRET:-}
+      - APPLE_IAP_SHARED_SECRET=${APPLE_IAP_SHARED_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
