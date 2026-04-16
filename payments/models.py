@@ -38,9 +38,16 @@ class Subscription(models.Model):
         related_name="subscription",
     )
 
-    # Stripe references
+    # Stripe references (kept for web payments)
     stripe_customer_id = models.CharField(max_length=255, blank=True, default="")
     stripe_subscription_id = models.CharField(max_length=255, blank=True, default="")
+
+    # RevenueCat / Apple IAP references
+    revenuecat_app_user_id = models.CharField(max_length=255, blank=True, default="")
+    original_transaction_id = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="Apple original transaction ID for IAP tracking",
+    )
 
     # Plan
     plan = models.CharField(max_length=30, choices=PLAN_CHOICES, default="free")

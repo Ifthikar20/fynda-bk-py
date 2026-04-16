@@ -229,6 +229,17 @@ class EmailConfig:
 
 
 @dataclass(frozen=True)
+class RevenueCatConfig:
+    """RevenueCat configuration for Apple IAP webhooks."""
+    webhook_secret: str = field(default_factory=lambda: os.getenv("REVENUECAT_WEBHOOK_SECRET", ""))
+    api_key: str = field(default_factory=lambda: os.getenv("REVENUECAT_API_KEY", ""))
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.webhook_secret)
+
+
+@dataclass(frozen=True)
 class AppConfig:
     """Main application configuration - aggregates all config sections."""
     
@@ -247,6 +258,7 @@ class AppConfig:
     awin: AwinConfig = field(default_factory=AwinConfig)
     stripe: StripeConfig = field(default_factory=StripeConfig)
     aws: AWSConfig = field(default_factory=AWSConfig)
+    revenuecat: RevenueCatConfig = field(default_factory=RevenueCatConfig)
     
     @property
     def is_production(self) -> bool:

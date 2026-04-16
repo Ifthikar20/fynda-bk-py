@@ -270,6 +270,9 @@ APNS_USE_SANDBOX = config.apns.use_sandbox
 
 AWIN_PUBLISHER_ID = config.awin.publisher_id
 
+REVENUECAT_WEBHOOK_SECRET = config.revenuecat.webhook_secret
+REVENUECAT_API_KEY = config.revenuecat.api_key
+
 # Logging Configuration
 LOGGING = {
     "version": 1,
