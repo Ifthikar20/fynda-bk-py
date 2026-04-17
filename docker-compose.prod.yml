@@ -188,6 +188,7 @@ services:
       - /var/www/certbot:/var/www/certbot:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/frontend:/var/www/frontend:ro
+      - ./ops-dashboard:/var/www/ops-dashboard:ro
       - static_data:/var/www/static:ro
       - media_data:/var/www/media:ro
     depends_on:

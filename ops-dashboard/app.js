@@ -8,7 +8,7 @@
 
     // ─── Configuration ──────────────────────────────────────────────────────
     const DEFAULT_CONFIG = {
-        apiUrl: 'https://api.outfi.ai/internal/ops/status/',
+        apiUrl: '/internal/ops/status/',
         refreshInterval: 15,      // seconds
         maxActivityItems: 30,
         latencyHistorySize: 20,
