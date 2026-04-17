@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ops Command Center — System Status</title>
+    <meta name="description" content="Real-time infrastructure monitoring dashboard for Outfi & FetchBot services.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <!-- ─── Ambient Background ─── -->
+    <div class="ambient-bg">
+        <div class="ambient-orb ambient-orb--1"></div>
+        <div class="ambient-orb ambient-orb--2"></div>
+        <div class="ambient-orb ambient-orb--3"></div>
+    </div>
+
+    <!-- ─── Header ─── -->
+    <header class="header" id="header">
+        <div class="header__left">
+            <div class="header__logo">
+                <svg class="header__logo-icon" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+                    <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/>
+                    <circle cx="16" cy="16" r="3" fill="currentColor"/>
+                    <line x1="16" y1="2" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="16" y1="24" x2="16" y2="30" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="2" y1="16" x2="8" y2="16" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="24" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <div>
+                    <h1 class="header__title">Ops Command Center</h1>
+                    <p class="header__subtitle">Infrastructure Monitoring</p>
+                </div>
+            </div>
+        </div>
+        <div class="header__right">
+            <div class="header__status" id="connectionStatus">
+                <span class="pulse-dot pulse-dot--green"></span>
+                <span class="header__status-text">Connected</span>
+            </div>
+            <div class="header__meta">
+                <span class="header__server" id="serverHost">54.81.148.134</span>
+                <span class="header__divider">•</span>
+                <span class="header__time" id="lastUpdated">--:--:--</span>
+            </div>
+            <button class="btn btn--refresh" id="refreshBtn" title="Refresh Now">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+            <button class="btn btn--settings" id="settingsBtn" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ─── Settings Panel ─── -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-panel__content glass-card">
+            <h3 class="settings-panel__title">Dashboard Settings</h3>
+            <div class="settings-field">
+                <label for="apiUrlInput">API Endpoint</label>
+                <input type="url" id="apiUrlInput" class="settings-input" placeholder="https://api.outfi.ai/internal/ops/status/">
+            </div>
+            <div class="settings-field">
+                <label for="refreshInterval">Refresh Interval (seconds)</label>
+                <input type="number" id="refreshInterval" class="settings-input" value="15" min="5" max="300">
+            </div>
+            <div class="settings-actions">
+                <button class="btn btn--primary" id="saveSettingsBtn">Save</button>
+                <button class="btn btn--ghost" id="cancelSettingsBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Main Content ─── -->
+    <main class="main">
+
+        <!-- ─── Overall Health Banner ─── -->
+        <section class="health-banner" id="healthBanner">
+            <div class="health-banner__indicator">
+                <div class="health-ring health-ring--ok" id="healthRing">
+                    <svg viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" class="health-ring__track"/>
+                        <circle cx="60" cy="60" r="54" class="health-ring__fill" id="healthRingFill"/>
+                    </svg>
+                    <span class="health-ring__label" id="healthScore">--</span>
+                </div>
+            </div>
+            <div class="health-banner__info">
+                <h2 class="health-banner__status" id="healthStatus">Connecting...</h2>
+                <p class="health-banner__detail" id="healthDetail">Waiting for first status check</p>
+            </div>
+        </section>
+
+        <!-- ─── System Vitals ─── -->
+        <section class="section" id="vitalsSection">
+            <h2 class="section__title">
+                <svg class="section__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                System Vitals
+            </h2>
+            <div class="vitals-grid">
+                <div class="vital-card glass-card" id="cpuCard">
+                    <div class="vital-card__ring">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" class="ring-track"/>
+                            <circle cx="50" cy="50" r="42" class="ring-fill" id="cpuRing" style="--percent: 0"/>
+                        </svg>
+                        <span class="vital-card__value" id="cpuValue">--%</span>
+                    </div>
+                    <div class="vital-card__label">CPU Usage</div>
+                </div>
+                <div class="vital-card glass-card" id="memoryCard">
+                    <div class="vital-card__ring">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" class="ring-track"/>
+                            <circle cx="50" cy="50" r="42" class="ring-fill" id="memoryRing" style="--percent: 0"/>
+                        </svg>
+                        <span class="vital-card__value" id="memoryValue">--%</span>
+                    </div>
+                    <div class="vital-card__label">Memory</div>
+                    <div class="vital-card__detail" id="memoryDetail">-- / -- MB</div>
+                </div>
+                <div class="vital-card glass-card" id="diskCard">
+                    <div class="vital-card__ring">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" class="ring-track"/>
+                            <circle cx="50" cy="50" r="42" class="ring-fill" id="diskRing" style="--percent: 0"/>
+                        </svg>
+                        <span class="vital-card__value" id="diskValue">--%</span>
+                    </div>
+                    <div class="vital-card__label">Disk</div>
+                    <div class="vital-card__detail" id="diskDetail">-- / -- GB</div>
+                </div>
+                <div class="vital-card glass-card" id="uptimeCard">
+                    <div class="vital-card__icon-large">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <div class="vital-card__value vital-card__value--text" id="uptimeValue">--</div>
+                    <div class="vital-card__label">Uptime</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Docker Containers ─── -->
+        <section class="section" id="containersSection">
+            <h2 class="section__title">
+                <svg class="section__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                Docker Containers
+                <span class="section__badge" id="containerCount">0</span>
+            </h2>
+            <div class="container-grid" id="containerGrid">
+                <!-- Populated by JS -->
+                <div class="skeleton-card glass-card"></div>
+                <div class="skeleton-card glass-card"></div>
+                <div class="skeleton-card glass-card"></div>
+            </div>
+        </section>
+
+        <!-- ─── Service Health ─── -->
+        <section class="section" id="servicesSection">
+            <h2 class="section__title">
+                <svg class="section__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                Service Health
+            </h2>
+            <div class="services-grid" id="servicesGrid">
+                <!-- Populated by JS -->
+                <div class="skeleton-card glass-card skeleton-card--wide"></div>
+                <div class="skeleton-card glass-card skeleton-card--wide"></div>
+                <div class="skeleton-card glass-card skeleton-card--wide"></div>
+            </div>
+        </section>
+
+        <!-- ─── Endpoint Monitor ─── -->
+        <section class="section" id="endpointsSection">
+            <h2 class="section__title">
+                <svg class="section__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                Endpoint Monitor
+            </h2>
+            <div class="endpoints-list" id="endpointsList">
+                <!-- Populated by JS -->
+                <div class="skeleton-card glass-card skeleton-card--row"></div>
+                <div class="skeleton-card glass-card skeleton-card--row"></div>
+            </div>
+        </section>
+
+        <!-- ─── Activity Feed ─── -->
+        <section class="section" id="activitySection">
+            <h2 class="section__title">
+                <svg class="section__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Activity Feed
+            </h2>
+            <div class="activity-feed glass-card" id="activityFeed">
+                <div class="activity-feed__empty">
+                    <p>Monitoring started — events will appear here</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ─── Footer ─── -->
+    <footer class="footer">
+        <span>Ops Command Center v1.0</span>
+        <span class="footer__divider">•</span>
+        <span>Polling every <strong id="pollIntervalDisplay">15</strong>s</span>
+        <span class="footer__divider">•</span>
+        <span id="footerStatus">Initializing...</span>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

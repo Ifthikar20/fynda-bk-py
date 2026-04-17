@@ -14,6 +14,8 @@ from outfi.config import config
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticBlogSitemap
 from blog.feeds import LatestPostsFeed
 from users.analytics_views import analytics_dashboard, analytics_data
+from django.contrib.admin.views.decorators import staff_member_required
+from core.ops_views import ops_status_view
 
 # Sitemap configuration
 sitemaps = {
@@ -112,6 +114,9 @@ urlpatterns = [
     # Internal staff-only analytics dashboard (mounted outside /api/ to bypass APIGuard)
     path('internal/analytics/', analytics_dashboard, name='internal_analytics'),
     path('internal/analytics/data/', analytics_data, name='internal_analytics_data'),
+
+    # Ops Command Center — system health API (staff-only)
+    path('internal/ops/status/', staff_member_required(ops_status_view), name='ops_status'),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 
