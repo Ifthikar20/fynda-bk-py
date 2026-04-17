@@ -1111,8 +1111,100 @@ body {
     opacity: 0.3;
 }
 
+/* ─── Container Expanded Detail (click to expand) ────────────────────────── */
+
+.container-card {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.container-card__expand-hint {
+    font-size: 0.6rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: var(--space-sm);
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.container-card:hover .container-card__expand-hint {
+    opacity: 1;
+}
+
+.container-card__detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s var(--ease-out), margin-top 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.container-card.expanded .container-card__detail {
+    max-height: 300px;
+    opacity: 1;
+    margin-top: var(--space-md);
+}
+
+.container-card__detail-inner {
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.container-card__usage-row {
+    margin-bottom: var(--space-sm);
+}
+
+.container-card__usage-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.container-card__usage-bar {
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.container-card__usage-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s var(--ease-out);
+    background: var(--green);
+}
+
+.container-card__usage-fill[data-level="warning"] { background: var(--amber); }
+.container-card__usage-fill[data-level="critical"] { background: var(--red); }
+
+.container-card__detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.container-card__detail-row:last-child {
+    border-bottom: none;
+}
+
+.container-card__detail-key {
+    color: var(--text-tertiary);
+}
+
+.container-card__detail-val {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 
+/* Tablet landscape */
 @media (max-width: 1024px) {
     .vitals-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1122,61 +1214,305 @@ body {
     }
 }
 
+/* Tablet portrait / large phone landscape */
 @media (max-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+
     .header {
         flex-direction: column;
-        gap: var(--space-md);
-        padding: var(--space-md);
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        position: sticky;
+        top: 0;
+    }
+
+    .header__left {
+        width: 100%;
     }
 
     .header__right {
+        width: 100%;
         flex-wrap: wrap;
-        justify-content: center;
+        justify-content: space-between;
+        gap: var(--space-sm);
+    }
+
+    .header__meta {
+        font-size: 0.65rem;
     }
 
     .main {
-        padding: var(--space-md);
+        padding: var(--space-md) var(--space-sm) var(--space-2xl);
     }
 
     .health-banner {
         flex-direction: column;
         text-align: center;
+        padding: var(--space-md);
+        gap: var(--space-md);
+    }
+
+    .health-ring {
+        width: 80px;
+        height: 80px;
+    }
+
+    .health-ring__label {
+        font-size: 1.25rem;
+    }
+
+    .health-banner__status {
+        font-size: 1.1rem;
     }
 
     .vitals-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+
+    .vital-card {
+        padding: var(--space-md) var(--space-sm);
+    }
+
+    .vital-card__ring {
+        width: 70px;
+        height: 70px;
+    }
+
+    .vital-card__value {
+        font-size: 1rem;
     }
 
     .services-grid {
         grid-template-columns: 1fr;
+        gap: var(--space-sm);
     }
 
     .container-grid {
         grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .container-card {
+        padding: var(--space-md);
+    }
+
+    .container-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
     }
 
     .endpoint-row {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        padding: var(--space-md);
     }
 
     .endpoint-row__metrics {
         width: 100%;
-        justify-content: flex-start;
-        gap: var(--space-md);
-    }
-}
-
-@media (max-width: 480px) {
-    .vitals-grid {
-        grid-template-columns: 1fr 1fr;
+        display: flex;
+        justify-content: space-between;
     }
 
-    .container-grid {
-        grid-template-columns: 1fr;
+    .section__title {
+        font-size: 0.78rem;
+    }
+
+    .footer {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        padding: var(--space-md);
+        font-size: 0.65rem;
     }
 
     .settings-panel {
         width: 100%;
         right: -100%;
     }
+
+    .activity-item {
+        gap: var(--space-sm);
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .activity-item__time {
+        min-width: 55px;
+        font-size: 0.6rem;
+    }
+
+    .activity-item__text {
+        font-size: 0.72rem;
+    }
 }
+
+/* Phone portrait */
+@media (max-width: 480px) {
+    html {
+        font-size: 14px;
+    }
+
+    .header__title {
+        font-size: 1rem;
+    }
+
+    .header__subtitle {
+        font-size: 0.6rem;
+    }
+
+    .header__logo-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .main {
+        padding: var(--space-sm) var(--space-sm) var(--space-2xl);
+    }
+
+    .health-banner {
+        padding: var(--space-sm) var(--space-md);
+        margin-bottom: var(--space-lg);
+    }
+
+    .health-ring {
+        width: 68px;
+        height: 68px;
+    }
+
+    .health-banner__status {
+        font-size: 1rem;
+    }
+
+    .health-banner__detail {
+        font-size: 0.75rem;
+    }
+
+    .vitals-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-xs);
+    }
+
+    .vital-card {
+        padding: var(--space-sm);
+    }
+
+    .vital-card__ring {
+        width: 60px;
+        height: 60px;
+        margin-bottom: var(--space-sm);
+    }
+
+    .vital-card__value {
+        font-size: 0.9rem;
+    }
+
+    .vital-card__label {
+        font-size: 0.65rem;
+    }
+
+    .vital-card__detail {
+        font-size: 0.6rem;
+    }
+
+    .vital-card__value--text {
+        font-size: 0.8rem;
+    }
+
+    .vital-card__icon-large {
+        width: 40px;
+        height: 40px;
+        margin-bottom: var(--space-sm);
+    }
+
+    .vital-card__icon-large svg {
+        width: 30px;
+        height: 30px;
+    }
+
+    .container-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .container-card__name {
+        font-size: 0.75rem;
+    }
+
+    .container-card__status {
+        font-size: 0.6rem;
+        padding: 2px 8px;
+    }
+
+    .service-card {
+        padding: var(--space-md);
+    }
+
+    .service-card__name {
+        font-size: 0.82rem;
+    }
+
+    .service-card__icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+
+    .service-card__metric-value {
+        font-size: 0.9rem;
+    }
+
+    .endpoint-row__label {
+        font-size: 0.78rem;
+    }
+
+    .endpoint-row__url {
+        font-size: 0.6rem;
+    }
+
+    .section {
+        margin-bottom: var(--space-lg);
+    }
+
+    .section__title {
+        margin-bottom: var(--space-md);
+    }
+
+    .ambient-orb--1 { width: 300px; height: 300px; }
+    .ambient-orb--2 { width: 250px; height: 250px; }
+    .ambient-orb--3 { display: none; }
+}
+
+/* Safe area for notched phones */
+@supports (padding: env(safe-area-inset-top)) {
+    .header {
+        padding-top: max(var(--space-md), env(safe-area-inset-top));
+        padding-left: max(var(--space-md), env(safe-area-inset-left));
+        padding-right: max(var(--space-md), env(safe-area-inset-right));
+    }
+
+    .footer {
+        padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom));
+    }
+
+    .main {
+        padding-left: max(var(--space-md), env(safe-area-inset-left));
+        padding-right: max(var(--space-md), env(safe-area-inset-right));
+    }
+}
+
+/* Touch device hover fix */
+@media (hover: none) {
+    .glass-card:hover {
+        transform: none;
+        border-color: var(--border-subtle);
+        box-shadow: var(--shadow-card);
+    }
+
+    .container-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+

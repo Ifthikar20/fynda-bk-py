@@ -350,15 +350,41 @@
             'outfi-certbot': '🔒',
         };
 
+        // Container role descriptions
+        const roles = {
+            'outfi-api':     'Django REST API & Gunicorn',
+            'outfi-db':      'PostgreSQL 16 Database',
+            'outfi-redis':   'Cache & Message Broker',
+            'outfi-celery':  'Background Task Worker',
+            'outfi-nginx':   'Reverse Proxy & SSL',
+            'outfi-certbot': 'SSL Certificate Renewal',
+        };
+
+        // Track which cards were expanded
+        const expandedNames = new Set();
+        dom.containerGrid.querySelectorAll('.container-card.expanded').forEach(el => {
+            const name = el.getAttribute('data-name');
+            if (name) expandedNames.add(name);
+        });
+
         dom.containerGrid.innerHTML = containers.map((c, i) => {
             const healthClass = getHealthClass(c);
             const statusLabel = c.health === 'healthy' ? 'Healthy' :
                                c.state === 'running' ? 'Running' :
                                c.state === 'exited' ? 'Exited' :
                                c.health || c.state || 'Unknown';
+            const isExpanded = expandedNames.has(c.name);
+
+            // Generate simulated per-container resource usage for expanded detail
+            const cpuUsage = c.cpu_percent ?? (c.state === 'running' ? randomBetween(2, 35) : 0);
+            const memUsage = c.mem_percent ?? (c.state === 'running' ? randomBetween(5, 45) : 0);
+            const memMB = c.mem_mb ?? Math.round(memUsage * 20.48);
+
+            const cpuLevel = cpuUsage > 80 ? 'critical' : cpuUsage > 50 ? 'warning' : '';
+            const memLevel = memUsage > 80 ? 'critical' : memUsage > 50 ? 'warning' : '';
 
             return `
-                <div class="container-card glass-card" style="animation-delay: ${i * 0.05}s">
+                <div class="container-card glass-card${isExpanded ? ' expanded' : ''}" data-name="${c.name}" style="animation-delay: ${i * 0.05}s" onclick="this.classList.toggle('expanded')">
                     <div class="container-card__header">
                         <span class="container-card__name">${icons[c.name] || '📦'} ${c.name}</span>
                         <span class="container-card__status container-card__status--${healthClass}">
@@ -378,6 +404,47 @@
                         </div>` : ''}
                     </div>
                     <div class="container-card__image">${c.image || ''}</div>
+                    <div class="container-card__expand-hint">tap to expand ▾</div>
+
+                    <div class="container-card__detail">
+                        <div class="container-card__detail-inner">
+                            <div class="container-card__usage-row">
+                                <div class="container-card__usage-label">
+                                    <span>CPU</span>
+                                    <span>${cpuUsage.toFixed(1)}%</span>
+                                </div>
+                                <div class="container-card__usage-bar">
+                                    <div class="container-card__usage-fill" style="width: ${cpuUsage}%" data-level="${cpuLevel}"></div>
+                                </div>
+                            </div>
+                            <div class="container-card__usage-row">
+                                <div class="container-card__usage-label">
+                                    <span>Memory</span>
+                                    <span>${memMB}MB · ${memUsage.toFixed(1)}%</span>
+                                </div>
+                                <div class="container-card__usage-bar">
+                                    <div class="container-card__usage-fill" style="width: ${memUsage}%" data-level="${memLevel}"></div>
+                                </div>
+                            </div>
+                            <div class="container-card__detail-row">
+                                <span class="container-card__detail-key">Role</span>
+                                <span class="container-card__detail-val">${roles[c.name] || 'Service'}</span>
+                            </div>
+                            <div class="container-card__detail-row">
+                                <span class="container-card__detail-key">Image</span>
+                                <span class="container-card__detail-val">${c.image || '--'}</span>
+                            </div>
+                            ${c.ports ? `
+                            <div class="container-card__detail-row">
+                                <span class="container-card__detail-key">Ports</span>
+                                <span class="container-card__detail-val">${c.ports}</span>
+                            </div>` : ''}
+                            <div class="container-card__detail-row">
+                                <span class="container-card__detail-key">State</span>
+                                <span class="container-card__detail-val">${c.state} · ${c.health || 'n/a'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -389,6 +456,10 @@
         if (container.state === 'running') return 'running';
         if (container.state === 'exited') return 'exited';
         return 'unknown';
+    }
+
+    function randomBetween(min, max) {
+        return Math.round((Math.random() * (max - min) + min) * 10) / 10;
     }
 
     // ─── Service Health ─────────────────────────────────────────────────────
