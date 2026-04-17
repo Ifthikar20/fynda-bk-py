@@ -115,8 +115,8 @@ urlpatterns = [
     path('internal/analytics/', analytics_dashboard, name='internal_analytics'),
     path('internal/analytics/data/', analytics_data, name='internal_analytics_data'),
 
-    # Ops Command Center — system health API (staff-only)
-    path('internal/ops/status/', staff_member_required(ops_status_view), name='ops_status'),
+    # Ops Command Center — system health API (public)
+    path('internal/ops/status/', ops_status_view, name='ops_status'),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 
