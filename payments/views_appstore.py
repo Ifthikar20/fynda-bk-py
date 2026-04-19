@@ -116,6 +116,7 @@ class VerifyIOSReceiptView(APIView):
         # Activate subscription
         sub, _ = Subscription.objects.get_or_create(user=request.user)
         sub.plan = plan
+        sub.plan_id = apple_product_id
         sub.status = 'active'
         sub.current_period_start = datetime.now(tz.utc)
         sub.current_period_end = expires_at
