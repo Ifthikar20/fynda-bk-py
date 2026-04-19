@@ -1206,9 +1206,26 @@ class DealAlertMatchesView(APIView):
         matches = alert.matches.all()
         if request.query_params.get("unseen_only") == "true":
             matches = matches.filter(is_seen=False)
+
+        # Clamp pagination server-side: hard cap 200 per page to prevent memory blowups.
+        try:
+            limit = int(request.query_params.get("limit", 50))
+        except (TypeError, ValueError):
+            limit = 50
+        try:
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            offset = 0
+        limit = max(1, min(limit, 200))
+        offset = max(0, offset)
+
+        total = matches.count()
+        page = matches[offset:offset + limit]
         return Response({
-            "matches": DealAlertMatchSerializer(matches[:50], many=True).data,
-            "count": matches.count(),
+            "matches": DealAlertMatchSerializer(page, many=True).data,
+            "count": total,
+            "limit": limit,
+            "offset": offset,
         })
 
     def post(self, request, alert_id):

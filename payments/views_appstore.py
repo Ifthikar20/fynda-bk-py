@@ -359,6 +359,7 @@ class AppStoreNotificationView(APIView):
             return
 
         sub.plan = self._determine_plan(transaction)
+        sub.plan_id = transaction.get('productId', '') or sub.plan_id
         sub.status = 'active'
         sub.current_period_end = self._parse_expires(transaction)
         sub.cancel_at_period_end = False
@@ -371,11 +372,12 @@ class AppStoreNotificationView(APIView):
         if not sub:
             return
 
+        sub.plan_id = transaction.get('productId', '') or sub.plan_id
         sub.status = 'active'
         sub.current_period_end = self._parse_expires(transaction)
         sub.cancel_at_period_end = False
         sub.save(update_fields=[
-            'status', 'current_period_end', 'cancel_at_period_end'
+            'plan_id', 'status', 'current_period_end', 'cancel_at_period_end'
         ])
         logger.info(f'App Store: renewed {sub.user.email}')
 
