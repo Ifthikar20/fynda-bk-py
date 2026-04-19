@@ -572,14 +572,44 @@ class MobileDealListView(APIView):
     
     def get(self, request):
         from deals.services.orchestrator import orchestrator
-        
+
         limit = min(int(request.query_params.get("limit", 20)), 50)
         sort = request.query_params.get("sort", "relevance")
-        
+        near_me = request.query_params.get("near_me", "").lower() in ("1", "true", "yes")
+
         start_time = time.time()
-        
-        # Get fashion-specific trending deals
-        result = orchestrator.search("trending women fashion clothing shoes accessories")
+
+        # Location: request params override preferences.
+        prefs = None
+        if request.user.is_authenticated:
+            prefs = UserPreferences.objects.filter(user=request.user).first()
+
+        def _float(val):
+            try:
+                return float(val) if val not in (None, "") else None
+            except (TypeError, ValueError):
+                return None
+
+        lat = _float(request.query_params.get("latitude")) or (
+            prefs.default_latitude if prefs else None
+        )
+        lng = _float(request.query_params.get("longitude")) or (
+            prefs.default_longitude if prefs else None
+        )
+        max_dist = _float(request.query_params.get("max_distance"))
+        if max_dist is None and prefs:
+            max_dist = prefs.max_distance_miles
+
+        if lat is not None and lng is not None:
+            orchestrator.set_user_location(lat, lng, max_distance=max_dist)
+
+        # "Near me" biases the query toward local marketplace listings.
+        query = (
+            "trending women fashion clothing shoes accessories local marketplace"
+            if near_me else
+            "trending women fashion clothing shoes accessories"
+        )
+        result = orchestrator.search(query)
         result_dict = result.to_dict()
         
         deals = result_dict.get("deals", [])
@@ -598,14 +628,18 @@ class MobileDealListView(APIView):
             if not any(kw in (d.get("title") or "").lower() for kw in _SCENERY_BLOCKLIST)
         ]
         
-        # Apply sorting
-        if sort == "price_low":
+        # Near-me mode: keep only deals with a concrete distance (local sources)
+        # and sort nearest first. Other sort modes still work otherwise.
+        if near_me:
+            deals = [d for d in deals if d.get("distance_miles") is not None]
+            deals.sort(key=lambda x: x.get("distance_miles") or float("inf"))
+        elif sort == "price_low":
             deals.sort(key=lambda x: x.get("price", float("inf")))
         elif sort == "price_high":
             deals.sort(key=lambda x: x.get("price", 0), reverse=True)
         elif sort == "rating":
             deals.sort(key=lambda x: x.get("rating") or 0, reverse=True)
-        
+
         deals = deals[:limit]
         
         # Mark saved deals if authenticated
@@ -828,18 +862,22 @@ class MobileDealSearchView(APIView):
         if gender and gender not in query.lower():
             query = f"{gender}'s {query}"
 
-        # Set user location from request params or saved preferences
-        lat = request.data.get("latitude")
-        lng = request.data.get("longitude")
-        max_dist = None
+        # Set user location from request params or saved preferences.
+        # Request-level max_distance overrides the saved preference.
+        lat = data.get("latitude") or request.data.get("latitude")
+        lng = data.get("longitude") or request.data.get("longitude")
+        max_dist = data.get("max_distance")
         if not lat and prefs and prefs.default_latitude:
             lat = prefs.default_latitude
             lng = prefs.default_longitude
-        if prefs:
+        if max_dist is None and prefs:
             max_dist = prefs.max_distance_miles
         if lat and lng:
             try:
-                orchestrator.set_user_location(float(lat), float(lng), max_distance=max_dist)
+                orchestrator.set_user_location(
+                    float(lat), float(lng),
+                    max_distance=float(max_dist) if max_dist else None,
+                )
             except (ValueError, TypeError):
                 pass
 

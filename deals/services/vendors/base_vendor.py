@@ -66,7 +66,10 @@ class VendorProduct:
     sku: Optional[str] = None
     upc: Optional[str] = None
     fetched_at: str = ""
-    
+    # Geo fields — populated by location-aware vendors (e.g. Facebook Marketplace).
+    distance_miles: Optional[float] = None
+    location_name: str = ""
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         d = {
@@ -95,6 +98,8 @@ class VendorProduct:
             "features": self.features,
             "relevance_score": self.relevance_score,
             "fetched_at": self.fetched_at or datetime.now().isoformat(),
+            "distance_miles": self.distance_miles,
+            "location_name": self.location_name,
         }
         # Include affiliate-specific fields if present
         if self.network:

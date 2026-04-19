@@ -222,6 +222,8 @@ class FacebookVendor(BaseVendorService):
                 condition=item.get("condition", "Used"),
                 shipping="Local pickup",
                 features=features,
+                distance_miles=distance_miles,
+                location_name=location_name or "",
                 fetched_at=datetime.now().isoformat(),
             )
             results.append(product)
