@@ -454,7 +454,7 @@ class MobileLoginSerializer(serializers.Serializer):
     # Device info for binding
     device_id = serializers.CharField()
     device_name = serializers.CharField(required=False, allow_blank=True)
-    platform = serializers.ChoiceField(choices=["ios", "android"])
+    platform = serializers.ChoiceField(choices=["ios"])
     app_version = serializers.CharField(required=False, allow_blank=True)
     push_token = serializers.CharField(required=False, allow_blank=True)
 
@@ -486,7 +486,7 @@ class MobileRegisterSerializer(serializers.Serializer):
     
     # Device info
     device_id = serializers.CharField()
-    platform = serializers.ChoiceField(choices=["ios", "android"])
+    platform = serializers.ChoiceField(choices=["ios"])
     push_token = serializers.CharField(required=False, allow_blank=True)
     
     def validate_email(self, value):

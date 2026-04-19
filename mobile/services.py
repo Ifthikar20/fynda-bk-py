@@ -29,7 +29,7 @@ class MobileDeviceService(BaseService):
         Args:
             user: authenticated User instance
             device_id: unique device identifier
-            platform: 'ios' or 'android'
+            platform: 'ios'
             **kwargs: push_token, device_name, app_version
 
         Returns:

@@ -54,15 +54,10 @@ class Subscription(models.Model):
     plan = models.CharField(max_length=30, choices=PLAN_CHOICES, default="free")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
 
-    # Store product identifiers (surface to mobile for deep-links into
-    # Apple/Google subscription management).
+    # Apple store product identifier for the active subscription.
     plan_id = models.CharField(
         max_length=255, blank=True, default="",
-        help_text="Store product id, e.g. com.outfi.outfiApp.premium.monthly",
-    )
-    android_package = models.CharField(
-        max_length=255, blank=True, default="",
-        help_text="Android package name used for Play subscription deep-links",
+        help_text="Apple product id, e.g. com.outfi.outfiApp.premium.monthly",
     )
 
     # Billing cycle

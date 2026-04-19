@@ -141,23 +141,23 @@ class APIGuardMiddleware:
         
         Mobile apps must include:
         - X-Outfi-Mobile-Key: Secret key configured in app
-        - X-Outfi-Platform: ios or android
+        - X-Outfi-Platform: ios
         - X-Outfi-App-Version: App version string
-        
+
         Or they must be accessing /api/mobile/ endpoints with valid JWT.
         """
         # Check for mobile API key (accept both old Outfi and new Outfi headers)
         mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "") or request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "")
         platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "") or request.META.get("HTTP_X_OUTFI_PLATFORM", "")
-        
+
         # Get configured mobile key from settings/env
         from outfi.config import config
         expected_key = getattr(config.security, 'mobile_api_key', None)
-        
+
         # If mobile key is configured and matches
         if expected_key and mobile_key == expected_key:
-            # Validate platform
-            if platform.lower() in ["ios", "android"]:
+            # Validate platform — iOS only.
+            if platform.lower() == "ios":
                 return True
         
         # Also allow authenticated mobile API requests

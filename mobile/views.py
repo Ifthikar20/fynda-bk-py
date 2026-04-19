@@ -64,15 +64,11 @@ class HealthView(APIView):
     # Minimum supported app versions
     MIN_APP_VERSIONS = {
         "ios": "1.0.0",
-        "android": "1.0.0",
     }
 
     # Feature flags per platform — set to False to hide from that platform
     PLATFORM_FEATURES = {
         "ios": {
-            "image_search_enabled": True,
-        },
-        "android": {
             "image_search_enabled": True,
         },
         "web": {
@@ -1638,10 +1634,10 @@ class MobileOAuthView(APIView):
         "code": "authorization_code",
         "redirect_uri": "callback_url",
         "device_id": "unique-device-id",
-        "platform": "ios" | "android",
+        "platform": "ios",
         "id_token": "apple_id_token" (Apple only),
         "user": {"name": {...}} (Apple first login only),
-        "push_token": "fcm-or-apns-token" (optional)
+        "push_token": "apns-token" (optional)
     }
     """
     permission_classes = [AllowAny]

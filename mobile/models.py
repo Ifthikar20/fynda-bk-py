@@ -16,13 +16,12 @@ from django.conf import settings
 class DeviceToken(models.Model):
     """
     Device registration for push notifications.
-    
-    Stores FCM (Android) and APNs (iOS) tokens.
+
+    Stores APNs (iOS) tokens.
     """
-    
+
     PLATFORM_CHOICES = [
         ("ios", "iOS"),
-        ("android", "Android"),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

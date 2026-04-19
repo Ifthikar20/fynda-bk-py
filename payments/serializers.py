@@ -18,7 +18,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             "id",
             "plan",
             "plan_id",
-            "android_package",
             "status",
             "is_premium",
             "current_period_start",

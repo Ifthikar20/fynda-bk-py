@@ -88,7 +88,6 @@ class SubscriptionStatusView(APIView):
             return Response({
                 "plan": "free",
                 "plan_id": "",
-                "android_package": "",
                 "status": "active",
                 "is_premium": False,
                 "current_period_end": None,
