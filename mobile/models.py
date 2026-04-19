@@ -31,7 +31,7 @@ class DeviceToken(models.Model):
         related_name="devices"
     )
     
-    # Push notification token (FCM or APNs)
+    # Push notification token (APNs)
     token = models.CharField(max_length=500)
     platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     

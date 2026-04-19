@@ -109,7 +109,7 @@ class MobileLoginView(APIView):
         "device_id": "unique-device-id",
         "platform": "ios",
         "app_version": "1.0.0",
-        "push_token": "fcm-or-apns-token"
+        "push_token": "apns-token"
     }
     """
     permission_classes = [AllowAny]
