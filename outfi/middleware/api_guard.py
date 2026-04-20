@@ -138,31 +138,35 @@ class APIGuardMiddleware:
     def _is_valid_mobile_app(self, request):
         """
         Check if request is from a valid mobile app.
-        
-        Mobile apps must include:
-        - X-Outfi-Mobile-Key: Secret key configured in app
-        - X-Outfi-Platform: ios
-        - X-Outfi-App-Version: App version string
 
-        Or they must be accessing /api/mobile/ endpoints with valid JWT.
+        When the mobile API key is configured on the server, ALL mobile
+        requests — including authenticated ones — must present both:
+          - X-Outfi-Mobile-Key  (shared secret, matches server config)
+          - X-Outfi-Platform: ios
+          - X-Outfi-App-Version
+        A Bearer JWT alone is not sufficient. This closes the bypass
+        where a leaked/stolen token could be replayed from outside the
+        app without the build-time key.
+
+        When the mobile API key is NOT configured (dev/staging), we fall
+        back to accepting any authenticated /api/mobile/ request so the
+        dev loop isn't blocked.
         """
-        # Check for mobile API key (accept both old Outfi and new Outfi headers)
-        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "") or request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "")
-        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "") or request.META.get("HTTP_X_OUTFI_PLATFORM", "")
+        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "")
+        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "")
 
-        # Get configured mobile key from settings/env
         from outfi.config import config
         expected_key = getattr(config.security, 'mobile_api_key', None)
 
-        # If mobile key is configured and matches
-        if expected_key and mobile_key == expected_key:
-            # Validate platform — iOS only.
-            if platform.lower() == "ios":
+        if expected_key:
+            # Hard requirement: mobile key must be correct AND platform == ios.
+            if mobile_key == expected_key and platform.lower() == "ios":
                 return True
-        
-        # Also allow authenticated mobile API requests
+            return False
+
+        # Dev / staging fallback: no mobile key configured — allow
+        # authenticated mobile API traffic to proceed.
         if request.path.startswith("/api/mobile/"):
-            # Check for valid JWT
             auth_header = request.META.get("HTTP_AUTHORIZATION", "")
             if auth_header.startswith("Bearer ") and len(auth_header) > 20:
                 return True
