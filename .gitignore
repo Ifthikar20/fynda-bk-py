@@ -107,3 +107,6 @@ Flutter_fynda_app/
 *.sketch
 *_SKETCH.png
 *.p8
+
+# Dev + deploy script log bundles
+logs/
