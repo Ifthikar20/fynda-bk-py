@@ -10,7 +10,7 @@ from mobile.push_service import send_push_to_user
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=600, name="deals.check_deal_alerts")
+@shared_task(bind=True, max_retries=4, default_retry_delay=600, name="deals.check_deal_alerts")
 def check_deal_alerts(self, alert_id=None):
     """
     Check active deal alerts.
@@ -260,3 +260,31 @@ def _send_alert_pushes(alerts):
             )
         except Exception as e:
             logger.error(f"Failed to send push to {user.email}: {e}")
+
+
+# ============================================
+# Notification retention
+# ============================================
+
+@shared_task(name="mobile.purge_old_notifications")
+def purge_old_notifications(days: int = 90):
+    """
+    Delete read notifications older than `days` days (default 90).
+
+    Rationale: the in-app feed accumulates a row per alert-with-new-
+    matches every beat tick. Unread rows are collapsed in-place by
+    check_deal_alerts, but rows the user *has* read would otherwise
+    grow unbounded. Unread rows are left alone so users who ignore
+    the feed for months don't silently lose history; only rows they
+    already acknowledged get purged.
+
+    Scheduled daily via CELERY_BEAT_SCHEDULE.
+    """
+    from mobile.models import Notification
+
+    cutoff = timezone.now() - timezone.timedelta(days=days)
+    deleted, _ = Notification.objects.filter(
+        is_read=True, created_at__lt=cutoff,
+    ).delete()
+    logger.info("Purged %d read notifications older than %d days", deleted, days)
+    return {"deleted": deleted, "days": days}

@@ -453,6 +453,10 @@ class Notification(models.Model):
             # The feed query is always "for this user, newest first, optionally unread".
             models.Index(fields=["user", "-created_at"]),
             models.Index(fields=["user", "is_read"]),
+            # Supports the collapse lookup:
+            #   filter(user=..., alert=..., kind="new_matches", is_read=False)
+            # runs on every alert that gets fresh matches.
+            models.Index(fields=["user", "alert", "is_read"]),
         ]
 
     def __str__(self):

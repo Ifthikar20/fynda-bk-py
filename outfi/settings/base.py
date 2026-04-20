@@ -242,6 +242,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "deals.check_deal_alerts",
         "schedule": crontab(minute=0, hour="*/4"),  # Every 4 hours
     },
+    "purge-old-notifications": {
+        # Purge read notifications older than 90d. Runs once a day at
+        # 03:15 UTC (quiet hour on every US timezone). Unread rows are
+        # left alone — collapsed in-place by check_deal_alerts instead.
+        "task": "mobile.purge_old_notifications",
+        "schedule": crontab(hour=3, minute=15),
+    },
 }
 
 # Cache Configuration
