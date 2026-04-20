@@ -106,23 +106,59 @@ def check_deal_alerts(self, alert_id=None):
                 DealAlertMatch.objects.bulk_create(new_matches, ignore_conflicts=True)
                 alert.matches_count = alert.matches.count()
                 total_new += len(new_matches)
-                # Write an in-app Notification row for the owner.
+                # Write an in-app Notification row for the owner. If an
+                # unread "new_matches" notification for this alert already
+                # exists, collapse into it (accumulate the count + bump
+                # the timestamp) so the feed doesn't spam with a new row
+                # every 4 hours for users who never open the alert.
                 count = len(new_matches)
-                Notification.objects.create(
+                existing_unread = Notification.objects.filter(
                     user=alert.user,
-                    kind="new_matches",
-                    title=f"{count} new match{'es' if count != 1 else ''} for "
-                          f"{alert.description[:80]}",
-                    body=(
-                        f"We found {count} deal{'s' if count != 1 else ''} "
-                        f"under your alert."
-                    ),
                     alert=alert,
-                    data={
+                    kind="new_matches",
+                    is_read=False,
+                ).order_by("-created_at").first()
+
+                if existing_unread is not None:
+                    accumulated = (
+                        int(existing_unread.data.get("new_matches", 0) or 0) + count
+                    )
+                    existing_unread.title = (
+                        f"{accumulated} new match{'es' if accumulated != 1 else ''} "
+                        f"for {alert.description[:80]}"
+                    )
+                    existing_unread.body = (
+                        f"We found {accumulated} deal"
+                        f"{'s' if accumulated != 1 else ''} under your alert."
+                    )
+                    existing_unread.data = {
+                        **existing_unread.data,
                         "alert_id": str(alert.id),
-                        "new_matches": count,
-                    },
-                )
+                        "new_matches": accumulated,
+                    }
+                    # Bump created_at so the row moves to the top of the feed.
+                    existing_unread.created_at = now
+                    existing_unread.save(
+                        update_fields=["title", "body", "data", "created_at"]
+                    )
+                else:
+                    Notification.objects.create(
+                        user=alert.user,
+                        kind="new_matches",
+                        title=(
+                            f"{count} new match{'es' if count != 1 else ''} for "
+                            f"{alert.description[:80]}"
+                        ),
+                        body=(
+                            f"We found {count} deal"
+                            f"{'s' if count != 1 else ''} under your alert."
+                        ),
+                        alert=alert,
+                        data={
+                            "alert_id": str(alert.id),
+                            "new_matches": count,
+                        },
+                    )
                 alerts_with_new_matches.append(alert)
 
             alert.last_checked_at = now

@@ -38,6 +38,7 @@ from .views import (
     FavoriteDetailView,
     NotificationListView,
     NotificationMarkReadView,
+    NotificationSummaryView,
     # Storyboard
     MobileStoryboardView,
     MobileStoryboardDetailView,
@@ -111,6 +112,7 @@ urlpatterns = [
     # Notifications (in-app feed)
     # ============================================
     path("notifications/", NotificationListView.as_view(), name="notifications"),
+    path("notifications/summary/", NotificationSummaryView.as_view(), name="notifications-summary"),
     path("notifications/read/", NotificationMarkReadView.as_view(), name="notifications-mark-read"),
 
     # ============================================

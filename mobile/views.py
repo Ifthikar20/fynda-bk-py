@@ -1179,14 +1179,23 @@ class DealAlertListView(APIView):
         alert.save(update_fields=["search_query", "reference_image"])
 
         # One-shot refresh: kick the matcher for just this alert id so the
-        # user doesn't wait up to 4 hours for the beat schedule. Failure
-        # here must never block the create — the beat will still pick it
-        # up on the next tick.
-        try:
-            from deals.tasks import check_deal_alerts
-            check_deal_alerts.delay(alert_id=str(alert.id))
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("one-shot dispatch failed for alert %s: %s", alert.id, exc)
+        # user doesn't wait up to 4 hours for the beat schedule. Deferred
+        # via transaction.on_commit so the worker never reads a row that
+        # hasn't been committed yet (safe even if ATOMIC_REQUESTS is
+        # enabled later). Failure to enqueue must never block the create
+        # — the beat will still pick it up on the next tick.
+        from django.db import transaction
+
+        def _fire_one_shot(alert_id):
+            try:
+                from deals.tasks import check_deal_alerts
+                check_deal_alerts.delay(alert_id=alert_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "one-shot dispatch failed for alert %s: %s", alert_id, exc,
+                )
+
+        transaction.on_commit(lambda: _fire_one_shot(str(alert.id)))
 
         return Response(DealAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
 
@@ -2429,12 +2438,15 @@ class NotificationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from django.db.models import Count, Q
         from .models import Notification
         from .serializers import NotificationSerializer
 
-        qs = Notification.objects.filter(user=request.user)
-        if request.query_params.get("unread_only", "").lower() in ("1", "true", "yes"):
-            qs = qs.filter(is_read=False)
+        unread_only = request.query_params.get("unread_only", "").lower() in (
+            "1", "true", "yes",
+        )
+        base = Notification.objects.filter(user=request.user)
+        qs = base.filter(is_read=False) if unread_only else base
 
         try:
             limit = int(request.query_params.get("limit", 50))
@@ -2447,18 +2459,42 @@ class NotificationListView(APIView):
         limit = max(1, min(limit, 100))
         offset = max(0, offset)
 
-        total = qs.count()
-        unread = qs.filter(is_read=False).count() if not request.query_params.get(
-            "unread_only"
-        ) else total
+        # One aggregate query instead of two COUNT(*)s.
+        stats = base.aggregate(
+            total=Count("id"),
+            unread=Count("id", filter=Q(is_read=False)),
+        )
         items = qs[offset:offset + limit]
 
         return Response({
             "notifications": NotificationSerializer(items, many=True).data,
-            "count": total,
-            "unread_count": unread,
+            "count": stats["total"] or 0,
+            "unread_count": stats["unread"] or 0,
             "limit": limit,
             "offset": offset,
+        })
+
+
+class NotificationSummaryView(APIView):
+    """
+    Cheap polling endpoint — `{unread, total}` only.
+
+    The home screen bell polls this every 2 minutes; serializing
+    notification rows was wasteful when all we need is the badge count.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+        from .models import Notification
+
+        stats = Notification.objects.filter(user=request.user).aggregate(
+            total=Count("id"),
+            unread=Count("id", filter=Q(is_read=False)),
+        )
+        return Response({
+            "total": stats["total"] or 0,
+            "unread": stats["unread"] or 0,
         })
 
 

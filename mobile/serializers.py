@@ -10,7 +10,10 @@ Optimized serializers for mobile with:
 
 from rest_framework import serializers
 from django.utils import timezone
-from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession, DealAlert, DealAlertMatch
+from .models import (
+    DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession,
+    DealAlert, DealAlertMatch, Notification,
+)
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -167,7 +170,6 @@ class NotificationSerializer(serializers.ModelSerializer):
     alert_id = serializers.UUIDField(read_only=True, allow_null=True)
 
     class Meta:
-        from .models import Notification
         model = Notification
         fields = [
             "id",
