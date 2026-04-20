@@ -15,6 +15,7 @@ Generate the key:
 """
 
 import logging
+import os
 
 from django.conf import settings
 
