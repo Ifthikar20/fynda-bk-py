@@ -1085,9 +1085,19 @@ class DealAlertListView(APIView):
     - Text only: {"description": "black jacket", "max_price": 100}
     - With image: multipart with 'image' file + optional 'description' + 'max_price'
       Image is analyzed once via Gemini to generate search_query.
+
+    The create path is per-user throttled (DealAlertCreateThrottle) to
+    prevent a compromised token from flooding the alert table and
+    queuing a storm of one-shot Celery fires.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_throttles(self):
+        from outfi.throttles import DealAlertCreateThrottle
+        if self.request.method == "POST":
+            return [DealAlertCreateThrottle()]
+        return super().get_throttles()
 
     def get(self, request):
         from .models import DealAlert
@@ -1167,6 +1177,16 @@ class DealAlertListView(APIView):
         if reference_image_url:
             alert.reference_image = reference_image_url
         alert.save(update_fields=["search_query", "reference_image"])
+
+        # One-shot refresh: kick the matcher for just this alert id so the
+        # user doesn't wait up to 4 hours for the beat schedule. Failure
+        # here must never block the create — the beat will still pick it
+        # up on the next tick.
+        try:
+            from deals.tasks import check_deal_alerts
+            check_deal_alerts.delay(alert_id=str(alert.id))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("one-shot dispatch failed for alert %s: %s", alert.id, exc)
 
         return Response(DealAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
 
@@ -2389,4 +2409,101 @@ class StoryboardImageUploadView(APIView):
                 {"error": "Image processing failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# ============================================
+# Notifications (in-app feed)
+# ============================================
+
+class NotificationListView(APIView):
+    """
+    In-app notification feed.
+
+    GET /api/mobile/notifications/
+        ?unread_only=true  → only is_read=False
+        ?limit=50&offset=0 → paginated, clamped server-side
+
+    Security: results are ALWAYS filtered to request.user. A user can
+    never read another user's feed, regardless of ids passed in.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Notification
+        from .serializers import NotificationSerializer
+
+        qs = Notification.objects.filter(user=request.user)
+        if request.query_params.get("unread_only", "").lower() in ("1", "true", "yes"):
+            qs = qs.filter(is_read=False)
+
+        try:
+            limit = int(request.query_params.get("limit", 50))
+        except (TypeError, ValueError):
+            limit = 50
+        try:
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            offset = 0
+        limit = max(1, min(limit, 100))
+        offset = max(0, offset)
+
+        total = qs.count()
+        unread = qs.filter(is_read=False).count() if not request.query_params.get(
+            "unread_only"
+        ) else total
+        items = qs[offset:offset + limit]
+
+        return Response({
+            "notifications": NotificationSerializer(items, many=True).data,
+            "count": total,
+            "unread_count": unread,
+            "limit": limit,
+            "offset": offset,
+        })
+
+
+class NotificationMarkReadView(APIView):
+    """
+    Mark notifications as read.
+
+    POST /api/mobile/notifications/read/
+        {"ids": ["uuid", ...]}   → mark those notifications read
+        {"all": true}            → mark every notification for the user read
+
+    Security:
+      - Only rows owned by request.user are updated. Foreign ids are
+        silently ignored (no info-leak about existence).
+      - Write is idempotent.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .models import Notification
+
+        if request.data.get("all") is True:
+            updated = Notification.objects.filter(
+                user=request.user, is_read=False
+            ).update(is_read=True)
+            return Response({"updated": updated, "all": True})
+
+        raw_ids = request.data.get("ids") or []
+        if not isinstance(raw_ids, list):
+            return Response({"error": "ids must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate ids look like UUIDs; drop anything that doesn't parse.
+        import uuid as _uuid
+        clean_ids = []
+        for v in raw_ids[:200]:  # clamp payload size
+            try:
+                clean_ids.append(_uuid.UUID(str(v)))
+            except (ValueError, TypeError):
+                continue
+
+        if not clean_ids:
+            return Response({"updated": 0})
+
+        updated = Notification.objects.filter(
+            user=request.user, id__in=clean_ids, is_read=False
+        ).update(is_read=True)
+        return Response({"updated": updated})
 

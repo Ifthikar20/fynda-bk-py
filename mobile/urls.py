@@ -36,6 +36,8 @@ from .views import (
     # Favorites
     FavoritesView,
     FavoriteDetailView,
+    NotificationListView,
+    NotificationMarkReadView,
     # Storyboard
     MobileStoryboardView,
     MobileStoryboardDetailView,
@@ -104,6 +106,12 @@ urlpatterns = [
     path("deal-alerts/", DealAlertListView.as_view(), name="deal-alert-list"),
     path("deal-alerts/<uuid:alert_id>/", DealAlertDetailView.as_view(), name="deal-alert-detail"),
     path("deal-alerts/<uuid:alert_id>/matches/", DealAlertMatchesView.as_view(), name="deal-alert-matches"),
+
+    # ============================================
+    # Notifications (in-app feed)
+    # ============================================
+    path("notifications/", NotificationListView.as_view(), name="notifications"),
+    path("notifications/read/", NotificationMarkReadView.as_view(), name="notifications-mark-read"),
 
     # ============================================
     # Favorites / Saved Deals

@@ -161,6 +161,27 @@ class DealAlertMatchSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
+class NotificationSerializer(serializers.ModelSerializer):
+    """Feed serializer. All fields read-only — client never writes these."""
+
+    alert_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        from .models import Notification
+        model = Notification
+        fields = [
+            "id",
+            "kind",
+            "title",
+            "body",
+            "alert_id",
+            "data",
+            "is_read",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class DealAlertSerializer(serializers.ModelSerializer):
     # Compute from the actual relation so it's always accurate,
     # regardless of whether the stored counter was incremented.

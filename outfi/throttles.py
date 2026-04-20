@@ -65,6 +65,44 @@ class ImageUploadUserThrottle(SimpleRateThrottle):
         }
 
 
+class DealAlertCreateThrottle(SimpleRateThrottle):
+    """
+    Per-user cap on creating deal alerts. Prevents a compromised or
+    malicious token from flooding the alert table and triggering a
+    storm of one-shot Celery fires. Anonymous requests don't apply —
+    alert creation requires auth anyway.
+    """
+    scope = "deal_alert_create"
+
+    def get_cache_key(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return None
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": request.user.pk,
+        }
+
+
+class AlertRefreshThrottle(SimpleRateThrottle):
+    """
+    Per-alert cap on one-shot refresh fires. Even if the task dispatch
+    is triggered implicitly (create path), we guard against spamming
+    the same alert id repeatedly.
+    """
+    scope = "alert_refresh"
+
+    def get_cache_key(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return None
+        # Key includes the alert id in the URL path if available so the
+        # bucket is per-(user, alert), not a global user bucket.
+        alert_id = getattr(view, 'kwargs', {}).get('alert_id', '')
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": f"{request.user.pk}:{alert_id}",
+        }
+
+
 class RemoveBgAnonThrottle(SimpleRateThrottle):
     """
     Hourly limit for anonymous users requesting background removal.

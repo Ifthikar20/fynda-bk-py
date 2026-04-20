@@ -184,6 +184,9 @@ REST_FRAMEWORK = {
         "remove_bg_user": "30/hour",
         "image_burst": "5/minute",
         "image_daily": "100/day",  # Placeholder — actual limits enforced in throttle class
+        # Alert creation + one-shot refresh throttles.
+        "deal_alert_create": "20/hour",
+        "alert_refresh": "6/hour",
     },
     "EXCEPTION_HANDLER": "core.exceptions.handlers.outfi_exception_handler",
 }

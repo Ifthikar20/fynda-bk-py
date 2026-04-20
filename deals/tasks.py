@@ -11,24 +11,41 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600, name="deals.check_deal_alerts")
-def check_deal_alerts(self):
+def check_deal_alerts(self, alert_id=None):
     """
-    Check active deal alerts every 4 hours.
+    Check active deal alerts.
+
+    Two entry points:
+    - Scheduled (beat, every 4h): no args → processes ALL active alerts.
+    - One-shot (on create): alert_id='<uuid>' → processes only that
+      alert so the user sees initial matches within a minute.
 
     Deduplication: groups alerts by search_query so identical queries
-    only hit marketplace APIs once.
+    only hit marketplace APIs once. For the one-shot path there's a
+    single-alert group, but the same code runs.
+
+    Security: alert_id is a trusted server-side value. Callers should
+    validate ownership before dispatching; we do not re-check here
+    because the task has no request context. If a malicious caller
+    manages to dispatch an arbitrary alert_id, the only observable
+    effect is a re-search for that alert's owner — no data leaks
+    cross-user (Notification/match rows are keyed to alert.user).
     """
-    from mobile.models import DealAlert, DealAlertMatch
+    from mobile.models import DealAlert, DealAlertMatch, Notification
     from deals.services.orchestrator import DealOrchestrator
 
     now = timezone.now()
 
-    # Expire old alerts in one query
-    DealAlert.objects.filter(
-        is_active=True, expires_at__lt=now,
-    ).update(is_active=False, status="disabled")
+    # Expire old alerts in one query (only on the full run).
+    if alert_id is None:
+        DealAlert.objects.filter(
+            is_active=True, expires_at__lt=now,
+        ).update(is_active=False, status="disabled")
 
-    alerts = list(DealAlert.objects.filter(is_active=True, status="active"))
+    base_qs = DealAlert.objects.filter(is_active=True, status="active")
+    if alert_id:
+        base_qs = base_qs.filter(id=alert_id)
+    alerts = list(base_qs)
     if not alerts:
         return {"checked": 0, "new_matches": 0, "queries": 0}
 
@@ -39,6 +56,9 @@ def check_deal_alerts(self):
 
     orchestrator = DealOrchestrator()
     total_new = 0
+    # Track alerts with NEW matches in *this* run (not lifetime) so we
+    # only notify on fresh activity.
+    alerts_with_new_matches = []
 
     for query, group in groups.items():
         try:
@@ -86,16 +106,37 @@ def check_deal_alerts(self):
                 DealAlertMatch.objects.bulk_create(new_matches, ignore_conflicts=True)
                 alert.matches_count = alert.matches.count()
                 total_new += len(new_matches)
+                # Write an in-app Notification row for the owner.
+                count = len(new_matches)
+                Notification.objects.create(
+                    user=alert.user,
+                    kind="new_matches",
+                    title=f"{count} new match{'es' if count != 1 else ''} for "
+                          f"{alert.description[:80]}",
+                    body=(
+                        f"We found {count} deal{'s' if count != 1 else ''} "
+                        f"under your alert."
+                    ),
+                    alert=alert,
+                    data={
+                        "alert_id": str(alert.id),
+                        "new_matches": count,
+                    },
+                )
+                alerts_with_new_matches.append(alert)
 
             alert.last_checked_at = now
             alert.save(update_fields=["last_checked_at", "matches_count"])
 
-    logger.info(f"Deal alerts: {len(alerts)} alerts, {len(groups)} queries, {total_new} new matches")
+    logger.info(
+        "Deal alerts: %d alerts, %d queries, %d new matches (one_shot=%s)",
+        len(alerts), len(groups), total_new, bool(alert_id),
+    )
 
-    # ── Notify users about new matches ──────────────────────
-    if total_new > 0:
-        _send_alert_emails(alerts)
-        _send_alert_pushes(alerts)
+    # ── Notify users about NEW matches only ─────────────────
+    if alerts_with_new_matches:
+        _send_alert_emails(alerts_with_new_matches)
+        _send_alert_pushes(alerts_with_new_matches)
 
     return {"checked": len(alerts), "new_matches": total_new, "queries": len(groups)}
 
