@@ -15,20 +15,20 @@ The code is fully deployed. You need to generate a key and add it to the server.
 ### Deploy to server:
 ```bash
 # Copy the .p8 key to server
-scp -i ~/.ssh/fynda-api-key.pem AuthKey_XXXXXXXXXX.p8 ubuntu@54.81.148.134:/home/ubuntu/fynda/certs/apns_key.p8
+scp -i ~/.ssh/outfi-api-key.pem AuthKey_XXXXXXXXXX.p8 ubuntu@54.81.148.134:/home/ubuntu/outfi/certs/apns_key.p8
 
 # SSH in and add env vars
-ssh -i ~/.ssh/fynda-api-key.pem ubuntu@54.81.148.134
-mkdir -p /home/ubuntu/fynda/certs
+ssh -i ~/.ssh/outfi-api-key.pem ubuntu@54.81.148.134
+mkdir -p /home/ubuntu/outfi/certs
 
 # Add to .env
-echo "APNS_KEY_ID=XXXXXXXXXX" >> /home/ubuntu/fynda/.env
-echo "APNS_TEAM_ID=YYYYYYYYYY" >> /home/ubuntu/fynda/.env
-echo "APNS_KEY_PATH=/app/certs/apns_key.p8" >> /home/ubuntu/fynda/.env
-echo "APNS_USE_SANDBOX=false" >> /home/ubuntu/fynda/.env
+echo "APNS_KEY_ID=XXXXXXXXXX" >> /home/ubuntu/outfi/.env
+echo "APNS_TEAM_ID=YYYYYYYYYY" >> /home/ubuntu/outfi/.env
+echo "APNS_KEY_PATH=/app/certs/apns_key.p8" >> /home/ubuntu/outfi/.env
+echo "APNS_USE_SANDBOX=false" >> /home/ubuntu/outfi/.env
 
 # Rebuild
-cd /home/ubuntu/fynda
+cd /home/ubuntu/outfi
 sudo docker compose -f docker-compose.prod.yml up -d --build api celery
 ```
 
@@ -55,9 +55,9 @@ Email service code is deployed but AWS credentials aren't set on the server.
 2. Create SMTP credentials or use IAM access keys
 3. Add to server .env:
 ```bash
-echo "AWS_ACCESS_KEY_ID=AKIAXXXXXXXXXX" >> /home/ubuntu/fynda/.env
-echo "AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxx" >> /home/ubuntu/fynda/.env
-echo "AWS_SES_REGION_NAME=us-east-1" >> /home/ubuntu/fynda/.env
+echo "AWS_ACCESS_KEY_ID=AKIAXXXXXXXXXX" >> /home/ubuntu/outfi/.env
+echo "AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxx" >> /home/ubuntu/outfi/.env
+echo "AWS_SES_REGION_NAME=us-east-1" >> /home/ubuntu/outfi/.env
 ```
 4. Rebuild: `sudo docker compose -f docker-compose.prod.yml up -d --build api celery`
 

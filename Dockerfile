@@ -1,5 +1,5 @@
 # =============================================================================
-# Optimized Python Base Image for Fynda API
+# Optimized Python Base Image for Outfi API
 # Uses multi-stage build for smaller final image
 # =============================================================================
 

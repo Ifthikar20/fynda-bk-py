@@ -23,9 +23,9 @@ set -Eeuo pipefail
 
 # ── Config ──────────────────────────────────────────────────────────────────
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SSH_KEY="${SSH_KEY:-$HOME/.ssh/fynda-api-key.pem}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/outfi-api-key.pem}"
 SERVER="${DEPLOY_SERVER:-ubuntu@54.81.148.134}"
-REMOTE_DIR="${REMOTE_DIR:-/home/ubuntu/fynda}"
+REMOTE_DIR="${REMOTE_DIR:-/home/ubuntu/outfi}"
 COMPOSE_FILE="docker-compose.prod.yml"
 HEALTH_URL="${HEALTH_URL:-https://api.outfi.ai/api/health/}"
 LOG_ROOT="${LOG_ROOT:-${HERE}/logs/deploy}"

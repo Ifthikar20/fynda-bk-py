@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy Ops Command Center to EC2
-# Run: ssh -i ~/.ssh/fynda-api-key.pem ubuntu@54.81.148.134 < deploy_ops.sh
+# Run: ssh -i ~/.ssh/outfi-api-key.pem ubuntu@54.81.148.134 < deploy_ops.sh
 
 set -e
 echo "=== Deploying Ops Command Center ==="
