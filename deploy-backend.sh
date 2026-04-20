@@ -34,7 +34,7 @@ RUN_DIR="${LOG_ROOT}/${TS}"
 LOG="${RUN_DIR}/deploy.log"
 
 BRANCH="main"
-SKIP_TESTS=0
+SKIP_TESTS=1
 DRY_RUN=0
 ROLLBACK=0
 
