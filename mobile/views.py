@@ -1169,14 +1169,25 @@ class DealAlertListView(APIView):
 
         serializer = DealAlertSerializer(data=data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        alert = serializer.save()
+
+        try:
+            alert = serializer.save()
+        except Exception as exc:
+            logger.exception("DealAlert.save() failed: %s", exc)
+            return Response(
+                {"error": "Could not create alert. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # Set generated fields
         if search_query:
             alert.search_query = search_query
         if reference_image_url:
             alert.reference_image = reference_image_url
-        alert.save(update_fields=["search_query", "reference_image"])
+        try:
+            alert.save(update_fields=["search_query", "reference_image"])
+        except Exception as exc:
+            logger.warning("Alert update_fields failed: %s", exc)
 
         # One-shot refresh: kick the matcher for just this alert id so the
         # user doesn't wait up to 4 hours for the beat schedule. Deferred

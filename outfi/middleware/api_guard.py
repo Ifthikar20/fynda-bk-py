@@ -412,7 +412,13 @@ class BotDetectionMiddleware:
     def __call__(self, request):
         if not request.path.startswith("/api/"):
             return self.get_response(request)
-        
+
+        # Validated mobile app requests bypass burst/timing detection.
+        # The Flutter app fires 15+ concurrent calls on startup which
+        # triggers the burst limit otherwise.
+        if self._is_valid_mobile_app(request):
+            return self.get_response(request)
+
         ip = self._get_client_ip(request)
         
         # Check request timing
@@ -436,6 +442,20 @@ class BotDetectionMiddleware:
         if x_forwarded:
             return x_forwarded.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR", "unknown")
+
+    def _is_valid_mobile_app(self, request):
+        """Bypass burst/timing checks for validated mobile apps."""
+        mobile_key = request.META.get("HTTP_X_OUTFI_MOBILE_KEY", "")
+        platform = request.META.get("HTTP_X_OUTFI_PLATFORM", "")
+        from outfi.config import config
+        expected_key = getattr(config.security, 'mobile_api_key', None)
+        if expected_key:
+            return mobile_key == expected_key and platform.lower() == "ios"
+        # Dev fallback — accept any mobile API traffic with a Bearer token
+        if request.path.startswith("/api/mobile/") or request.path.startswith("/api/v1/mobile/"):
+            auth = request.META.get("HTTP_AUTHORIZATION", "")
+            return auth.startswith("Bearer ") and len(auth) > 20
+        return False
     
     def _is_bot_timing(self, ip):
         """Check if requests are too fast to be human."""
