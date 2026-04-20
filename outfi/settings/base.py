@@ -184,6 +184,9 @@ REST_FRAMEWORK = {
         "remove_bg_user": "30/hour",
         "image_burst": "5/minute",
         "image_daily": "100/day",  # Placeholder — actual limits enforced in throttle class
+        # Alert creation + one-shot refresh throttles.
+        "deal_alert_create": "20/hour",
+        "alert_refresh": "6/hour",
     },
     "EXCEPTION_HANDLER": "core.exceptions.handlers.outfi_exception_handler",
 }
@@ -238,6 +241,13 @@ CELERY_BEAT_SCHEDULE = {
     "check-deal-alerts": {
         "task": "deals.check_deal_alerts",
         "schedule": crontab(minute=0, hour="*/4"),  # Every 4 hours
+    },
+    "purge-old-notifications": {
+        # Purge read notifications older than 90d. Runs once a day at
+        # 03:15 UTC (quiet hour on every US timezone). Unread rows are
+        # left alone — collapsed in-place by check_deal_alerts instead.
+        "task": "mobile.purge_old_notifications",
+        "schedule": crontab(hour=3, minute=15),
     },
 }
 

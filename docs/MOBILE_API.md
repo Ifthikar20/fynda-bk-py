@@ -11,7 +11,7 @@
 ```
 ┌─────────────────────┐
 │   Flutter App        │
-│  (iOS / Android)     │
+│       (iOS)          │
 └──────────┬──────────┘
            │  HTTPS + JWT
            ▼
@@ -49,7 +49,7 @@ POST /api/mobile/auth/login/
   "device_id": "unique-device-uuid",
   "platform": "ios",
   "app_version": "1.0.0",
-  "push_token": "fcm-or-apns-token"
+  "push_token": "apns-token"
 }
 ```
 
@@ -96,7 +96,7 @@ POST /api/mobile/auth/oauth/
   "redirect_uri": "com.outfi.app:/oauth/callback",
   "device_id": "unique-device-uuid",
   "platform": "ios",
-  "push_token": "fcm-token"
+  "push_token": "apns-token"
 }
 ```
 

@@ -10,7 +10,10 @@ Optimized serializers for mobile with:
 
 from rest_framework import serializers
 from django.utils import timezone
-from .models import DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession, DealAlert, DealAlertMatch
+from .models import (
+    DeviceToken, SyncState, UserPreferences, PriceAlert, MobileSession,
+    DealAlert, DealAlertMatch, Notification,
+)
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -159,6 +162,26 @@ class DealAlertMatchSerializer(serializers.ModelSerializer):
         model = DealAlertMatch
         fields = ["id", "deal_id", "title", "price", "image_url", "source", "url", "is_seen", "created_at"]
         read_only_fields = ["id", "created_at"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Feed serializer. All fields read-only — client never writes these."""
+
+    alert_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "kind",
+            "title",
+            "body",
+            "alert_id",
+            "data",
+            "is_read",
+            "created_at",
+        ]
+        read_only_fields = fields
 
 
 class DealAlertSerializer(serializers.ModelSerializer):
@@ -454,7 +477,7 @@ class MobileLoginSerializer(serializers.Serializer):
     # Device info for binding
     device_id = serializers.CharField()
     device_name = serializers.CharField(required=False, allow_blank=True)
-    platform = serializers.ChoiceField(choices=["ios", "android"])
+    platform = serializers.ChoiceField(choices=["ios"])
     app_version = serializers.CharField(required=False, allow_blank=True)
     push_token = serializers.CharField(required=False, allow_blank=True)
 
@@ -486,7 +509,7 @@ class MobileRegisterSerializer(serializers.Serializer):
     
     # Device info
     device_id = serializers.CharField()
-    platform = serializers.ChoiceField(choices=["ios", "android"])
+    platform = serializers.ChoiceField(choices=["ios"])
     push_token = serializers.CharField(required=False, allow_blank=True)
     
     def validate_email(self, value):

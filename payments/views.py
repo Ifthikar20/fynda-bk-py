@@ -87,8 +87,12 @@ class SubscriptionStatusView(APIView):
         if not sub:
             return Response({
                 "plan": "free",
+                "plan_id": "",
                 "status": "active",
                 "is_premium": False,
+                "current_period_end": None,
+                "expires_at": None,
+                "cancel_at_period_end": False,
                 "limits": _get_limits(False),
             })
 

@@ -58,10 +58,14 @@ class VerifyIOSReceiptView(APIView):
 
         if not receipt_data:
             return Response({'error': 'Missing receipt_data'}, status=400)
+        if not transaction_id:
+            # Required for idempotency. Without it, a replayed receipt
+            # would slip past the dedup check and re-grant premium.
+            return Response({'error': 'Missing transaction_id'}, status=400)
 
         # Idempotency: skip if we've already processed this transaction
         idempotency_key = f'ios_receipt:{transaction_id}'
-        if transaction_id and cache.get(idempotency_key):
+        if cache.get(idempotency_key):
             logger.info(f'iOS receipt: duplicate transaction {transaction_id}, skipping')
             sub = Subscription.objects.filter(user=request.user).first()
             return Response({
@@ -116,6 +120,7 @@ class VerifyIOSReceiptView(APIView):
         # Activate subscription
         sub, _ = Subscription.objects.get_or_create(user=request.user)
         sub.plan = plan
+        sub.plan_id = apple_product_id
         sub.status = 'active'
         sub.current_period_start = datetime.now(tz.utc)
         sub.current_period_end = expires_at
@@ -126,8 +131,7 @@ class VerifyIOSReceiptView(APIView):
         sub.save()
 
         # Mark as processed (24h dedup window)
-        if transaction_id:
-            cache.set(idempotency_key, True, timeout=86400)
+        cache.set(idempotency_key, True, timeout=86400)
 
         logger.info(
             f'iOS receipt verified: {request.user.email} → {plan} '
@@ -303,10 +307,19 @@ class AppStoreNotificationView(APIView):
             return None
 
     def _find_subscription(self, transaction):
-        """Find subscription by original_transaction_id."""
-        original_txn_id = transaction.get(
-            'originalTransactionId', ''
-        )
+        """Find subscription by original_transaction_id.
+
+        SECURITY: We only trust originalTransactionId (cryptographically
+        signed by Apple inside the JWS). We do NOT fall back to
+        appAccountToken to look up / create a subscription, because that
+        claim could be forged to mark an arbitrary user_id premium.
+
+        If no subscription exists for this txn, we log and skip. The
+        canonical activation path for a first purchase is the
+        authenticated /payments/verify-ios/ endpoint, where the server
+        knows the requesting user directly.
+        """
+        original_txn_id = transaction.get('originalTransactionId', '')
         if not original_txn_id:
             return None
 
@@ -317,22 +330,10 @@ class AppStoreNotificationView(APIView):
         if sub:
             return sub
 
-        # Try by bundle-scoped app_account_token (user ID)
-        app_account_token = transaction.get('appAccountToken', '')
-        if app_account_token:
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            try:
-                user = User.objects.get(id=app_account_token)
-                sub, _ = Subscription.objects.get_or_create(user=user)
-                sub.original_transaction_id = original_txn_id
-                sub.save(update_fields=['original_transaction_id'])
-                return sub
-            except (User.DoesNotExist, ValueError):
-                pass
-
         logger.warning(
-            f'App Store notify: no subscription for txn {original_txn_id}'
+            'App Store notify: no subscription for txn %s — skipping '
+            '(first activation goes through /verify-ios/)',
+            original_txn_id,
         )
         return None
 
@@ -359,6 +360,7 @@ class AppStoreNotificationView(APIView):
             return
 
         sub.plan = self._determine_plan(transaction)
+        sub.plan_id = transaction.get('productId', '') or sub.plan_id
         sub.status = 'active'
         sub.current_period_end = self._parse_expires(transaction)
         sub.cancel_at_period_end = False
@@ -371,11 +373,12 @@ class AppStoreNotificationView(APIView):
         if not sub:
             return
 
+        sub.plan_id = transaction.get('productId', '') or sub.plan_id
         sub.status = 'active'
         sub.current_period_end = self._parse_expires(transaction)
         sub.cancel_at_period_end = False
         sub.save(update_fields=[
-            'status', 'current_period_end', 'cancel_at_period_end'
+            'plan_id', 'status', 'current_period_end', 'cancel_at_period_end'
         ])
         logger.info(f'App Store: renewed {sub.user.email}')
 

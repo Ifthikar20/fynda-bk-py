@@ -240,7 +240,7 @@
 ### Future Features
 - [ ] **Design custom paywall UI** — waiting for design direction
 - [ ] Onboarding flow — style/size/gender/location questionnaire
-- [ ] Push notification delivery (FCM/APNs)
+- [ ] Push notification delivery (APNs)
 - [ ] Price alert background checker (Celery task)
 - [ ] Cancel subscription UI in profile screen
 - [ ] Fashion Timeline: image upload per day (camera/gallery)

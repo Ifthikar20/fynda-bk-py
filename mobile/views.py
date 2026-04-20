@@ -64,15 +64,11 @@ class HealthView(APIView):
     # Minimum supported app versions
     MIN_APP_VERSIONS = {
         "ios": "1.0.0",
-        "android": "1.0.0",
     }
 
     # Feature flags per platform — set to False to hide from that platform
     PLATFORM_FEATURES = {
         "ios": {
-            "image_search_enabled": True,
-        },
-        "android": {
             "image_search_enabled": True,
         },
         "web": {
@@ -113,7 +109,7 @@ class MobileLoginView(APIView):
         "device_id": "unique-device-id",
         "platform": "ios",
         "app_version": "1.0.0",
-        "push_token": "fcm-or-apns-token"
+        "push_token": "apns-token"
     }
     """
     permission_classes = [AllowAny]
@@ -572,14 +568,44 @@ class MobileDealListView(APIView):
     
     def get(self, request):
         from deals.services.orchestrator import orchestrator
-        
+
         limit = min(int(request.query_params.get("limit", 20)), 50)
         sort = request.query_params.get("sort", "relevance")
-        
+        near_me = request.query_params.get("near_me", "").lower() in ("1", "true", "yes")
+
         start_time = time.time()
-        
-        # Get fashion-specific trending deals
-        result = orchestrator.search("trending women fashion clothing shoes accessories")
+
+        # Location: request params override preferences.
+        prefs = None
+        if request.user.is_authenticated:
+            prefs = UserPreferences.objects.filter(user=request.user).first()
+
+        def _float(val):
+            try:
+                return float(val) if val not in (None, "") else None
+            except (TypeError, ValueError):
+                return None
+
+        lat = _float(request.query_params.get("latitude")) or (
+            prefs.default_latitude if prefs else None
+        )
+        lng = _float(request.query_params.get("longitude")) or (
+            prefs.default_longitude if prefs else None
+        )
+        max_dist = _float(request.query_params.get("max_distance"))
+        if max_dist is None and prefs:
+            max_dist = prefs.max_distance_miles
+
+        if lat is not None and lng is not None:
+            orchestrator.set_user_location(lat, lng, max_distance=max_dist)
+
+        # "Near me" biases the query toward local marketplace listings.
+        query = (
+            "trending women fashion clothing shoes accessories local marketplace"
+            if near_me else
+            "trending women fashion clothing shoes accessories"
+        )
+        result = orchestrator.search(query)
         result_dict = result.to_dict()
         
         deals = result_dict.get("deals", [])
@@ -598,14 +624,18 @@ class MobileDealListView(APIView):
             if not any(kw in (d.get("title") or "").lower() for kw in _SCENERY_BLOCKLIST)
         ]
         
-        # Apply sorting
-        if sort == "price_low":
+        # Near-me mode: keep only deals with a concrete distance (local sources)
+        # and sort nearest first. Other sort modes still work otherwise.
+        if near_me:
+            deals = [d for d in deals if d.get("distance_miles") is not None]
+            deals.sort(key=lambda x: x.get("distance_miles") or float("inf"))
+        elif sort == "price_low":
             deals.sort(key=lambda x: x.get("price", float("inf")))
         elif sort == "price_high":
             deals.sort(key=lambda x: x.get("price", 0), reverse=True)
         elif sort == "rating":
             deals.sort(key=lambda x: x.get("rating") or 0, reverse=True)
-        
+
         deals = deals[:limit]
         
         # Mark saved deals if authenticated
@@ -828,18 +858,22 @@ class MobileDealSearchView(APIView):
         if gender and gender not in query.lower():
             query = f"{gender}'s {query}"
 
-        # Set user location from request params or saved preferences
-        lat = request.data.get("latitude")
-        lng = request.data.get("longitude")
-        max_dist = None
+        # Set user location from request params or saved preferences.
+        # Request-level max_distance overrides the saved preference.
+        lat = data.get("latitude") or request.data.get("latitude")
+        lng = data.get("longitude") or request.data.get("longitude")
+        max_dist = data.get("max_distance")
         if not lat and prefs and prefs.default_latitude:
             lat = prefs.default_latitude
             lng = prefs.default_longitude
-        if prefs:
+        if max_dist is None and prefs:
             max_dist = prefs.max_distance_miles
         if lat and lng:
             try:
-                orchestrator.set_user_location(float(lat), float(lng), max_distance=max_dist)
+                orchestrator.set_user_location(
+                    float(lat), float(lng),
+                    max_distance=float(max_dist) if max_dist else None,
+                )
             except (ValueError, TypeError):
                 pass
 
@@ -1051,9 +1085,19 @@ class DealAlertListView(APIView):
     - Text only: {"description": "black jacket", "max_price": 100}
     - With image: multipart with 'image' file + optional 'description' + 'max_price'
       Image is analyzed once via Gemini to generate search_query.
+
+    The create path is per-user throttled (DealAlertCreateThrottle) to
+    prevent a compromised token from flooding the alert table and
+    queuing a storm of one-shot Celery fires.
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_throttles(self):
+        from outfi.throttles import DealAlertCreateThrottle
+        if self.request.method == "POST":
+            return [DealAlertCreateThrottle()]
+        return super().get_throttles()
 
     def get(self, request):
         from .models import DealAlert
@@ -1134,6 +1178,25 @@ class DealAlertListView(APIView):
             alert.reference_image = reference_image_url
         alert.save(update_fields=["search_query", "reference_image"])
 
+        # One-shot refresh: kick the matcher for just this alert id so the
+        # user doesn't wait up to 4 hours for the beat schedule. Deferred
+        # via transaction.on_commit so the worker never reads a row that
+        # hasn't been committed yet (safe even if ATOMIC_REQUESTS is
+        # enabled later). Failure to enqueue must never block the create
+        # — the beat will still pick it up on the next tick.
+        from django.db import transaction
+
+        def _fire_one_shot(alert_id):
+            try:
+                from deals.tasks import check_deal_alerts
+                check_deal_alerts.delay(alert_id=alert_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "one-shot dispatch failed for alert %s: %s", alert_id, exc,
+                )
+
+        transaction.on_commit(lambda: _fire_one_shot(str(alert.id)))
+
         return Response(DealAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
 
 
@@ -1206,9 +1269,26 @@ class DealAlertMatchesView(APIView):
         matches = alert.matches.all()
         if request.query_params.get("unseen_only") == "true":
             matches = matches.filter(is_seen=False)
+
+        # Clamp pagination server-side: hard cap 200 per page to prevent memory blowups.
+        try:
+            limit = int(request.query_params.get("limit", 50))
+        except (TypeError, ValueError):
+            limit = 50
+        try:
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            offset = 0
+        limit = max(1, min(limit, 200))
+        offset = max(0, offset)
+
+        total = matches.count()
+        page = matches[offset:offset + limit]
         return Response({
-            "matches": DealAlertMatchSerializer(matches[:50], many=True).data,
-            "count": matches.count(),
+            "matches": DealAlertMatchSerializer(page, many=True).data,
+            "count": total,
+            "limit": limit,
+            "offset": offset,
         })
 
     def post(self, request, alert_id):
@@ -1583,10 +1663,10 @@ class MobileOAuthView(APIView):
         "code": "authorization_code",
         "redirect_uri": "callback_url",
         "device_id": "unique-device-id",
-        "platform": "ios" | "android",
+        "platform": "ios",
         "id_token": "apple_id_token" (Apple only),
         "user": {"name": {...}} (Apple first login only),
-        "push_token": "fcm-or-apns-token" (optional)
+        "push_token": "apns-token" (optional)
     }
     """
     permission_classes = [AllowAny]
@@ -2338,4 +2418,128 @@ class StoryboardImageUploadView(APIView):
                 {"error": "Image processing failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# ============================================
+# Notifications (in-app feed)
+# ============================================
+
+class NotificationListView(APIView):
+    """
+    In-app notification feed.
+
+    GET /api/mobile/notifications/
+        ?unread_only=true  → only is_read=False
+        ?limit=50&offset=0 → paginated, clamped server-side
+
+    Security: results are ALWAYS filtered to request.user. A user can
+    never read another user's feed, regardless of ids passed in.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+        from .models import Notification
+        from .serializers import NotificationSerializer
+
+        unread_only = request.query_params.get("unread_only", "").lower() in (
+            "1", "true", "yes",
+        )
+        base = Notification.objects.filter(user=request.user)
+        qs = base.filter(is_read=False) if unread_only else base
+
+        try:
+            limit = int(request.query_params.get("limit", 50))
+        except (TypeError, ValueError):
+            limit = 50
+        try:
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            offset = 0
+        limit = max(1, min(limit, 100))
+        offset = max(0, offset)
+
+        # One aggregate query instead of two COUNT(*)s.
+        stats = base.aggregate(
+            total=Count("id"),
+            unread=Count("id", filter=Q(is_read=False)),
+        )
+        items = qs[offset:offset + limit]
+
+        return Response({
+            "notifications": NotificationSerializer(items, many=True).data,
+            "count": stats["total"] or 0,
+            "unread_count": stats["unread"] or 0,
+            "limit": limit,
+            "offset": offset,
+        })
+
+
+class NotificationSummaryView(APIView):
+    """
+    Cheap polling endpoint — `{unread, total}` only.
+
+    The home screen bell polls this every 2 minutes; serializing
+    notification rows was wasteful when all we need is the badge count.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+        from .models import Notification
+
+        stats = Notification.objects.filter(user=request.user).aggregate(
+            total=Count("id"),
+            unread=Count("id", filter=Q(is_read=False)),
+        )
+        return Response({
+            "total": stats["total"] or 0,
+            "unread": stats["unread"] or 0,
+        })
+
+
+class NotificationMarkReadView(APIView):
+    """
+    Mark notifications as read.
+
+    POST /api/mobile/notifications/read/
+        {"ids": ["uuid", ...]}   → mark those notifications read
+        {"all": true}            → mark every notification for the user read
+
+    Security:
+      - Only rows owned by request.user are updated. Foreign ids are
+        silently ignored (no info-leak about existence).
+      - Write is idempotent.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .models import Notification
+
+        if request.data.get("all") is True:
+            updated = Notification.objects.filter(
+                user=request.user, is_read=False
+            ).update(is_read=True)
+            return Response({"updated": updated, "all": True})
+
+        raw_ids = request.data.get("ids") or []
+        if not isinstance(raw_ids, list):
+            return Response({"error": "ids must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate ids look like UUIDs; drop anything that doesn't parse.
+        import uuid as _uuid
+        clean_ids = []
+        for v in raw_ids[:200]:  # clamp payload size
+            try:
+                clean_ids.append(_uuid.UUID(str(v)))
+            except (ValueError, TypeError):
+                continue
+
+        if not clean_ids:
+            return Response({"updated": 0})
+
+        updated = Notification.objects.filter(
+            user=request.user, id__in=clean_ids, is_read=False
+        ).update(is_read=True)
+        return Response({"updated": updated})
 

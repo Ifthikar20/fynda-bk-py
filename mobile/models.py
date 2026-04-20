@@ -16,13 +16,12 @@ from django.conf import settings
 class DeviceToken(models.Model):
     """
     Device registration for push notifications.
-    
-    Stores FCM (Android) and APNs (iOS) tokens.
+
+    Stores APNs (iOS) tokens.
     """
-    
+
     PLATFORM_CHOICES = [
         ("ios", "iOS"),
-        ("android", "Android"),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -32,7 +31,7 @@ class DeviceToken(models.Model):
         related_name="devices"
     )
     
-    # Push notification token (FCM or APNs)
+    # Push notification token (APNs)
     token = models.CharField(max_length=500)
     platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     
@@ -401,6 +400,67 @@ class DealAlertMatch(models.Model):
 
     def __str__(self):
         return f"{self.title[:40]} — ${self.price}"
+
+
+class Notification(models.Model):
+    """
+    In-app notification feed entry.
+
+    One row per user-visible status change: new matches for an alert,
+    price drop, alert expired/paused, subscription state changes, etc.
+    Writes are produced by Celery tasks or backend signals — never by
+    direct mobile client input.
+    """
+
+    KIND_CHOICES = [
+        ("new_matches", "New matches found"),
+        ("price_drop", "Price dropped"),
+        ("alert_expired", "Alert expired"),
+        ("alert_paused", "Alert paused"),
+        ("subscription", "Subscription update"),
+        ("system", "System message"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mobile_notifications",
+    )
+    kind = models.CharField(max_length=30, choices=KIND_CHOICES)
+    title = models.CharField(max_length=200)
+    body = models.CharField(max_length=500, blank=True, default="")
+
+    # Optional deep-link targets. `alert` is a soft FK — we keep the row
+    # around even if the alert is later deleted (set-null) so the feed
+    # doesn't lose history.
+    alert = models.ForeignKey(
+        DealAlert,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+    data = models.JSONField(default=dict, blank=True, help_text="Client deep-link hints")
+
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "mobile_notifications"
+        ordering = ["-created_at"]
+        indexes = [
+            # The feed query is always "for this user, newest first, optionally unread".
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["user", "is_read"]),
+            # Supports the collapse lookup:
+            #   filter(user=..., alert=..., kind="new_matches", is_read=False)
+            # runs on every alert that gets fresh matches.
+            models.Index(fields=["user", "alert", "is_read"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.kind} {self.title[:40]}"
 
 
 class MobileSession(models.Model):
