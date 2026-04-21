@@ -189,20 +189,35 @@ class DealAlertSerializer(serializers.ModelSerializer):
     # regardless of whether the stored counter was incremented.
     matches_count = serializers.SerializerMethodField()
 
+    # Best-effort thumbnail for list rendering: the reference image the
+    # user uploaded, else the image from the most recent match. If
+    # neither exists, this is an empty string and mobile hides the row.
+    thumbnail_url = serializers.SerializerMethodField()
+
     class Meta:
         model = DealAlert
         fields = [
-            "id", "description", "search_query", "reference_image", "max_price",
+            "id", "description", "search_query", "reference_image",
+            "thumbnail_url", "max_price",
             "status", "is_active", "last_checked_at", "matches_count",
             "expires_at", "created_at", "updated_at",
         ]
         read_only_fields = [
-            "id", "search_query", "reference_image", "last_checked_at",
-            "matches_count", "expires_at", "created_at", "updated_at",
+            "id", "search_query", "reference_image", "thumbnail_url",
+            "last_checked_at", "matches_count", "expires_at",
+            "created_at", "updated_at",
         ]
 
     def get_matches_count(self, obj):
         return obj.matches.count()
+
+    def get_thumbnail_url(self, obj):
+        if obj.reference_image:
+            return obj.reference_image
+        latest = obj.matches.order_by("-created_at").only("image_url").first()
+        if latest and latest.image_url:
+            return latest.image_url
+        return ""
 
     def create(self, validated_data):
         user = self.context["request"].user
